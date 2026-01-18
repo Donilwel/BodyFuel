@@ -1,8 +1,14 @@
 package app
 
 import (
+	"backend/internal/config"
+	"backend/internal/infrastructure/repositories/postgres"
+	"backend/pkg/logging"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"io"
 	"log"
 	"net/http"
@@ -18,20 +24,49 @@ type BackgroundWorker interface {
 }
 
 type App struct {
-	cfg          *config.Config
-	httpServer   *http.Server
-	workers      []BackgroundWorker
-	closers      []io.Closer
-	healthMetric prometheus.HealthMetric
+	cfg              *config.Config
+	httpServer       *http.Server
+	metricHttpServer *http.Server
+	workers          []BackgroundWorker
+	closers          []io.Closer
+	healthMetric     prometheus.Gauge
 }
 
 func NewApp(configPaths ...string) *App {
+	cfg, err := config.ReadConfig(configPaths...)
+	if err != nil {
+		log.Fatalf("Failed to read config: %v", err)
+	}
+
+	if err := logging.Configure(&cfg.Log); err != nil {
+		log.Fatalf("Failed to configure logger: %v", err)
+	}
+	ctx := context.Background()
+
+	logger := logging.GetLoggerFromContext(ctx)
+
+	db, err := initDB(cfg.Postgres)
+	if err != nil {
+		logger.Fatalf("Failed to init db: %v", err)
+	}
+
+	appMetrics := initializeMetrics()
+
+	workers := make([]BackgroundWorker, 0, 8)
+
+	transactionManager := postgres.NewTransactionManager(db)
+	userInfoRepository := postgres.NewUserInfoRepository(db)
+	userParamsRepository := postgres.NewUserParamsRepository(db)
+
 	return &App{
-		cfg:          cfg,
-		httpServer:   httpServer,
+		cfg: cfg,
+		metricHttpServer: &http.Server{
+			Addr:    fmt.Sprintf("%s:%d", cfg.AppConfig.HTTPServerConfig.Host, cfg.AppConfig.HTTPServerConfig.MetricPort),
+			Handler: metricsRouter,
+		},
 		workers:      workers,
 		closers:      closers,
-		healthMetric: healthMetric,
+		healthMetric: appMetric.HealthMetric,
 	}
 }
 
