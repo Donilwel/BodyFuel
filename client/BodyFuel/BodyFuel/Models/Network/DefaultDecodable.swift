@@ -1,0 +1,1 @@
+struct DefaultDecodable: Decodable { }
