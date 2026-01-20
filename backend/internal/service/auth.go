@@ -1,80 +1,92 @@
 package service
 
 import (
+	"backend/internal/domain/entities"
+	"backend/internal/dto"
+	"backend/internal/errors"
+	"backend/pkg/JWT"
+	"backend/pkg/logging"
 	"context"
+	"fmt"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthService interface {
-	Login(ctx context.Context, email string, password string) (string, error)
-	Register(ctx context.Context, email, password string, role models.UserRole) (*models.User, error)
+type (
+	UserInfoRepository interface {
+		Get(ctx context.Context, f dto.UserInfoFilter, withBlock bool) (*entities.UserInfo, error)
+		Create(ctx context.Context, userInfo *entities.UserInfo) error
+	}
+
+	TransactionManager interface {
+		Do(ctx context.Context, fn func(ctx context.Context) error) (err error)
+	}
+)
+
+type Service struct {
+	txm          TransactionManager
+	userInfoRepo UserInfoRepository
+	log          logging.Entry
 }
 
-type AuthUsecase struct {
-	userRepo   repository.UserRepository
-	walletRepo repository.WalletRepository
+type Config struct {
+	TransactionManager TransactionManager
+	UserInfoRepository UserInfoRepository
+	Log                logging.Entry
 }
 
-func (u *AuthUsecase) Register(ctx context.Context, email, password string, role models.UserRole) (*models.User, error) {
-	// Проверки на пустые поля
-	if email == "" {
-		return nil, errors.ErrEmailEmpty
+func NewService(c *Config) *Service {
+	return &Service{
+		txm:          c.TransactionManager,
+		userInfoRepo: c.UserInfoRepository,
+		log:          c.Log,
 	}
-	if password == "" {
-		return nil, errors.ErrPasswordEmpty
-	}
-	if len(password) < 6 {
-		return nil, errors.ErrPasswordTooShort
-	}
+}
 
-	// Если роль не передана — ставим Customer по умолчанию
-	if role == "" {
-		role = models.Customer
-	}
-
-	// Проверяем, существует ли пользователь с таким email
-	existingUser, _ := u.userRepo.GetUserByEmail(ctx, email)
-	if existingUser != nil {
-		return nil, errors.ErrUserAlreadyExists
-	}
-
-	// Хешируем пароль
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func (u *Service) hashesPassword(user *entities.UserInfoInitSpec) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, errors.ErrHashedPassword
+		return errors.ErrHashedPassword
 	}
-
-	user := &models.User{
-		Email:    email,
-		Password: string(hashedPassword),
-		Role:     string(role),
-	}
-	tx := u.userRepo.BeginTransaction(ctx)
-	defer tx.Rollback()
-
-	if err := u.userRepo.CreateUser(ctx, tx, user); err != nil {
-		return nil, err
-	}
-
-	wallet := &models.Wallet{
-		UserID:  user.ID,
-		Balance: 0.0,
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return user, nil
+	user.Password = string(hashedPassword)
+	return nil
 }
 
-func (u *AuthUsecase) Login(ctx context.Context, email string, password string) (string, error) {
-	user, err := u.userRepo.GetUserByEmail(ctx, email)
+func (u *Service) Register(ctx context.Context, info entities.UserInfoInitSpec) error {
+	return u.txm.Do(ctx, func(ctx context.Context) error {
+		existingUser, _ := u.userInfoRepo.Get(ctx, dto.UserInfoFilter{Username: &info.Username}, false)
+		if existingUser != nil {
+			return errors.ErrUserAlreadyExists
+		}
+
+		if err := u.hashesPassword(&info); err != nil {
+			return fmt.Errorf("register: %w", err)
+		}
+
+		if err := u.userInfoRepo.Create(ctx, entities.NewUserInfo(entities.WithUserInfoInitSpec(info))); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (u *Service) Login(ctx context.Context, ua entities.UserAuthInitSpec) (string, error) {
+	user, err := u.userInfoRepo.Get(ctx, dto.UserInfoFilter{Username: &ua.Username}, false)
 	if err != nil {
 		return "", err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	token, err := u.checkPasswordAndTakeToken(user, ua.Password)
+	if err != nil {
+		return "", fmt.Errorf("login: %w", err)
+	}
+
+	return token, nil
+}
+
+func (u *Service) checkPasswordAndTakeToken(user *entities.UserInfo, pass string) (string, error) {
+	password := user.Password()
+	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(pass)); err != nil {
 		return "", errors.ErrInvalidCredentials
 	}
 
@@ -84,8 +96,4 @@ func (u *AuthUsecase) Login(ctx context.Context, email string, password string) 
 	}
 
 	return token, nil
-}
-
-func NewAuthUsecase(userRepo repository.UserRepository, walletRepo repository.WalletRepository) AuthService {
-	return &AuthUsecase{userRepo: userRepo, walletRepo: walletRepo}
 }

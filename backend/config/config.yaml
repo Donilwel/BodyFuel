@@ -1,0 +1,18 @@
+app:
+  http_server:
+    host: "0.0.0.0"
+    port: 8080
+    api_host: "0.0.0.0"
+    metric_port: 8081
+  graceful_timeout: "5s"
+
+sage:
+  level: "info"
+  format: "json"
+
+postgres:
+  host: "localhost"
+  port: 5432
+  database: "backend_db"
+  username: "backend_user"
+  password: "backend_pass"
