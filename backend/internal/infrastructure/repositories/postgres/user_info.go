@@ -109,8 +109,18 @@ func (r *UserInfoRepo) Delete(ctx context.Context, f dto.UserInfoFilter) error {
 		return fmt.Errorf("build sql: %w", err)
 	}
 
-	if _, err = r.getter.Get(ctx).ExecContext(ctx, query, args...); err != nil {
+	result, err := r.getter.Get(ctx).ExecContext(ctx, query, args...)
+	if err != nil {
 		return fmt.Errorf("exec context: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows deleted: %w", errs.ErrUserInfoAlreadyDeleted)
 	}
 
 	return nil

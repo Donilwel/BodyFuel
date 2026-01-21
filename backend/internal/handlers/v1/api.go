@@ -4,6 +4,7 @@ import (
 	"backend/internal/domain/entities"
 	"backend/internal/dto"
 	"backend/pkg/JWT"
+	"backend/pkg/logging"
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -37,6 +38,7 @@ type Config struct {
 	UserStatisticsService UserStatisticsService
 	CRUDService           CRUDService
 	Validator             validator.Validate
+	Log                   logging.Entry
 }
 
 type API struct {
@@ -44,6 +46,7 @@ type API struct {
 	userStatisticsService UserStatisticsService
 	CRUDService           CRUDService
 	validator             validator.Validate
+	log                   logging.Entry
 }
 
 func NewHandlers(c Config) *API {
@@ -52,6 +55,7 @@ func NewHandlers(c Config) *API {
 		userStatisticsService: c.UserStatisticsService,
 		CRUDService:           c.CRUDService,
 		validator:             c.Validator,
+		log:                   c.Log,
 	}
 }
 

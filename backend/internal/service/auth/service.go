@@ -55,17 +55,14 @@ func (u *Service) Register(ctx context.Context, info entities.UserInfoInitSpec) 
 	return u.txm.Do(ctx, func(ctx context.Context) error {
 		existingUser, _ := u.userInfoRepo.Get(ctx, dto.UserInfoFilter{Username: &info.Username}, false)
 		if existingUser != nil {
-			u.log.Errorf("%s: %v", "register", errors.ErrUserAlreadyExists)
 			return fmt.Errorf("register: %w", errors.ErrUserAlreadyExists)
 		}
 
 		if err := u.hashesPassword(&info); err != nil {
-			u.log.Errorf("%s: %v", "register", err)
 			return fmt.Errorf("register: %w", err)
 		}
 
 		if err := u.userInfoRepo.Create(ctx, entities.NewUserInfo(entities.WithUserInfoInitSpec(info))); err != nil {
-			u.log.Errorf("%s: %v", "register", err)
 			return fmt.Errorf("register: %w", err)
 		}
 
@@ -76,13 +73,11 @@ func (u *Service) Register(ctx context.Context, info entities.UserInfoInitSpec) 
 func (u *Service) Login(ctx context.Context, ua entities.UserAuthInitSpec) (string, error) {
 	user, err := u.userInfoRepo.Get(ctx, dto.UserInfoFilter{Username: &ua.Username}, false)
 	if err != nil {
-		u.log.Errorf("%s: %v", "login", err)
 		return "", fmt.Errorf("login: %w", err)
 	}
 
 	token, err := u.checkPasswordAndTakeToken(user, ua.Password)
 	if err != nil {
-		u.log.Errorf("%w: %v", "login", err)
 		return "", fmt.Errorf("login: %w", err)
 	}
 
@@ -92,13 +87,11 @@ func (u *Service) Login(ctx context.Context, ua entities.UserAuthInitSpec) (stri
 func (u *Service) checkPasswordAndTakeToken(user *entities.UserInfo, pass string) (string, error) {
 	password := user.Password()
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(pass)); err != nil {
-		u.log.Errorf("%s: %v", errors.ErrInvalidCredentials, err)
 		return "", errors.ErrInvalidCredentials
 	}
 
 	token, err := JWT.GenerateJWT(user)
 	if err != nil {
-		u.log.Errorf("%s: %v", errors.ErrTokenGeneration, err)
 		return "", fmt.Errorf("%w: %v", errors.ErrTokenGeneration, err)
 	}
 

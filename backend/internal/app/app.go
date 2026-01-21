@@ -85,6 +85,7 @@ func NewApp(configPaths ...string) *App {
 			AuthService: authService,
 			CRUDService: crudService,
 			Validator:   *validator,
+			Log:         logger,
 		}),
 	)
 
