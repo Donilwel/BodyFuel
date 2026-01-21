@@ -34,16 +34,24 @@ final class AuthService: AuthServiceProtocol {
             throw NetworkError.invalidURL
         }
         
-        let response: LoginResponseBody = try await networkClient.request(
-            requiresAuthorization: false,
-            url: url,
-            method: .post,
-            requestBody: user
-        )
-        
-        tokenStorage.token = response.token
-        
-        print("[INFO] [AuthService/login]: Successfully logged in")
+        do {
+            let response: LoginResponseBody = try await networkClient.request(
+                requiresAuthorization: false,
+                url: url,
+                method: .post,
+                requestBody: user
+            )
+            
+            tokenStorage.token = response.token
+            
+            print("[INFO] [AuthService/login]: Successfully logged in")
+        } catch {
+            if error.localizedDescription.contains("401") {
+                throw AuthError.invalidCredentials
+            } else {
+                throw AuthError.invalidData(error.localizedDescription)
+            }
+        }
     }
 
     func register(user: RegisterPayload) async throws {

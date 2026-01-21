@@ -48,7 +48,6 @@ final class AuthViewModel: ObservableObject {
                 try await authService.register(user: payload)
             }
         } catch {
-            print("[ERROR] [AuthViewModel/submit]: \(error.localizedDescription)")
             screenState = .error(error.localizedDescription)
         }
     }
