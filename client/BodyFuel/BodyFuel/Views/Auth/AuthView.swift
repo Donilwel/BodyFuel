@@ -25,7 +25,8 @@ struct AuthView: View {
                         AuthTextField(title: "Логин", keyboardType: .default, text: $viewModel.login)
                         
                         if viewModel.mode == .register {
-                            AuthTextField(title: "ФИО", keyboardType: .default, text: $viewModel.fullName)
+                            AuthTextField(title: "Имя", keyboardType: .default, text: $viewModel.name)
+                            AuthTextField(title: "Фамилия", keyboardType: .default, text: $viewModel.surname)
                             ValidatedField(error: viewModel.phoneError) {
                                 AuthTextField(
                                     title: "Телефон",

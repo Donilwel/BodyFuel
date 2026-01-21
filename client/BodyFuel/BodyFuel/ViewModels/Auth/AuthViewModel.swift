@@ -12,7 +12,8 @@ final class AuthViewModel: ObservableObject {
     @Published var confirmPassword = ""
     @Published var confirmPasswordError: String? = nil
 
-    @Published var fullName = ""
+    @Published var name = ""
+    @Published var surname = ""
     @Published var phone = ""
     @Published var phoneError: String? = nil
     @Published var email = ""
@@ -33,7 +34,8 @@ final class AuthViewModel: ObservableObject {
                 _ = try await authService.login(login: login, password: password)
             case .register:
                 let payload = RegisterPayload(
-                    fullName: fullName,
+                    name: name,
+                    surname: surname,
                     phone: phone,
                     login: login,
                     email: email,
@@ -62,7 +64,7 @@ final class AuthViewModel: ObservableObject {
         case .login:
             hasErrors = [login, password].contains { $0.isEmpty }
         case .register:
-            hasErrors = [login, fullName].contains { $0.isEmpty } ||
+            hasErrors = [login, name, surname].contains { $0.isEmpty } ||
             [passwordError, confirmPasswordError, phoneError, emailError].contains { $0 != nil }
         }
         

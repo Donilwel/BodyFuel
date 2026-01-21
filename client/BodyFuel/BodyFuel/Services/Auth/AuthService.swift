@@ -20,7 +20,8 @@ enum AuthError: LocalizedError {
 }
 
 struct RegisterPayload: Encodable {
-    let fullName: String
+    let name: String
+    let surname: String
     let phone: String
     let login: String
     let email: String
@@ -34,11 +35,11 @@ final class AuthService: AuthServiceProtocol {
     
     func login(login: String, password: String) async throws -> User {
         guard password == "123456" else { throw AuthError.invalidCredentials }
-        return User(id: .init(), fullName: "Test User", phone: nil, login: login, email: nil)
+        return User(id: .init(), name: "test", surname: "test", phone: nil, login: login, email: nil)
     }
 
     func register(user: RegisterPayload) async throws -> User {
-        return User(id: .init(), fullName: user.fullName, phone: user.phone, login: user.login, email: user.email)
+        return User(id: .init(), name: user.name, surname: user.surname, phone: user.phone, login: user.login, email: user.email)
     }
 
     func sendRecoveryCode(login: String) async throws { }
