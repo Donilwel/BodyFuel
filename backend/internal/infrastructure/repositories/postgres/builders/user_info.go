@@ -129,7 +129,7 @@ type UserInfoDeleteBuilder struct {
 }
 
 func NewUserInfoDeleteBuilder() *UserInfoDeleteBuilder {
-	deleteBuilder := newQueryBuilder().
+	deleteBuilder := newDeleteQueryBuilder().
 		Delete(userInfoTable)
 
 	return &UserInfoDeleteBuilder{b: deleteBuilder}

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS bodyfuel.user_info (
 
 CREATE INDEX IF NOT EXISTS idx_user_info ON bodyfuel.user_info(username);
 
+
 -- +goose Down
 DROP SCHEMA IF EXISTS bodyfuel CASCADE;
 

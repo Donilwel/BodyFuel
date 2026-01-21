@@ -110,3 +110,29 @@ func WithUserInfoInitSpec(s UserInfoInitSpec) UserInfoOption {
 		u.createdAt = s.CreatedAt
 	}
 }
+
+type UserInfoUpdateParams struct {
+	Username *string
+	Name     *string
+	Surname  *string
+	Email    *string
+	Phone    *string
+}
+
+func (ui *UserInfo) Update(p UserInfoUpdateParams) {
+	if p.Username != nil {
+		ui.username = *p.Username
+	}
+	if p.Name != nil {
+		ui.name = *p.Name
+	}
+	if p.Surname != nil {
+		ui.surname = *p.Surname
+	}
+	if p.Email != nil {
+		ui.email = *p.Email
+	}
+	if p.Phone != nil {
+		ui.phone = *p.Phone
+	}
+}

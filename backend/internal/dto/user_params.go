@@ -9,9 +9,8 @@ type UserParams struct {
 	ID        *uuid.UUID
 	UserID    *uuid.UUID
 	Height    *int
-	Weight    []*entities.WeightDay
 	Photo     *string
-	Wants     []*entities.WantDay
+	Wants     *entities.Want
 	Lifestyle *entities.Lifestyle
 }
 
@@ -19,8 +18,7 @@ type UserParamsFilter struct {
 	ID        *uuid.UUID
 	UserID    *uuid.UUID
 	Height    *int
-	Weight    []*entities.WeightDay
 	Photo     *string
-	Wants     []*entities.WantDay
+	Wants     *entities.Want
 	Lifestyle *entities.Lifestyle
 }

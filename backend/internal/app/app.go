@@ -5,7 +5,8 @@ import (
 	"backend/internal/handlers"
 	v1 "backend/internal/handlers/v1"
 	"backend/internal/infrastructure/repositories/postgres"
-	"backend/internal/service"
+	"backend/internal/service/auth"
+	"backend/internal/service/crud"
 	"backend/pkg/logging"
 	"context"
 	"errors"
@@ -57,12 +58,19 @@ func NewApp(configPaths ...string) *App {
 
 	transactionManager := postgres.NewTransactionManager(db)
 	userInfoRepository := postgres.NewUserInfoRepository(db)
-	//userParamsRepository := postgres.NewUserParamsRepository(db)
+	userParamsRepository := postgres.NewUserParamsRepository(db)
 
-	authService := service.NewService(&service.Config{
+	authService := auth.NewService(&auth.Config{
 		TransactionManager: transactionManager,
 		UserInfoRepository: userInfoRepository,
 		Log:                logger,
+	})
+
+	crudService := crud.NewService(&crud.Config{
+		TransactionManager:   transactionManager,
+		UserInfoRepository:   userInfoRepository,
+		UserParamsRepository: userParamsRepository,
+		Log:                  logger,
 	})
 
 	validator := validator.New()
@@ -75,6 +83,7 @@ func NewApp(configPaths ...string) *App {
 		cfg.AppConfig.HTTPServerConfig.ApiHost,
 		v1.NewHandlers(v1.Config{
 			AuthService: authService,
+			CRUDService: crudService,
 			Validator:   *validator,
 		}),
 	)
