@@ -3,6 +3,7 @@ package crud
 import (
 	"backend/internal/domain/entities"
 	"backend/internal/dto"
+	"backend/internal/errors"
 	"backend/pkg/logging"
 	"context"
 	"fmt"
@@ -60,8 +61,13 @@ func (s *Service) GetInfoUser(ctx context.Context, f dto.UserInfoFilter, withBlo
 	return user, nil
 }
 
+// TODO : Бесполезный сервис, может потом куда то можно будет пристроить
 func (s *Service) CreateInfoUser(ctx context.Context, info entities.UserInfoInitSpec) error {
 	return s.transactionManager.Do(ctx, func(ctx context.Context) error {
+		if _, err := s.userInfoRepository.Get(ctx, dto.UserInfoFilter{ID: &info.ID}, false); err == nil {
+			s.log.Errorf("%s: %v", "create user info", errors.ErrUserInfoAlreadyExists)
+			return fmt.Errorf("create user info: %w", errors.ErrUserInfoAlreadyExists)
+		}
 		if err := s.userInfoRepository.Create(ctx, entities.NewUserInfo(entities.WithUserInfoInitSpec(info))); err != nil {
 			s.log.Errorf("%s: %v", "create user info", err)
 			return fmt.Errorf("create user info: %w", err)
@@ -109,6 +115,11 @@ func (s *Service) GetParamsUser(ctx context.Context, f dto.UserParamsFilter, wit
 
 func (s *Service) CreateParamsUser(ctx context.Context, params entities.UserParamsInitSpec) error {
 	return s.transactionManager.Do(ctx, func(ctx context.Context) error {
+		if _, err := s.userParamsRepository.Get(ctx, dto.UserParamsFilter{UserID: &params.UserID}, false); err == nil {
+			s.log.Errorf("%s: %v", "create user params", errors.ErrUserParamsAlreadyExists)
+			return fmt.Errorf("create user params: %w", errors.ErrUserParamsAlreadyExists)
+		}
+
 		if err := s.userParamsRepository.Create(ctx, entities.NewUserParams(entities.WithUserParamsInitSpec(params))); err != nil {
 			s.log.Errorf("%s: %v", "create user params", err)
 			return fmt.Errorf("create user params: %w", err)
