@@ -80,6 +80,11 @@ type UserInfoInitSpec struct {
 	CreatedAt time.Time
 }
 
+type UserAuthInitSpec struct {
+	Username string
+	Password string
+}
+
 func WithUserInfoRestoreSpec(spec UserInfoRestoreSpec) UserInfoOption {
 	return func(u *UserInfo) {
 		u.id = spec.ID

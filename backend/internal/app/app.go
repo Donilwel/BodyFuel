@@ -2,13 +2,16 @@ package app
 
 import (
 	"backend/internal/config"
+	"backend/internal/handlers"
+	v1 "backend/internal/handlers/v1"
 	"backend/internal/infrastructure/repositories/postgres"
+	"backend/internal/service"
 	"backend/pkg/logging"
 	"context"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/go-playground/validator/v10"
 	"io"
 	"log"
 	"net/http"
@@ -24,12 +27,10 @@ type BackgroundWorker interface {
 }
 
 type App struct {
-	cfg              *config.Config
-	httpServer       *http.Server
-	metricHttpServer *http.Server
-	workers          []BackgroundWorker
-	closers          []io.Closer
-	healthMetric     prometheus.Gauge
+	cfg        *config.Config
+	httpServer *http.Server
+	workers    []BackgroundWorker
+	closers    []io.Closer
 }
 
 func NewApp(configPaths ...string) *App {
@@ -50,23 +51,42 @@ func NewApp(configPaths ...string) *App {
 		logger.Fatalf("Failed to init db: %v", err)
 	}
 
-	appMetrics := initializeMetrics()
-
 	workers := make([]BackgroundWorker, 0, 8)
+
+	closers := make([]io.Closer, 0, 8)
 
 	transactionManager := postgres.NewTransactionManager(db)
 	userInfoRepository := postgres.NewUserInfoRepository(db)
-	userParamsRepository := postgres.NewUserParamsRepository(db)
+	//userParamsRepository := postgres.NewUserParamsRepository(db)
+
+	authService := service.NewService(&service.Config{
+		TransactionManager: transactionManager,
+		UserInfoRepository: userInfoRepository,
+		Log:                logger,
+	})
+
+	validator := validator.New()
+
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+
+	handlers.Register(
+		router.Group(""),
+		cfg.AppConfig.HTTPServerConfig.ApiHost,
+		v1.NewHandlers(v1.Config{
+			AuthService: authService,
+			Validator:   *validator,
+		}),
+	)
 
 	return &App{
 		cfg: cfg,
-		metricHttpServer: &http.Server{
-			Addr:    fmt.Sprintf("%s:%d", cfg.AppConfig.HTTPServerConfig.Host, cfg.AppConfig.HTTPServerConfig.MetricPort),
-			Handler: metricsRouter,
+		httpServer: &http.Server{
+			Addr:    fmt.Sprintf("%s:%d", cfg.AppConfig.HTTPServerConfig.Host, cfg.AppConfig.HTTPServerConfig.Port),
+			Handler: router,
 		},
-		workers:      workers,
-		closers:      closers,
-		healthMetric: appMetric.HealthMetric,
+		workers: workers,
+		closers: closers,
 	}
 }
 
@@ -91,15 +111,6 @@ func (a *App) Run() {
 		log.Printf("Server closed")
 	}()
 
-	go func() {
-		log.Printf("Metrics server is listening on %d", a.cfg.AppConfig.HTTPServerConfig.MetricPort)
-
-		if err := a.metricHttpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Failed listen and serve metrics http server: %v", err)
-		}
-		log.Printf("Metrics server closed")
-	}()
-
 	for _, s := range a.workers {
 		if err := s.Run(); err != nil {
 			log.Fatalf("Failed to start service: %v", err)
@@ -110,7 +121,6 @@ func (a *App) Run() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 
-	a.healthMetric.Set(1)
 	log.Println("Application is running")
 	a.waitGracefulShutdown()
 }

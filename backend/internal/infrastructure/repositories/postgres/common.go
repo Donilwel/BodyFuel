@@ -3,6 +3,7 @@ package postgres
 import (
 	"fmt"
 	"github.com/fatih/structs"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"reflect"
 	"strings"
 	"time"

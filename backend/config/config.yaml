@@ -1,0 +1,23 @@
+app:
+  http_server:
+    host: "0.0.0.0"
+    port: 8080
+    api_host: "0.0.0.0"
+    metric_port: 8081
+  graceful_timeout: "5s"
+
+sage:
+  level: "info"
+  app_id: 1
+  deployment_environment: test
+  system: bodyfuel
+  stand_type: test
+  pod_name: bodyfuel-0
+
+
+postgres:
+  host: "localhost"
+  port: 5432
+  database: "backend_db"
+  user: "d.y.maslov"
+  password: "backend_pass"
