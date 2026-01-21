@@ -31,19 +31,24 @@ final class AuthViewModel: ObservableObject {
 
             switch mode {
             case .login:
-                _ = try await authService.login(login: login, password: password)
-            case .register:
-                let payload = RegisterPayload(
-                    name: name,
-                    surname: surname,
-                    phone: phone,
-                    login: login,
-                    email: email,
+                let payload = LoginPayload(
+                    username: login,
                     password: password
                 )
-                _ = try await authService.register(user: payload)
+                try await authService.login(user: payload)
+            case .register:
+                let payload = RegisterPayload(
+                    username: login,
+                    name: name,
+                    surname: surname,
+                    email: email,
+                    phone: phone,
+                    password: password
+                )
+                try await authService.register(user: payload)
             }
         } catch {
+            print("[ERROR] [AuthViewModel/submit]: \(error.localizedDescription)")
             screenState = .error(error.localizedDescription)
         }
     }

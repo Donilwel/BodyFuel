@@ -88,12 +88,10 @@ struct AuthView: View {
                     .padding(.top, 40)
                 }
             }
-            .alert("Ошибка", isPresented: .constant(isError)) {
+            .alert("Что-то пошло не так", isPresented: .constant(isError)) {
                 Button("OK") { viewModel.screenState = .idle }
             } message: {
-                if case let .error(message) = viewModel.screenState {
-                    Text(message)
-                }
+                Text("Попробуйте еще раз")
             }
         }
     }

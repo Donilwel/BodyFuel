@@ -3,7 +3,7 @@ import Foundation
 enum NetworkError: Error, LocalizedError {
     case invalidURL
     case missingToken
-    case requestFailed(statusCode: Int, data: Data)
+    case requestFailed(statusCode: Int, message: String)
     case decodingFailed
     case encodingFailed
     case network(Error)
@@ -14,8 +14,8 @@ enum NetworkError: Error, LocalizedError {
             return "Invalid URL"
         case .missingToken:
             return "Token is missing"
-        case .requestFailed(let statusCode, _):
-            return "Invalid request: HTTP \(statusCode)"
+        case .requestFailed(let statusCode, let msg):
+            return "Invalid request: HTTP \(statusCode), \(msg)"
         case .decodingFailed:
             return "Decoding failed"
         case .encodingFailed:
@@ -42,17 +42,22 @@ final class NetworkClient {
     private init() {}
 
     func request<T: Decodable, U: Encodable>(
+        requiresAuthorization: Bool = true,
         url: URL,
         method: HTTPMethod,
         requestBody: U? = Optional<DefaultEncodable>.none
     ) async throws -> T {
-        guard let token = TokenStorage.shared.token else {
-            throw NetworkError.missingToken
-        }
-
         var request = URLRequest(url: url)
+        
+        if requiresAuthorization {
+            guard let token = TokenStorage.shared.token else {
+                throw NetworkError.missingToken
+            }
+            
+            request.setValue("OAuth \(token)", forHTTPHeaderField: "authorization")
+        }
+        
         request.httpMethod = method.rawValue
-        request.setValue("OAuth \(token)", forHTTPHeaderField: "authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         if let body = requestBody {
@@ -69,11 +74,13 @@ final class NetworkClient {
             let (data, response) = try await session.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                throw NetworkError.requestFailed(statusCode: -1, data: data)
+                let errorMessage = extractErrorMessage(from: data)
+                throw NetworkError.requestFailed(statusCode: -1, message: errorMessage)
             }
 
             guard 200..<300 ~= httpResponse.statusCode else {
-                throw NetworkError.requestFailed(statusCode: httpResponse.statusCode, data: data)
+                let errorMessage = extractErrorMessage(from: data)
+                throw NetworkError.requestFailed(statusCode: httpResponse.statusCode, message: errorMessage)
             }
 
             if data.isEmpty {
@@ -97,5 +104,17 @@ final class NetworkClient {
         } catch {
             throw NetworkError.network(error)
         }
+    }
+    
+    private func extractErrorMessage(from data: Data) -> String {
+        if let apiError = try? JSONDecoder().decode(APIMessageResponse.self, from: data) {
+            return apiError.message
+        }
+
+        if let text = String(data: data, encoding: .utf8), !text.isEmpty {
+            return text
+        }
+
+        return "Ошибка сервера"
     }
 }

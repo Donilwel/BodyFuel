@@ -1,8 +1,8 @@
 import Foundation
 
 protocol AuthServiceProtocol {
-    func login(login: String, password: String) async throws -> User
-    func register(user: RegisterPayload) async throws -> User
+    func login(user: LoginPayload) async throws
+    func register(user: RegisterPayload) async throws
     func sendRecoveryCode(login: String) async throws
     func confirmRecovery(code: String, newPassword: String) async throws
 }
@@ -19,27 +19,48 @@ enum AuthError: LocalizedError {
     }
 }
 
-struct RegisterPayload: Encodable {
-    let name: String
-    let surname: String
-    let phone: String
-    let login: String
-    let email: String
-    let password: String
-}
-
 final class AuthService: AuthServiceProtocol {
     static let shared = AuthService()
     
+    private let networkClient = NetworkClient.shared
+    private let tokenStorage = TokenStorage.shared
+    
     private init() {}
     
-    func login(login: String, password: String) async throws -> User {
-        guard password == "123456" else { throw AuthError.invalidCredentials }
-        return User(id: .init(), name: "test", surname: "test", phone: nil, login: login, email: nil)
+    func login(user: LoginPayload) async throws {
+        let urlComponents = URLComponents(string: API.baseURLString + API.Auth.login)!
+        guard let url = urlComponents.url else {
+            print("[ERROR] [AuthService/login] Invalid login URL")
+            throw NetworkError.invalidURL
+        }
+        
+        let response: LoginResponseBody = try await networkClient.request(
+            requiresAuthorization: false,
+            url: url,
+            method: .post,
+            requestBody: user
+        )
+        
+        tokenStorage.token = response.token
+        
+        print("[INFO] [AuthService/login]: Successfully logged in")
     }
 
-    func register(user: RegisterPayload) async throws -> User {
-        return User(id: .init(), name: user.name, surname: user.surname, phone: user.phone, login: user.login, email: user.email)
+    func register(user: RegisterPayload) async throws {
+        let urlComponents = URLComponents(string: API.baseURLString + API.Auth.register)!
+        guard let url = urlComponents.url else {
+            print("[ERROR] [AuthService/register] Invalid register URL")
+            throw NetworkError.invalidURL
+        }
+        
+        let response: APIMessageResponse = try await networkClient.request(
+            requiresAuthorization: false,
+            url: url,
+            method: .post,
+            requestBody: user
+        )
+        
+        print("[INFO] [AuthService/register]: \(response.message)")
     }
 
     func sendRecoveryCode(login: String) async throws { }
