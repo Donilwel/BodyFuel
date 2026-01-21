@@ -45,7 +45,7 @@ func NewService(c *Config) *Service {
 func (u *Service) hashesPassword(user *entities.UserInfoInitSpec) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return errors.ErrHashedPassword
+		return fmt.Errorf("%w: %v", errors.ErrHashedPassword, err)
 	}
 	user.Password = string(hashedPassword)
 	return nil
@@ -73,7 +73,7 @@ func (u *Service) Register(ctx context.Context, info entities.UserInfoInitSpec) 
 func (u *Service) Login(ctx context.Context, ua entities.UserAuthInitSpec) (string, error) {
 	user, err := u.userInfoRepo.Get(ctx, dto.UserInfoFilter{Username: &ua.Username}, false)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("login: %w", err)
 	}
 
 	token, err := u.checkPasswordAndTakeToken(user, ua.Password)
@@ -92,7 +92,8 @@ func (u *Service) checkPasswordAndTakeToken(user *entities.UserInfo, pass string
 
 	token, err := JWT.GenerateJWT(user)
 	if err != nil {
-		return "", errors.ErrTokenGeneration
+		u.log.Errorf("token generation failed: %v", err)
+		return "", fmt.Errorf("%w: %v", errors.ErrTokenGeneration, err)
 	}
 
 	return token, nil

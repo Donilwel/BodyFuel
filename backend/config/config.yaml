@@ -8,11 +8,16 @@ app:
 
 sage:
   level: "info"
-  format: "json"
+  app_id: 1
+  deployment_environment: test
+  system: bodyfuel
+  stand_type: test
+  pod_name: bodyfuel-0
+
 
 postgres:
   host: "localhost"
   port: 5432
   database: "backend_db"
-  username: "backend_user"
+  user: "d.y.maslov"
   password: "backend_pass"

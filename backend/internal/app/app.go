@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"io"
 	"log"
 	"net/http"
@@ -64,6 +65,8 @@ func NewApp(configPaths ...string) *App {
 		Log:                logger,
 	})
 
+	validator := validator.New()
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -72,6 +75,7 @@ func NewApp(configPaths ...string) *App {
 		cfg.AppConfig.HTTPServerConfig.ApiHost,
 		v1.NewHandlers(v1.Config{
 			AuthService: authService,
+			Validator:   *validator,
 		}),
 	)
 
