@@ -30,7 +30,6 @@ func (a *API) register(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{"auth error": err.Error()})
 		return
 	}
-
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Successfully registers"})
 }
 
