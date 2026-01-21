@@ -24,7 +24,7 @@ type RegisterRequestModel struct {
 	Surname  string `json:"surname" form:"surname" validate:"required,min=2,max=50"`
 	Password string `json:"password,omitempty" form:"password" validate:"required,min=6"`
 	Email    string `json:"email" form:"email" validate:"required"`
-	Phone    string `json:"phone" form:"phone" validate:"required,e164"`
+	Phone    string `json:"phone" form:"phone" validate:"required,regex=^\\+?[0-9]{10,15}$"`
 }
 
 func (r *RegisterRequestModel) ToSpec() entities.UserInfoInitSpec {

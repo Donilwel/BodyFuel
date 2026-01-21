@@ -50,7 +50,7 @@ func (a *API) handleValidationAuthFields(c *gin.Context, err error, typeMethod s
 			out[field] = field + " is required"
 		case "min":
 			out[field] = field + " is too short"
-		case "e164":
+		case "regex":
 			out[field] = "phone number is invalid"
 		case "email":
 			out[field] = "email is invalid"
