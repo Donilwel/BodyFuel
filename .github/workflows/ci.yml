@@ -29,6 +29,7 @@ jobs:
 
       - name: Run coverage for services
         run: |
+          cd backend
           go test ./service/... \
             -coverpkg=./service/... \
             -coverprofile=coverage.out
