@@ -66,6 +66,5 @@ jobs:
 
       - name: Run golangci-lint
         run: |
-          cd backend
           go mod tidy
           golangci-lint run --verbose --timeout 5m ./internal/service/...
