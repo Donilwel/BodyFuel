@@ -65,5 +65,4 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Run golangci-lint
-        run: |
-          golangci-lint run ./internal/service/...
+        run: golangci-lint run --verbose --timeout 5m ./internal/service/...
