@@ -1,0 +1,39 @@
+name: Service Coverage
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  service-coverage:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run coverage for services
+        run: |
+          go test ./service/... \
+            -coverpkg=./service/... \
+            -coverprofile=coverage.out
+
+      - name: Enforce coverage >= 50%
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Service coverage: $COVERAGE%"
+
+          REQUIRED=50.0
+          awk -v c="$COVERAGE" -v r="$REQUIRED" \
+            'BEGIN { if (c < r) exit 1 }'
