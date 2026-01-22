@@ -41,9 +41,10 @@ jobs:
 
           REQUIRED=50.0
           awk -v c="$COVERAGE" -v r="$REQUIRED" \
-            'BEGIN { if (c < r) { print "❌ Coverage too low"; exit 1 } else { print "✅ Coverage OK" } }'
+            'BEGIN { if (c < r) { print "Coverage too low"; exit 1 } else { print "Coverage OK" } }'
 
   lint:
+    needs: test
     runs-on: ubuntu-latest
     defaults:
       run:
