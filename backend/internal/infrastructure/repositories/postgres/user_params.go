@@ -49,7 +49,7 @@ func (r *UserParamsRepo) Get(ctx context.Context, f dto.UserParamsFilter, withBl
 		return nil, fmt.Errorf("build sql: %w", err)
 	}
 
-	var row models.UserParams
+	var row models.UserParamsRow
 	if err := r.getter.Get(ctx).GetContext(ctx, &row, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errs.ErrUserParamsNotFound
@@ -104,8 +104,18 @@ func (r *UserParamsRepo) Delete(ctx context.Context, f dto.UserParamsFilter) err
 		return fmt.Errorf("build sql: %w", err)
 	}
 
-	if _, err = r.getter.Get(ctx).ExecContext(ctx, query, args...); err != nil {
+	result, err := r.getter.Get(ctx).ExecContext(ctx, query, args...)
+	if err != nil {
 		return fmt.Errorf("exec context: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows deleted: %w", errs.ErrUserParamsAlreadyDeleted)
 	}
 
 	return nil

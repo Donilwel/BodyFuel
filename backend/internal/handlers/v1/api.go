@@ -4,6 +4,7 @@ import (
 	"backend/internal/domain/entities"
 	"backend/internal/dto"
 	"backend/pkg/JWT"
+	"backend/pkg/logging"
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -29,6 +30,12 @@ type (
 		CreateParamsUser(ctx context.Context, params entities.UserParamsInitSpec) error
 		UpdateParamsUser(ctx context.Context, f dto.UserParamsFilter, userParams entities.UserParamsUpdateParams) error
 		DeleteParamsUser(ctx context.Context, f dto.UserParamsFilter) error
+
+		GetWeightUser(ctx context.Context, f dto.UserWeightFilter, withBlock bool) (*entities.UserWeight, error)
+		ListWeightsUser(ctx context.Context, f dto.UserWeightFilter, withBlock bool) ([]*entities.UserWeight, error)
+		CreateWeightUser(ctx context.Context, weight entities.UserWeightInitSpec) error
+		UpdateWeightUser(ctx context.Context, f dto.UserWeightFilter, weight entities.UserWeightUpdateParams) error
+		DeleteWeightUser(ctx context.Context, f dto.UserWeightFilter) error
 	}
 )
 
@@ -37,6 +44,7 @@ type Config struct {
 	UserStatisticsService UserStatisticsService
 	CRUDService           CRUDService
 	Validator             validator.Validate
+	Log                   logging.Entry
 }
 
 type API struct {
@@ -44,6 +52,7 @@ type API struct {
 	userStatisticsService UserStatisticsService
 	CRUDService           CRUDService
 	validator             validator.Validate
+	log                   logging.Entry
 }
 
 func NewHandlers(c Config) *API {
@@ -52,6 +61,7 @@ func NewHandlers(c Config) *API {
 		userStatisticsService: c.UserStatisticsService,
 		CRUDService:           c.CRUDService,
 		validator:             c.Validator,
+		log:                   c.Log,
 	}
 }
 
@@ -59,7 +69,6 @@ func (a *API) RegisterHandlers(r *gin.RouterGroup) {
 	a.registerAuthHandlers(r)
 
 	protected := r.Group("", JWT.JWTAuthMiddleware())
-	a.registerParamsHandlers(r)
 	a.registerCRUDHandlers(protected)
 
 }

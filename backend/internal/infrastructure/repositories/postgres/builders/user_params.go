@@ -115,7 +115,7 @@ type UserParamsDeleteBuilder struct {
 }
 
 func NewUserParamsDeleteBuilder() *UserParamsDeleteBuilder {
-	deleteBuilder := newQueryBuilder().
+	deleteBuilder := newDeleteQueryBuilder().
 		Delete(userParamsTable)
 
 	return &UserParamsDeleteBuilder{b: deleteBuilder}

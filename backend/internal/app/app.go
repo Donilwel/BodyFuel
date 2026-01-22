@@ -59,6 +59,7 @@ func NewApp(configPaths ...string) *App {
 	transactionManager := postgres.NewTransactionManager(db)
 	userInfoRepository := postgres.NewUserInfoRepository(db)
 	userParamsRepository := postgres.NewUserParamsRepository(db)
+	userWeightRepository := postgres.NewUserWeightRepository(db)
 
 	authService := auth.NewService(&auth.Config{
 		TransactionManager: transactionManager,
@@ -69,6 +70,7 @@ func NewApp(configPaths ...string) *App {
 		TransactionManager:   transactionManager,
 		UserInfoRepository:   userInfoRepository,
 		UserParamsRepository: userParamsRepository,
+		UserWeightRepository: userWeightRepository,
 		Log:                  logger,
 	})
 
@@ -84,6 +86,7 @@ func NewApp(configPaths ...string) *App {
 			AuthService: authService,
 			CRUDService: crudService,
 			Validator:   *validator,
+			Log:         logger,
 		}),
 	)
 

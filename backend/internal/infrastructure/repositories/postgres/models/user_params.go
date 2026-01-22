@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserParams struct {
+type UserParamsRow struct {
 	ID        uuid.UUID          `db:"id"`
 	UserId    uuid.UUID          `db:"id_user"`
 	Height    int                `db:"height"`
@@ -14,8 +14,8 @@ type UserParams struct {
 	Lifestyle entities.Lifestyle `db:"lifestyle"`
 }
 
-func NewUserParamsRow(userParams *entities.UserParams) *UserParams {
-	return &UserParams{
+func NewUserParamsRow(userParams *entities.UserParams) *UserParamsRow {
+	return &UserParamsRow{
 		ID:        userParams.ID(),
 		UserId:    userParams.UserID(),
 		Height:    userParams.Height(),
@@ -25,7 +25,7 @@ func NewUserParamsRow(userParams *entities.UserParams) *UserParams {
 	}
 }
 
-func (u *UserParams) ToEntity() *entities.UserParams {
+func (u *UserParamsRow) ToEntity() *entities.UserParams {
 	return entities.NewUserParams(
 		entities.WithUserParamsRestoreSpec(entities.UserParamsRestoreSpec{
 			ID:        u.ID,

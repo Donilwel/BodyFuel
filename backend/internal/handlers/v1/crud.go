@@ -22,11 +22,18 @@ func (a *API) registerCRUDHandlers(router *gin.RouterGroup) {
 	user.PATCH("/params", a.updateUserParams)
 	user.DELETE("/params", a.deleteUserParams)
 	user.POST("/params", a.createUserParams)
+
+	user.GET("/weight", a.getUserWeight)
+	user.GET("/weight/history", a.getUserWeightHistory)
+	user.PATCH("/weight", a.updateUserWeight)
+	user.DELETE("/weight", a.deleteUserWeight)
+	user.POST("/weight", a.createUserWeight)
 }
 
 func (a *API) deleteUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
+		a.log.Errorf("crud error: delete user info: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -35,6 +42,7 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
+		a.log.Errorf("crud error: delete user info: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -43,6 +51,7 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		a.log.Errorf("crud error: delete user info: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -52,16 +61,19 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 
 	err = a.CRUDService.DeleteInfoUser(ctx, dto.UserInfoFilter{ID: &userID})
 	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
+	a.log.Infof("crud info: delete user info: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully deleted"})
 }
 
 func (a *API) updateUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
+		a.log.Errorf("crud error: update user info: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -70,6 +82,7 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
+		a.log.Errorf("crud error: update user info: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -78,6 +91,7 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		a.log.Errorf("crud error: update user info: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -87,6 +101,7 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 
 	var m models.UserInfoUpdateRequestModel
 	if err := ctx.ShouldBindJSON(&m); err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
@@ -98,16 +113,19 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 
 	err = a.CRUDService.UpdateInfoUser(ctx, dto.UserInfoFilter{ID: &userID}, m.ToParam())
 	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
+	a.log.Infof("crud info: update user info: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully updated"})
 }
 
 func (a *API) getUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
+		a.log.Errorf("crud error: get user info: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -116,6 +134,7 @@ func (a *API) getUserInfo(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
+		a.log.Errorf("crud error: get user info: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -124,6 +143,7 @@ func (a *API) getUserInfo(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		a.log.Errorf("crud error: get user info: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -133,16 +153,19 @@ func (a *API) getUserInfo(ctx *gin.Context) {
 
 	ui, err := a.CRUDService.GetInfoUser(ctx, dto.UserInfoFilter{ID: &userID}, false)
 	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
+	a.log.Infof("crud info: get user info: success")
 	ctx.JSON(http.StatusOK, models.NewUserInfoResponse(ui))
 }
 
 func (a *API) getUserParams(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
+		a.log.Errorf("crud error: get user params: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -151,6 +174,7 @@ func (a *API) getUserParams(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
+		a.log.Errorf("crud error: get user params: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -159,6 +183,7 @@ func (a *API) getUserParams(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		a.log.Errorf("crud error: get user params: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -168,16 +193,19 @@ func (a *API) getUserParams(ctx *gin.Context) {
 
 	up, err := a.CRUDService.GetParamsUser(ctx, dto.UserParamsFilter{UserID: &userID}, false)
 	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
+	a.log.Infof("crud info: get user params: success")
 	ctx.JSON(http.StatusOK, models.NewUserParamsResponse(up))
 }
 
 func (a *API) updateUserParams(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
+		a.log.Errorf("crud error: update user params: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -186,6 +214,7 @@ func (a *API) updateUserParams(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
+		a.log.Errorf("crud error: update user params: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -194,6 +223,7 @@ func (a *API) updateUserParams(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		a.log.Errorf("crud error: update user params: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -203,6 +233,7 @@ func (a *API) updateUserParams(ctx *gin.Context) {
 
 	var m models.UserParamsUpdateRequestModel
 	if err := ctx.ShouldBindJSON(&m); err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
@@ -214,22 +245,26 @@ func (a *API) updateUserParams(ctx *gin.Context) {
 
 	spec, err := m.ToParam()
 	if err != nil {
+		a.log.Errorf("crud error: invalid data: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: invalid data": err.Error()})
 		return
 	}
 
 	err = a.CRUDService.UpdateParamsUser(ctx, dto.UserParamsFilter{UserID: &userID}, spec)
 	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
+	a.log.Infof("crud info: update user params: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully updated"})
 }
 
 func (a *API) handleValidationErrors(c *gin.Context, err error, contextKey string) {
 	var ve validator.ValidationErrors
 	if !errors.As(err, &ve) {
+		a.log.Errorf("crud error: %s: %s", contextKey, err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error": "Internal validation error"})
 		return
 	}
@@ -258,13 +293,14 @@ func (a *API) handleValidationErrors(c *gin.Context, err error, contextKey strin
 			contextKey: out,
 		},
 	}
-
+	a.log.Errorf("crud error: validation error: %s", response)
 	c.AbortWithStatusJSON(http.StatusBadRequest, response)
 }
 
 func (a *API) deleteUserParams(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
+		a.log.Errorf("crud error: delete user params: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -273,6 +309,7 @@ func (a *API) deleteUserParams(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
+		a.log.Errorf("crud error: delete user params: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -281,6 +318,7 @@ func (a *API) deleteUserParams(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		a.log.Errorf("crud error: delete user params: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -290,16 +328,19 @@ func (a *API) deleteUserParams(ctx *gin.Context) {
 
 	err = a.CRUDService.DeleteParamsUser(ctx, dto.UserParamsFilter{UserID: &userID})
 	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
+	a.log.Infof("crud info: delete user params: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully deleted"})
 }
 
 func (a *API) createUserParams(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
+		a.log.Errorf("crud error: create user params: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -308,6 +349,7 @@ func (a *API) createUserParams(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
+		a.log.Errorf("crud error: create user params: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -316,6 +358,7 @@ func (a *API) createUserParams(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		a.log.Errorf("crud error: create user params: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -325,6 +368,7 @@ func (a *API) createUserParams(ctx *gin.Context) {
 
 	var m models.UserParamsCreateRequestModel
 	if err := ctx.ShouldBindJSON(&m); err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
@@ -335,15 +379,160 @@ func (a *API) createUserParams(ctx *gin.Context) {
 	}
 	up, err := m.ToSpec()
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: invalid data": err.Error()})
+		a.log.Errorf("crud error: create user params: invalid data: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: create user params: invalid data": err.Error()})
 		return
 	}
 	up.UserID = userID
 
 	if err := a.CRUDService.CreateParamsUser(ctx, up); err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
+	a.log.Infof("crud info: create user params: success")
+	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully created"})
+}
+
+func (a *API) getUserWeight(ctx *gin.Context) {
+	userIDRaw, ok := ctx.Get("user_id")
+	if !ok {
+		a.log.Errorf("crud error: get user weight: missing user_id in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "missing user_id in context",
+		})
+		return
+	}
+
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		a.log.Errorf("crud error: get user weight: invalid user_id type in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user_id type in context",
+		})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		a.log.Errorf("crud error: get user weight: invalid user_id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid user_id format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	uw, err := a.CRUDService.GetWeightUser(ctx, dto.UserWeightFilter{UserID: &userID}, false)
+	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
+		return
+	}
+
+	a.log.Infof("crud info: get user weight: success")
+	ctx.JSON(http.StatusOK, models.NewUserWeightResponse(uw))
+}
+
+func (a *API) getUserWeightHistory(ctx *gin.Context) {
+	userIDRaw, ok := ctx.Get("user_id")
+	if !ok {
+		a.log.Errorf("crud error: get user weight: missing user_id in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "missing user_id in context",
+		})
+		return
+	}
+
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		a.log.Errorf("crud error: get user weight history: invalid user_id type in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user_id type in context",
+		})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		a.log.Errorf("crud error: get user weight history: invalid user_id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid user_id format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	uwl, err := a.CRUDService.ListWeightsUser(ctx, dto.UserWeightFilter{UserID: &userID}, false)
+	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
+		return
+	}
+
+	a.log.Infof("crud info: get user weight history: success")
+	ctx.JSON(http.StatusOK, models.NewUserWeightResponseList(uwl))
+}
+
+func (a *API) updateUserWeight(ctx *gin.Context) {}
+
+func (a *API) deleteUserWeight(ctx *gin.Context) {}
+
+func (a *API) createUserWeight(ctx *gin.Context) {
+	userIDRaw, ok := ctx.Get("user_id")
+	if !ok {
+		a.log.Errorf("crud error: create user weight: missing user_id in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "missing user_id in context",
+		})
+		return
+	}
+
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		a.log.Errorf("crud error: create user weight: invalid user_id type in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user_id type in context",
+		})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		a.log.Errorf("crud error: create user weight: invalid user_id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid user_id format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	var m models.UserWeightCreateRequestModel
+	if err := ctx.ShouldBindJSON(&m); err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
+		return
+	}
+
+	if err := a.validator.Struct(m); err != nil {
+		a.handleValidationErrors(ctx, err, "create user weight")
+		return
+	}
+	uw := m.ToSpec()
+	if err != nil {
+		a.log.Errorf("crud error: create user weight: invalid data: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: create user weight: invalid data": err.Error()})
+		return
+	}
+	uw.UserID = userID
+
+	if err := a.CRUDService.CreateWeightUser(ctx, uw); err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
+		return
+	}
+
+	a.log.Infof("crud info: create user weight: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully created"})
 }
