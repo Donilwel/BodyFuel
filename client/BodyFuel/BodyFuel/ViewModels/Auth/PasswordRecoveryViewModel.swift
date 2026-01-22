@@ -9,12 +9,6 @@ final class PasswordRecoveryViewModel: ObservableObject {
         case success
     }
 
-    enum ScreenState {
-        case idle
-        case loading
-        case error(String)
-    }
-
     @Published var login: String = ""
     @Published var code: String = ""
     @Published var newPassword: String = ""
@@ -47,8 +41,11 @@ final class PasswordRecoveryViewModel: ObservableObject {
             case .success: break
             }
 
+        } catch let error as AuthError {
+            screenState = .error(error.errorDescription ?? "Заполните все поля")
         } catch {
-            screenState = .error(error.localizedDescription)
+            print("[ERROR] [PasswordRecoveryViewModel/submit]: \(error.localizedDescription)")
+            screenState = .error("Попробуйте еще раз позже")
         }
     }
     

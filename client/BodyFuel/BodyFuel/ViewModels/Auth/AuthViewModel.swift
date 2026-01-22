@@ -3,8 +3,19 @@ import Combine
 
 @MainActor
 final class AuthViewModel: ObservableObject {
+    enum AuthMode {
+        case login
+        case register
+    }
+    
+    enum AuthEvent {
+        case loginSuccess
+        case registrationSuccess
+    }
+    
     @Published var mode: AuthMode = .login
-    @Published var screenState: AuthScreenState = .idle
+    @Published var screenState: ScreenState = .idle
+    @Published var event: AuthEvent?
 
     @Published var login = ""
     @Published var password = ""
@@ -36,6 +47,7 @@ final class AuthViewModel: ObservableObject {
                     password: password
                 )
                 try await authService.login(user: payload)
+                event = .loginSuccess
             case .register:
                 let payload = RegisterPayload(
                     username: login,
@@ -46,9 +58,13 @@ final class AuthViewModel: ObservableObject {
                     password: password
                 )
                 try await authService.register(user: payload)
+                event = .registrationSuccess
             }
+        } catch let error as AuthError {
+            screenState = .error(error.errorDescription ?? "Заполните все поля")
         } catch {
-            screenState = .error(error.localizedDescription)
+            print("[ERROR] [AuthViewModel/submit]: \(error.localizedDescription)")
+            screenState = .error("Попробуйте еще раз позже")
         }
     }
     

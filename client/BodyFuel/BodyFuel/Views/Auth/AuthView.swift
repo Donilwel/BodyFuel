@@ -1,22 +1,27 @@
 import SwiftUI
 
+enum AuthDestination: Hashable {
+    case userParameters
+}
+
 struct AuthView: View {
     @StateObject private var viewModel = AuthViewModel()
+    @State private var path = NavigationPath()
     
-    var loginForm: some View {
+    private var loginForm: some View {
         VStack(spacing: 16) {
-            AuthTextField(title: "Логин", keyboardType: .default, text: $viewModel.login)
+            CustomTextField(title: "Логин", text: $viewModel.login)
             PasswordField(title: "Пароль", text: $viewModel.password)
         }
     }
     
-    var registerForm: some View {
+    private var registerForm: some View {
         VStack(spacing: 16) {
-            AuthTextField(title: "Логин", keyboardType: .default, text: $viewModel.login)
-            AuthTextField(title: "Имя", keyboardType: .default, text: $viewModel.name)
-            AuthTextField(title: "Фамилия", keyboardType: .default, text: $viewModel.surname)
+            CustomTextField(title: "Логин", text: $viewModel.login)
+            CustomTextField(title: "Имя", text: $viewModel.name)
+            CustomTextField(title: "Фамилия", text: $viewModel.surname)
             ValidatedField(error: viewModel.phoneError) {
-                AuthTextField(
+                CustomTextField(
                     title: "Телефон",
                     keyboardType: .phonePad,
                     text: $viewModel.phone.onChange {
@@ -25,7 +30,7 @@ struct AuthView: View {
                 )
             }
             ValidatedField(error: viewModel.emailError) {
-                AuthTextField(
+                CustomTextField(
                     title: "Почта",
                     keyboardType: .emailAddress,
                     text: $viewModel.email.onChange {
@@ -52,11 +57,11 @@ struct AuthView: View {
         }
     }
     
-    var formContent: some View {
+    private var formContent: some View {
         VStack(spacing: 16) {
             Picker("", selection: $viewModel.mode) {
-                Text("Вход").tag(AuthMode.login)
-                Text("Регистрация").tag(AuthMode.register)
+                Text("Вход").tag(AuthViewModel.AuthMode.login)
+                Text("Регистрация").tag(AuthViewModel.AuthMode.register)
             }
             .pickerStyle(.segmented)
             .padding(.bottom, 8)
@@ -95,9 +100,9 @@ struct AuthView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ZStack {
-                AppColors.backgroundGradient.ignoresSafeArea()
+                AnimatedBackground()
 
                 ScrollView {
                     Image("emblema")
@@ -113,6 +118,17 @@ struct AuthView: View {
             } message: {
                 if case let .error(message) = viewModel.screenState {
                     Text(message)
+                }
+            }
+            .navigationDestination(for: AuthDestination.self) { destination in
+                switch destination {
+                case .userParameters:
+                    UserParametersView()
+                }
+            }
+            .onChange(of: viewModel.event) { event in
+                if case .loginSuccess = event {
+                    path.append(AuthDestination.userParameters)
                 }
             }
         }

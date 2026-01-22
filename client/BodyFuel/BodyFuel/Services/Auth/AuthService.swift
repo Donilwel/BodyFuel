@@ -5,6 +5,7 @@ protocol AuthServiceProtocol {
     func register(user: RegisterPayload) async throws
     func sendRecoveryCode(login: String) async throws
     func confirmRecovery(code: String, newPassword: String) async throws
+    func sendUserParameters() async throws
 }
 
 enum AuthError: LocalizedError {
@@ -73,4 +74,5 @@ final class AuthService: AuthServiceProtocol {
 
     func sendRecoveryCode(login: String) async throws { }
     func confirmRecovery(code: String, newPassword: String) async throws { }
+    func sendUserParameters() async throws {}
 }

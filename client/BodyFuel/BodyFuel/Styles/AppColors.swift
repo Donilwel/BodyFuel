@@ -7,7 +7,7 @@ enum AppColors {
         endPoint: .bottom
     )
     static let background =  Color.blue
-    static let primary = Color.blue
+    static let primary = Color.indigo
 }
 
 #Preview {

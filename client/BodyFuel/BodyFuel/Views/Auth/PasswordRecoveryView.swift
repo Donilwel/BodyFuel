@@ -5,7 +5,7 @@ struct PasswordRecoveryView: View {
 
     var body: some View {
         ZStack {
-            AppColors.backgroundGradient.ignoresSafeArea()
+            AnimatedBackground()
 
             VStack(spacing: 20) {
                 if viewModel.step == .success {
@@ -20,9 +20,9 @@ struct PasswordRecoveryView: View {
                     Group {
                         switch viewModel.step {
                         case .enterLogin:
-                            AuthTextField(title: "Логин", keyboardType: .default, text: $viewModel.login)
+                            CustomTextField(title: "Логин", text: $viewModel.login)
                         case .enterCode:
-                            AuthTextField(title: "Код из СМС", keyboardType: .numberPad, text: $viewModel.code)
+                            CustomTextField(title: "Код из СМС", keyboardType: .numberPad, text: $viewModel.code)
                             ValidatedField(error: viewModel.passwordError) {
                                 PasswordField(
                                     title: "Новый пароль",
@@ -48,10 +48,6 @@ struct PasswordRecoveryView: View {
             .background(
                 RoundedRectangle(cornerRadius: 28)
                     .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
             )
             .padding(.horizontal, 20)
         }
