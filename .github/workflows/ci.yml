@@ -29,7 +29,7 @@ jobs:
 
       - name: Run service tests with coverage
         run: |
-          # запуск всех тестов в internal/services
+          cd backend
           go test ./internal/services/... \
             -coverpkg=./internal/services/... \
             -coverprofile=coverage.out
