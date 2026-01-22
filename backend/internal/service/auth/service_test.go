@@ -490,3 +490,113 @@ func TestService_Login(t *testing.T) {
 		})
 	}
 }
+
+func TestService_checkPasswordAndTakeToken(t *testing.T) {
+	hashPass, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	hashEmpty, _ := bcrypt.GenerateFromPassword([]byte(""), bcrypt.DefaultCost)
+
+	tests := []struct {
+		name    string
+		user    *entities.UserInfo
+		pass    string
+		wantErr error
+	}{
+		{
+			name: "correct password",
+			user: entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
+				Username: "user",
+				Password: string(hashPass),
+			})),
+			pass:    "password123",
+			wantErr: nil,
+		},
+		{
+			name: "wrong password",
+			user: entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
+				Username: "user",
+				Password: string(hashPass),
+			})),
+			pass:    "wrong",
+			wantErr: errors.ErrInvalidCredentials,
+		},
+		{
+			name: "empty password correct",
+			user: entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
+				Username: "user",
+				Password: string(hashEmpty),
+			})),
+			pass:    "",
+			wantErr: nil,
+		},
+	}
+
+	s := &Service{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := s.checkPasswordAndTakeToken(tt.user, tt.pass)
+
+			if tt.wantErr != nil {
+				assert.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr.Error())
+				assert.Empty(t, got)
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, got)
+			}
+		})
+	}
+}
+
+func TestService_hashesPassword(t *testing.T) {
+	tests := []struct {
+		name     string
+		password string
+		wantErr  bool
+	}{
+		{
+			name:     "normal password",
+			password: "mysecret",
+			wantErr:  false,
+		},
+		{
+			name:     "empty password",
+			password: "",
+			wantErr:  false,
+		},
+		{
+			name:     "long password",
+			password: "this_is_a_very_long_password_1234567890",
+			wantErr:  false,
+		},
+		{
+			name:     "simulate bcrypt error",
+			password: "error",
+			wantErr:  false,
+		},
+	}
+
+	s := &Service{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			user := &entities.UserInfoInitSpec{
+				Username: "user",
+				Password: tt.password,
+			}
+
+			err := s.hashesPassword(user)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotEmpty(t, user.Password)
+			assert.NotEqual(t, tt.password, user.Password)
+
+			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(tt.password))
+			assert.NoError(t, err)
+		})
+	}
+}
