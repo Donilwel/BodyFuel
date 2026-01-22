@@ -2,7 +2,7 @@ run:
   timeout: 5m
   skip-dirs:
     - "internal/service/auth/mocks"
-    
+    - "internal/service/crud/mocks"
 linters:
   enable:
     - govet
