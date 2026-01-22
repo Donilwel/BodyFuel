@@ -49,7 +49,7 @@ func (r *UserParamsRepo) Get(ctx context.Context, f dto.UserParamsFilter, withBl
 		return nil, fmt.Errorf("build sql: %w", err)
 	}
 
-	var row models.UserParams
+	var row models.UserParamsRow
 	if err := r.getter.Get(ctx).GetContext(ctx, &row, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errs.ErrUserParamsNotFound

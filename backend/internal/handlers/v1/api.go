@@ -30,6 +30,12 @@ type (
 		CreateParamsUser(ctx context.Context, params entities.UserParamsInitSpec) error
 		UpdateParamsUser(ctx context.Context, f dto.UserParamsFilter, userParams entities.UserParamsUpdateParams) error
 		DeleteParamsUser(ctx context.Context, f dto.UserParamsFilter) error
+
+		GetWeightUser(ctx context.Context, f dto.UserWeightFilter, withBlock bool) (*entities.UserWeight, error)
+		ListWeightsUser(ctx context.Context, f dto.UserWeightFilter, withBlock bool) ([]*entities.UserWeight, error)
+		CreateWeightUser(ctx context.Context, weight entities.UserWeightInitSpec) error
+		UpdateWeightUser(ctx context.Context, f dto.UserWeightFilter, weight entities.UserWeightUpdateParams) error
+		DeleteWeightUser(ctx context.Context, f dto.UserWeightFilter) error
 	}
 )
 

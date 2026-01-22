@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type UserInfo struct {
+type UserInfoRow struct {
 	ID        uuid.UUID `db:"id"`
 	Username  string    `db:"username"`
 	Name      string    `db:"name"`
@@ -17,8 +17,8 @@ type UserInfo struct {
 	CreatedAt time.Time `db:"created_at"`
 }
 
-func NewUserInfoRow(userInfo *entities.UserInfo) *UserInfo {
-	return &UserInfo{
+func NewUserInfoRow(userInfo *entities.UserInfo) *UserInfoRow {
+	return &UserInfoRow{
 		ID:        userInfo.ID(),
 		Username:  userInfo.Username(),
 		Name:      userInfo.Name(),
@@ -30,7 +30,7 @@ func NewUserInfoRow(userInfo *entities.UserInfo) *UserInfo {
 	}
 }
 
-func (u *UserInfo) ToEntity() *entities.UserInfo {
+func (u *UserInfoRow) ToEntity() *entities.UserInfo {
 	return entities.NewUserInfo(
 		entities.WithUserInfoRestoreSpec(entities.UserInfoRestoreSpec{
 			ID:        u.ID,

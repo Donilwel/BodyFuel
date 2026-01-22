@@ -52,7 +52,7 @@ func (r *UserInfoRepo) Get(ctx context.Context, f dto.UserInfoFilter, withBlock 
 		return nil, fmt.Errorf("build sql: %w", err)
 	}
 
-	var row models.UserInfo
+	var row models.UserInfoRow
 	if err := r.getter.Get(ctx).GetContext(ctx, &row, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errs.ErrUserInfoNotFound
