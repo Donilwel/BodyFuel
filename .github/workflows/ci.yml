@@ -30,8 +30,8 @@ jobs:
       - name: Run service tests with coverage
         run: |
           cd backend
-          go test ./internal/services/... \
-            -coverpkg=./internal/services/... \
+          go test ./internal/service/... \
+            -coverpkg=./internal/service/... \
             -coverprofile=coverage.out
 
       - name: Check coverage >= 50%
