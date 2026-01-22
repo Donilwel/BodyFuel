@@ -63,7 +63,6 @@ func NewApp(configPaths ...string) *App {
 	authService := auth.NewService(&auth.Config{
 		TransactionManager: transactionManager,
 		UserInfoRepository: userInfoRepository,
-		Log:                logger,
 	})
 
 	crudService := crud.NewService(&crud.Config{
