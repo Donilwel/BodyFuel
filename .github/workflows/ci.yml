@@ -26,3 +26,18 @@ jobs:
         run: |
           cd backend
           go test ./...
+
+      - name: Run coverage for services
+        run: |
+          go test ./service/... \
+            -coverpkg=./service/... \
+            -coverprofile=coverage.out
+
+      - name: Enforce coverage >= 50%
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Service coverage: $COVERAGE%"
+
+          REQUIRED=50.0
+          awk -v c="$COVERAGE" -v r="$REQUIRED" \
+            'BEGIN { if (c < r) exit 1 }'
