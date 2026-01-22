@@ -27,11 +27,11 @@ jobs:
           cd backend
           go test ./...
 
-      - name: Run coverage for services
+      - name: Run service tests with coverage
         run: |
-          cd backend
-          go test ./service/... \
-            -coverpkg=./service/... \
+          # запуск всех тестов в internal/services
+          go test ./internal/services/... \
+            -coverpkg=./internal/services/... \
             -coverprofile=coverage.out
 
       - name: Check coverage >= 50%
@@ -41,4 +41,4 @@ jobs:
 
           REQUIRED=50.0
           awk -v c="$COVERAGE" -v r="$REQUIRED" \
-            'BEGIN { if (c < r) { print "Coverage too low"; exit 1 } else { print "OK" } }'
+            'BEGIN { if (c < r) { print "❌ Coverage too low"; exit 1 } else { print "✅ Coverage OK" } }'
