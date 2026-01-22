@@ -1,21 +1,27 @@
-name: Backend CI
+name: Go Backend Tests
 
 on:
   push:
-    branches: [ "main" ]
   pull_request:
 
 jobs:
-  backend:
+  test:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: backend
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Download dependencies
+        run: |
+          cd backend
+          go mod download
+
       - name: Run tests
         run: |
-          echo "Мы внутри backend"
+          cd backend
+          go test ./...
