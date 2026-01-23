@@ -9,6 +9,7 @@ final class AuthViewModel: ObservableObject {
     }
     
     enum AuthEvent {
+        case idle
         case loginSuccess
         case registrationSuccess
     }

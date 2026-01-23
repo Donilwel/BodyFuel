@@ -130,6 +130,7 @@ struct AuthView: View {
                 if case .loginSuccess = event {
                     path.append(AuthDestination.userParameters)
                 }
+                viewModel.event = .idle
             }
         }
     }
