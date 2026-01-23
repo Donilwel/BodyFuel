@@ -127,7 +127,7 @@ struct AuthView: View {
                 }
             }
             .onChange(of: viewModel.event) { event in
-                if case .loginSuccess = event {
+                if case .registrationSuccess = event {
                     path.append(AuthDestination.userParameters)
                 }
                 viewModel.event = .idle

@@ -50,7 +50,7 @@ final class AuthViewModel: ObservableObject {
                 try await authService.login(user: payload)
                 event = .loginSuccess
             case .register:
-                let payload = RegisterPayload(
+                let registerPayload = RegisterPayload(
                     username: login,
                     name: name,
                     surname: surname,
@@ -58,7 +58,8 @@ final class AuthViewModel: ObservableObject {
                     phone: phone,
                     password: password
                 )
-                try await authService.register(user: payload)
+                try await authService.register(user: registerPayload)
+                try await authService.login(user: LoginPayload(username: registerPayload.username, password: registerPayload.password))
                 event = .registrationSuccess
             }
         } catch let error as AuthError {
