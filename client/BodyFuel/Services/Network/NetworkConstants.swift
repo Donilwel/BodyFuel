@@ -1,7 +1,7 @@
 import Foundation
 
 enum API {
-    static let baseURLString = "http://localhost:8080/api/v2"
+    static let baseURLString = "http://localhost:8080/api/v1"
     
     enum Auth {
         static let register = "/auth/register"

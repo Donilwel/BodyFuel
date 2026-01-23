@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct UserParametersView: View {
     @StateObject private var viewModel = UserParametersViewModel()
@@ -8,6 +9,13 @@ struct UserParametersView: View {
     
     private var parametersFields: some View {
         VStack(spacing: 16) {
+            PhotosPicker(selection: $viewModel.avatarItem, matching: .images) {
+                AvatarPickerView(data: viewModel.avatarData)
+            }
+            .onChange(of: viewModel.avatarItem) { _ in
+                Task { await viewModel.loadAvatar() }
+            }
+            
             ValidatedField(error: viewModel.heightError) {
                 CustomTextField(
                     title: "Рост",

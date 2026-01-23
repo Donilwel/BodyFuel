@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import PhotosUI
 import SwiftUI
 
 @MainActor
@@ -16,6 +17,8 @@ final class UserParametersViewModel: ObservableObject {
     @Published var targetWeightError: String? = nil
     @Published var targetStepsDaily: Float = 0.0
     @Published var targetWorkoutsWeekly: Float = 0.0
+    @Published var avatarData: Data?
+    @Published var avatarItem: PhotosPickerItem?
     
     var weight: Float {
         Float(weightString) ?? 0.0
@@ -25,6 +28,10 @@ final class UserParametersViewModel: ObservableObject {
     
     private var height: Int {
         Int(heightString) ?? 0
+    }
+    
+    func loadAvatar() async {
+        avatarData = try? await avatarItem?.loadTransferable(type: Data.self)
     }
 
     func submit() async {
