@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	docsSwag "backend/docs"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -26,6 +27,9 @@ func Register(router *gin.RouterGroup, host string, controllers ...HTTPControlle
 			"status": http.StatusOK,
 		})
 	})
+
+	docsSwag.SwaggerInfo.Host = host
+	docsSwag.SwaggerInfo.BasePath = apiEndpoint
 
 	router.OPTIONS("/*path", func(c *gin.Context) {
 		c.Status(204)

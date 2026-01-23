@@ -1,0 +1,669 @@
+definitions:
+  entities.Lifestyle:
+    enum:
+    - not_active
+    - active
+    - sportive
+    type: string
+    x-enum-varnames:
+    - NotActive
+    - Active
+    - Sportive
+  entities.Want:
+    enum:
+    - lose_weight
+    - build_muscle
+    - stay_fit
+    type: string
+    x-enum-varnames:
+    - LoseWeight
+    - BuildMuscle
+    - StayFit
+  models.JWTModel:
+    properties:
+      jwt:
+        type: string
+    type: object
+  models.LoginRequestModel:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  models.RegisterRequestModel:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      password:
+        minLength: 6
+        type: string
+      phone:
+        type: string
+      surname:
+        maxLength: 50
+        minLength: 2
+        type: string
+      username:
+        maxLength: 32
+        minLength: 3
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - phone
+    - surname
+    - username
+    type: object
+  models.UserInfoResponseModel:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      surname:
+        type: string
+      username:
+        type: string
+    type: object
+  models.UserInfoUpdateRequestModel:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      phone:
+        type: string
+      surname:
+        maxLength: 50
+        minLength: 2
+        type: string
+    required:
+    - email
+    - name
+    - phone
+    - surname
+    type: object
+  models.UserParamsCreateRequestModel:
+    properties:
+      height:
+        maximum: 250
+        minimum: 100
+        type: integer
+      lifestyle:
+        enum:
+        - not_active
+        - active
+        - sportive
+        type: string
+      photo:
+        type: string
+      wants:
+        enum:
+        - lose_weight
+        - build_muscle
+        - stay_fit
+        type: string
+    required:
+    - height
+    - lifestyle
+    - wants
+    type: object
+  models.UserParamsResponseModel:
+    properties:
+      height:
+        type: integer
+      lifestyle:
+        $ref: '#/definitions/entities.Lifestyle'
+      photo:
+        type: string
+      wants:
+        $ref: '#/definitions/entities.Want'
+    type: object
+  models.UserParamsUpdateRequestModel:
+    properties:
+      height:
+        maximum: 250
+        minimum: 100
+        type: integer
+      lifestyle:
+        enum:
+        - not_active
+        - active
+        - sportive
+        type: string
+      photo:
+        type: string
+      wants:
+        enum:
+        - lose_weight
+        - build_muscle
+        - stay_fit
+        type: string
+    type: object
+  models.UserWeightCreateRequestModel:
+    properties:
+      weight:
+        maximum: 300
+        minimum: 10
+        type: number
+    required:
+    - weight
+    type: object
+  models.UserWeightResponseModel:
+    properties:
+      date:
+        type: string
+      weight:
+        type: number
+    type: object
+info:
+  contact: {}
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Вход пользователя в систему и получение JWT токена
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequestModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная аутентификация
+          schema:
+            $ref: '#/definitions/models.JWTModel'
+        "400":
+          description: Ошибка валидации
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Неверные учетные данные
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Аутентификация пользователя
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создание нового аккаунта пользователя
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequestModel'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь успешно зарегистрирован
+          schema:
+            type: string
+        "400":
+          description: Ошибка валидации
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Пользователь уже существует
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Регистрация нового пользователя
+      tags:
+      - Auth
+  /crud/user/info:
+    delete:
+      description: Удаляет основную информацию о пользователе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное удаление
+          schema:
+            type: string
+        "400":
+          description: Неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удаление информации пользователя
+      tags:
+      - User Info
+    get:
+      description: Получает основную информацию о пользователе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о пользователе
+          schema:
+            $ref: '#/definitions/models.UserInfoResponseModel'
+        "400":
+          description: Неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получение информации пользователя
+      tags:
+      - User Info
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет основную информацию о пользователе
+      parameters:
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserInfoUpdateRequestModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное обновление
+          schema:
+            type: string
+        "400":
+          description: Ошибка валидации или неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновление информации пользователя
+      tags:
+      - User Info
+  /crud/user/params:
+    delete:
+      description: Удаляет дополнительные параметры пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное удаление
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удаление параметров пользователя
+      tags:
+      - User Params
+    get:
+      description: Получает дополнительные параметры пользователя (рост, возраст и
+        т.д.)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Параметры пользователя
+          schema:
+            $ref: '#/definitions/models.UserParamsResponseModel'
+        "400":
+          description: Неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получение параметров пользователя
+      tags:
+      - User Params
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет дополнительные параметры пользователя (рост, возраст
+        и т.д.)
+      parameters:
+      - description: Данные параметров для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserParamsUpdateRequestModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное обновление
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Ошибка валидации или неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновление параметров пользователя
+      tags:
+      - User Params
+    post:
+      consumes:
+      - application/json
+      description: Создает дополнительные параметры пользователя (рост, возраст и
+        т.д.)
+      parameters:
+      - description: Данные параметров для создания
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserParamsCreateRequestModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное создание
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Ошибка валидации или неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создание параметров пользователя
+      tags:
+      - User Params
+  /crud/user/weight:
+    delete:
+      description: Удаляет запись о весе пользователя по ID
+      parameters:
+      - description: ID записи о весе
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное удаление
+          schema:
+            type: string
+        "400":
+          description: Неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удаление записи о весе пользователя
+      tags:
+      - User Weight
+    get:
+      description: Получает текущий вес пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Актуальный (последний) вес пользователя
+          schema:
+            $ref: '#/definitions/models.UserWeightResponseModel'
+        "400":
+          description: Неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получение текущего веса пользователя
+      tags:
+      - User Weight
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет текущий вес пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное обновление
+          schema:
+            type: string
+        "400":
+          description: Ошибка валидации или неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновление веса пользователя (пока нет)
+      tags:
+      - User Weight
+    post:
+      consumes:
+      - application/json
+      description: Создает новую запись о весе пользователя
+      parameters:
+      - description: Данные веса для создания
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserWeightCreateRequestModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное создание
+          schema:
+            type: string
+        "400":
+          description: Ошибка валидации или неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создание записи о весе пользователя
+      tags:
+      - User Weight
+  /crud/user/weight/history:
+    get:
+      description: Получает всю историю изменений веса пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: История веса пользователя
+          schema:
+            items:
+              $ref: '#/definitions/models.UserWeightResponseModel'
+            type: array
+        "400":
+          description: Неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получение истории веса пользователя
+      tags:
+      - User Weight
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+tags:
+- name: Auth
+- name: User Weight
+- name: User Params
+- name: User Info

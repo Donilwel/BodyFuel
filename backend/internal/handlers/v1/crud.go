@@ -30,6 +30,17 @@ func (a *API) registerCRUDHandlers(router *gin.RouterGroup) {
 	user.POST("/weight", a.createUserWeight)
 }
 
+// deleteUserInfo удаляет информацию о пользователе
+// @Summary Удаление информации пользователя
+// @Description Удаляет основную информацию о пользователе
+// @Tags User Info
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {string} string "Успешное удаление"
+// @Failure 400 {object} map[string]interface{} "Неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/info [delete]
 func (a *API) deleteUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -70,6 +81,19 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully deleted"})
 }
 
+// updateUserInfo обновляет информацию о пользователе
+// @Summary Обновление информации пользователя
+// @Description Обновляет основную информацию о пользователе
+// @Tags User Info
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body models.UserInfoUpdateRequestModel true "Данные для обновления"
+// @Success 200 {string} map[string]string "Успешное обновление"
+// @Failure 400 {object} map[string]interface{} "Ошибка валидации или неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/info [patch]
 func (a *API) updateUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -122,6 +146,17 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully updated"})
 }
 
+// getUserInfo получает информацию о пользователе
+// @Summary Получение информации пользователя
+// @Description Получает основную информацию о пользователе
+// @Tags User Info
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} models.UserInfoResponseModel "Информация о пользователе"
+// @Failure 400 {object} map[string]interface{} "Неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/info [get]
 func (a *API) getUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -162,6 +197,17 @@ func (a *API) getUserInfo(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models.NewUserInfoResponse(ui))
 }
 
+// getUserParams получает параметры пользователя
+// @Summary Получение параметров пользователя
+// @Description Получает дополнительные параметры пользователя (рост, возраст и т.д.)
+// @Tags User Params
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} models.UserParamsResponseModel "Параметры пользователя"
+// @Failure 400 {object} map[string]interface{} "Неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/params [get]
 func (a *API) getUserParams(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -202,6 +248,19 @@ func (a *API) getUserParams(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models.NewUserParamsResponse(up))
 }
 
+// updateUserParams обновляет параметры пользователя
+// @Summary Обновление параметров пользователя
+// @Description Обновляет дополнительные параметры пользователя (рост, возраст и т.д.)
+// @Tags User Params
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body models.UserParamsUpdateRequestModel true "Данные параметров для обновления"
+// @Success 200 {object} map[string]string "Успешное обновление"
+// @Failure 400 {object} map[string]interface{} "Ошибка валидации или неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/params [patch]
 func (a *API) updateUserParams(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -297,6 +356,17 @@ func (a *API) handleValidationErrors(c *gin.Context, err error, contextKey strin
 	c.AbortWithStatusJSON(http.StatusBadRequest, response)
 }
 
+// deleteUserParams удаляет параметры пользователя
+// @Summary Удаление параметров пользователя
+// @Description Удаляет дополнительные параметры пользователя
+// @Tags User Params
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]string "Успешное удаление"
+// @Failure 400 {object} map[string]interface{} "Неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/params [delete]
 func (a *API) deleteUserParams(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -337,6 +407,19 @@ func (a *API) deleteUserParams(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully deleted"})
 }
 
+// createUserParams создает параметры пользователя
+// @Summary Создание параметров пользователя
+// @Description Создает дополнительные параметры пользователя (рост, возраст и т.д.)
+// @Tags User Params
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body models.UserParamsCreateRequestModel true "Данные параметров для создания"
+// @Success 200 {object} map[string]string "Успешное создание"
+// @Failure 400 {object} map[string]interface{} "Ошибка валидации или неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/params [post]
 func (a *API) createUserParams(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -395,6 +478,17 @@ func (a *API) createUserParams(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully created"})
 }
 
+// getUserWeight получает текущий вес пользователя
+// @Summary Получение текущего веса пользователя
+// @Description Получает текущий вес пользователя
+// @Tags User Weight
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} models.UserWeightResponseModel "Актуальный (последний) вес пользователя"
+// @Failure 400 {object} map[string]interface{} "Неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/weight [get]
 func (a *API) getUserWeight(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -435,6 +529,17 @@ func (a *API) getUserWeight(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models.NewUserWeightResponse(uw))
 }
 
+// getUserWeightHistory получает историю веса пользователя
+// @Summary Получение истории веса пользователя
+// @Description Получает всю историю изменений веса пользователя
+// @Tags User Weight
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} []models.UserWeightResponseModel "История веса пользователя"
+// @Failure 400 {object} map[string]interface{} "Неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/weight/history [get]
 func (a *API) getUserWeightHistory(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
@@ -475,10 +580,47 @@ func (a *API) getUserWeightHistory(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models.NewUserWeightResponseList(uwl))
 }
 
+// updateUserWeight обновляет вес пользователя
+// @Summary Обновление веса пользователя (пока нет)
+// @Description Обновляет текущий вес пользователя
+// @Tags User Weight
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {string} map[string]string "Успешное обновление"
+// @Failure 400 {object} map[string]interface{} "Ошибка валидации или неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/weight [patch]
 func (a *API) updateUserWeight(ctx *gin.Context) {}
 
+// deleteUserWeight удаляет запись о весе пользователя по айди записи (пока нет)
+// @Summary Удаление записи о весе пользователя
+// @Description Удаляет запись о весе пользователя по ID
+// @Tags User Weight
+// @Security BearerAuth
+// @Produce json
+// @Param id query string true "ID записи о весе"
+// @Success 200 {string} map[string]string "Успешное удаление"
+// @Failure 400 {object} map[string]interface{} "Неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/weight [delete]
 func (a *API) deleteUserWeight(ctx *gin.Context) {}
 
+// createUserWeight создает запись о весе пользователя
+// @Summary Создание записи о весе пользователя
+// @Description Создает новую запись о весе пользователя
+// @Tags User Weight
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body models.UserWeightCreateRequestModel true "Данные веса для создания"
+// @Success 200 {string} map[string]string "Успешное создание"
+// @Failure 400 {object} map[string]interface{} "Ошибка валидации или неверный формат ID"
+// @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /crud/user/weight [post]
 func (a *API) createUserWeight(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {

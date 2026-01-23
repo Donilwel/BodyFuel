@@ -3,9 +3,12 @@ package v1
 import (
 	"backend/internal/handlers/v1/models"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+
 	"net/http"
+	"regexp"
 )
 
 func (a *API) registerAuthHandlers(router *gin.RouterGroup) {
@@ -14,6 +17,18 @@ func (a *API) registerAuthHandlers(router *gin.RouterGroup) {
 	group.POST("/login", a.login)
 }
 
+// register обрабатывает регистрацию пользователя
+// @Summary Регистрация нового пользователя
+// @Description Создание нового аккаунта пользователя
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body models.RegisterRequestModel true "Данные для регистрации"
+// @Success 201 {string}	string	"Пользователь успешно зарегистрирован"
+// @Failure 400 {object} map[string]interface{} "Ошибка валидации"
+// @Failure 409 {object} map[string]interface{} "Пользователь уже существует"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /auth/register [post]
 func (a *API) register(ctx *gin.Context) {
 	var r models.RegisterRequestModel
 	if err := ctx.ShouldBindJSON(&r); err != nil {
@@ -27,6 +42,13 @@ func (a *API) register(ctx *gin.Context) {
 		return
 	}
 
+	err := a.checkPhone(ctx, r.Phone)
+	if err != nil {
+		a.log.Errorf("%s: %v", "auth error", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"auth error": err.Error()})
+		return
+	}
+
 	if err := a.authService.Register(ctx, r.ToSpec()); err != nil {
 		a.log.Errorf("%s: %v", "auth error", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{"auth error": err.Error()})
@@ -34,6 +56,17 @@ func (a *API) register(ctx *gin.Context) {
 	}
 	a.log.Info("auth: register: success")
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Successfully registers"})
+}
+
+func (a *API) checkPhone(ctx *gin.Context, phone string) error {
+	phoneRegex := `^\+?[0-9]{10,15}$`
+	re := regexp.MustCompile(phoneRegex)
+
+	if !re.MatchString(phone) {
+		return fmt.Errorf("uncorrect inpit phone number")
+	}
+
+	return nil
 }
 
 func (a *API) handleValidationAuthFields(c *gin.Context, err error, typeMethod string) {
@@ -72,6 +105,18 @@ func (a *API) handleValidationAuthFields(c *gin.Context, err error, typeMethod s
 	c.AbortWithStatusJSON(http.StatusBadRequest, response)
 }
 
+// login обрабатывает вход пользователя
+// @Summary Аутентификация пользователя
+// @Description Вход пользователя в систему и получение JWT токена
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body models.LoginRequestModel true "Данные для входа"
+// @Success 200 {object} models.JWTModel "Успешная аутентификация"
+// @Failure 400 {object} map[string]interface{} "Ошибка валидации"
+// @Failure 401 {object} map[string]interface{} "Неверные учетные данные"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /auth/login [post]
 func (a *API) login(ctx *gin.Context) {
 	var m models.LoginRequestModel
 	if err := ctx.ShouldBindJSON(&m); err != nil {
