@@ -2,13 +2,9 @@ package v1
 
 import (
 	"backend/internal/handlers/v1/models"
-	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 
 	"net/http"
-	"regexp"
 )
 
 func (a *API) registerAuthHandlers(router *gin.RouterGroup) {
@@ -56,53 +52,6 @@ func (a *API) register(ctx *gin.Context) {
 	}
 	a.log.Info("auth: register: success")
 	ctx.JSON(http.StatusCreated, gin.H{"message": "Successfully registers"})
-}
-
-func (a *API) checkPhone(ctx *gin.Context, phone string) error {
-	phoneRegex := `^\+?[0-9]{10,15}$`
-	re := regexp.MustCompile(phoneRegex)
-
-	if !re.MatchString(phone) {
-		return fmt.Errorf("uncorrect inpit phone number")
-	}
-
-	return nil
-}
-
-func (a *API) handleValidationAuthFields(c *gin.Context, err error, typeMethod string) {
-	var ve validator.ValidationErrors
-	if !errors.As(err, &ve) {
-		a.log.Errorf("%s: %v", "auth error", "Internal error")
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"auth error": "Internal error"})
-		return
-	}
-
-	out := make(map[string]string)
-	for _, fe := range ve {
-		field := fe.Field()
-		tag := fe.Tag()
-
-		switch tag {
-		case "required":
-			out[field] = field + " is required"
-		case "min":
-			out[field] = field + " is too short"
-		case "regex":
-			out[field] = "phone number is invalid"
-		case "email":
-			out[field] = "email is invalid"
-		default:
-			out[field] = field + " is invalid"
-		}
-	}
-
-	response := gin.H{
-		"auth error": gin.H{
-			typeMethod: out,
-		},
-	}
-	a.log.Errorf("%s: %s: %v", "auth error", typeMethod, out)
-	c.AbortWithStatusJSON(http.StatusBadRequest, response)
 }
 
 // login обрабатывает вход пользователя

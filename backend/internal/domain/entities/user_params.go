@@ -63,18 +63,17 @@ func ToLifestyle(s string) (Lifestyle, error) {
 }
 
 type UserParams struct {
-	id        uuid.UUID
-	userId    uuid.UUID
-	height    int
-	photo     string
-	wants     Want
-	lifestyle Lifestyle
+	id                  uuid.UUID
+	userId              uuid.UUID
+	height              int
+	photo               string
+	wants               Want
+	lifestyle           Lifestyle
+	targetWeight        float64
+	targetWorkoutsWeeks int
+	targetCaloriesDaily int
+	currentWeight       float64
 }
-
-//type WantDay struct {
-//	date time.Time
-//	want Want
-//}
 
 func (u *UserParams) ID() uuid.UUID {
 	return u.id
@@ -100,6 +99,22 @@ func (u *UserParams) Lifestyle() Lifestyle {
 	return u.lifestyle
 }
 
+func (u *UserParams) CurrentWeight() float64 {
+	return u.currentWeight
+}
+
+func (u *UserParams) TargetWeight() float64 {
+	return u.targetWeight
+}
+
+func (u *UserParams) TargetWorkoutsWeeks() int {
+	return u.targetWorkoutsWeeks
+}
+
+func (u *UserParams) TargetCaloriesDaily() int {
+	return u.targetCaloriesDaily
+}
+
 type UserParamsOption func(u *UserParams)
 
 func NewUserParams(opt UserParamsOption) *UserParams {
@@ -111,21 +126,28 @@ func NewUserParams(opt UserParamsOption) *UserParams {
 }
 
 type UserParamsRestoreSpec struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Height    int
-	Photo     string
-	Wants     Want
-	Lifestyle Lifestyle
+	ID                  uuid.UUID
+	UserID              uuid.UUID
+	Height              int
+	Photo               string
+	Wants               Want
+	Lifestyle           Lifestyle
+	TargetWeight        float64
+	TargetWorkoutsWeeks int
+	TargetCaloriesDaily int
+	CurrentWeight       float64
 }
 
 type UserParamsInitSpec struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	Height    int
-	Photo     string
-	Wants     Want
-	Lifestyle Lifestyle
+	ID                  uuid.UUID
+	UserID              uuid.UUID
+	Height              int
+	Photo               string
+	Wants               Want
+	Lifestyle           Lifestyle
+	TargetWeight        float64
+	TargetWorkoutsWeeks int
+	TargetCaloriesDaily int
 }
 
 func WithUserParamsRestoreSpec(spec UserParamsRestoreSpec) UserParamsOption {
@@ -136,6 +158,10 @@ func WithUserParamsRestoreSpec(spec UserParamsRestoreSpec) UserParamsOption {
 		u.photo = spec.Photo
 		u.wants = spec.Wants
 		u.lifestyle = spec.Lifestyle
+		u.targetWorkoutsWeeks = spec.TargetWorkoutsWeeks
+		u.targetCaloriesDaily = spec.TargetCaloriesDaily
+		u.targetWeight = spec.TargetWeight
+		u.currentWeight = spec.CurrentWeight
 	}
 }
 
@@ -147,6 +173,9 @@ func WithUserParamsInitSpec(spec UserParamsInitSpec) UserParamsOption {
 		u.photo = spec.Photo
 		u.wants = spec.Wants
 		u.lifestyle = spec.Lifestyle
+		u.targetWorkoutsWeeks = spec.TargetWorkoutsWeeks
+		u.targetCaloriesDaily = spec.TargetCaloriesDaily
+		u.targetWeight = spec.TargetWeight
 	}
 }
 
@@ -163,11 +192,23 @@ func (r *UserParams) Update(p UserParamsUpdateParams) {
 	if p.Lifestyle != nil {
 		r.lifestyle = *p.Lifestyle
 	}
+	if p.TargetCaloriesDaily != nil {
+		r.targetCaloriesDaily = *p.TargetCaloriesDaily
+	}
+	if p.TargetWeight != nil {
+		r.targetWeight = *p.TargetWeight
+	}
+	if p.TargetWorkoutsWeeks != nil {
+		r.targetWorkoutsWeeks = *p.TargetWorkoutsWeeks
+	}
 }
 
 type UserParamsUpdateParams struct {
-	Height    *int
-	Photo     *string
-	Wants     *Want
-	Lifestyle *Lifestyle
+	Height              *int
+	Photo               *string
+	Wants               *Want
+	Lifestyle           *Lifestyle
+	TargetWeight        *float64
+	TargetWorkoutsWeeks *int
+	TargetCaloriesDaily *int
 }

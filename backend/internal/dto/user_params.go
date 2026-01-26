@@ -6,19 +6,25 @@ import (
 )
 
 type UserParams struct {
-	ID        *uuid.UUID
-	UserID    *uuid.UUID
-	Height    *int
-	Photo     *string
-	Wants     *entities.Want
-	Lifestyle *entities.Lifestyle
+	ID                  *uuid.UUID
+	UserID              *uuid.UUID
+	Height              *int
+	Photo               *string
+	Wants               *entities.Want
+	TargetWorkoutsWeeks *int
+	TargetCaloriesDaily *int
+	TargetWeight        *float64
+	Lifestyle           *entities.Lifestyle
 }
 
 type UserParamsFilter struct {
-	ID        *uuid.UUID
-	UserID    *uuid.UUID
-	Height    *int
-	Photo     *string
-	Wants     *entities.Want
-	Lifestyle *entities.Lifestyle
+	ID                  *uuid.UUID
+	UserID              *uuid.UUID
+	Height              *int
+	Photo               *string
+	Wants               *entities.Want
+	TargetWorkoutsWeeks *int
+	TargetCaloriesDaily *int
+	TargetWeight        *float64
+	Lifestyle           *entities.Lifestyle
 }

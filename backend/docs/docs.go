@@ -125,6 +125,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/avatars": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Генерирует и скидывает ссылку для загрузки аватарки пользователя со стороны клиента",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Photo"
+                ],
+                "summary": "Обработка аватарки",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PresignAvatarRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешная выдача публичной ссылки для загрузки",
+                        "schema": {
+                            "$ref": "#/definitions/models.PresignAvatarResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Неверные учетные данные",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/crud/user/info": {
             "get": {
                 "security": [
@@ -591,59 +651,6 @@ const docTemplate = `{
                     }
                 }
             },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Удаляет запись о весе пользователя по ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User Weight"
-                ],
-                "summary": "Удаление записи о весе пользователя",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID записи о весе",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Успешное удаление",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Неверный формат ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Отсутствует авторизация",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Внутренняя ошибка сервера",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
             "patch": {
                 "security": [
                     {
@@ -740,6 +747,61 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/crud/user/weight/{uuid}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет запись о весе пользователя по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Weight"
+                ],
+                "summary": "Удаление записи о весе пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID записи о весе",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное удаление",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -788,6 +850,31 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PresignAvatarRequest": {
+            "type": "object",
+            "required": [
+                "content_type"
+            ],
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PresignAvatarResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "object_key": {
+                    "type": "string"
+                },
+                "upload_url": {
                     "type": "string"
                 }
             }
@@ -885,6 +972,9 @@ const docTemplate = `{
             "required": [
                 "height",
                 "lifestyle",
+                "targetCaloriesDaily",
+                "targetWeight",
+                "targetWorkoutsWeeks",
                 "wants"
             ],
             "properties": {
@@ -904,6 +994,21 @@ const docTemplate = `{
                 "photo": {
                     "type": "string"
                 },
+                "targetCaloriesDaily": {
+                    "type": "integer",
+                    "maximum": 10000,
+                    "minimum": 0
+                },
+                "targetWeight": {
+                    "type": "number",
+                    "maximum": 300,
+                    "minimum": 40
+                },
+                "targetWorkoutsWeeks": {
+                    "type": "integer",
+                    "maximum": 7,
+                    "minimum": 0
+                },
                 "wants": {
                     "type": "string",
                     "enum": [
@@ -917,6 +1022,9 @@ const docTemplate = `{
         "models.UserParamsResponseModel": {
             "type": "object",
             "properties": {
+                "currentWeight": {
+                    "type": "number"
+                },
                 "height": {
                     "type": "integer"
                 },
@@ -925,6 +1033,15 @@ const docTemplate = `{
                 },
                 "photo": {
                     "type": "string"
+                },
+                "targetCaloriesDaily": {
+                    "type": "integer"
+                },
+                "targetWeight": {
+                    "type": "number"
+                },
+                "targetWorkoutsWeeks": {
+                    "type": "integer"
                 },
                 "wants": {
                     "$ref": "#/definitions/entities.Want"
@@ -949,6 +1066,21 @@ const docTemplate = `{
                 },
                 "photo": {
                     "type": "string"
+                },
+                "targetCaloriesDaily": {
+                    "type": "integer",
+                    "maximum": 10000,
+                    "minimum": 0
+                },
+                "targetWeight": {
+                    "type": "number",
+                    "maximum": 300,
+                    "minimum": 40
+                },
+                "targetWorkoutsWeeks": {
+                    "type": "integer",
+                    "maximum": 7,
+                    "minimum": 0
                 },
                 "wants": {
                     "type": "string",
@@ -977,6 +1109,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "date": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "string"
                 },
                 "weight": {

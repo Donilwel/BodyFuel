@@ -34,6 +34,22 @@ definitions:
     - password
     - username
     type: object
+  models.PresignAvatarRequest:
+    properties:
+      content_type:
+        type: string
+    required:
+    - content_type
+    type: object
+  models.PresignAvatarResponse:
+    properties:
+      avatar_url:
+        type: string
+      object_key:
+        type: string
+      upload_url:
+        type: string
+    type: object
   models.RegisterRequestModel:
     properties:
       email:
@@ -112,6 +128,18 @@ definitions:
         type: string
       photo:
         type: string
+      targetCaloriesDaily:
+        maximum: 10000
+        minimum: 0
+        type: integer
+      targetWeight:
+        maximum: 300
+        minimum: 40
+        type: number
+      targetWorkoutsWeeks:
+        maximum: 7
+        minimum: 0
+        type: integer
       wants:
         enum:
         - lose_weight
@@ -121,16 +149,27 @@ definitions:
     required:
     - height
     - lifestyle
+    - targetCaloriesDaily
+    - targetWeight
+    - targetWorkoutsWeeks
     - wants
     type: object
   models.UserParamsResponseModel:
     properties:
+      currentWeight:
+        type: number
       height:
         type: integer
       lifestyle:
         $ref: '#/definitions/entities.Lifestyle'
       photo:
         type: string
+      targetCaloriesDaily:
+        type: integer
+      targetWeight:
+        type: number
+      targetWorkoutsWeeks:
+        type: integer
       wants:
         $ref: '#/definitions/entities.Want'
     type: object
@@ -148,6 +187,18 @@ definitions:
         type: string
       photo:
         type: string
+      targetCaloriesDaily:
+        maximum: 10000
+        minimum: 0
+        type: integer
+      targetWeight:
+        maximum: 300
+        minimum: 40
+        type: number
+      targetWorkoutsWeeks:
+        maximum: 7
+        minimum: 0
+        type: integer
       wants:
         enum:
         - lose_weight
@@ -167,6 +218,8 @@ definitions:
   models.UserWeightResponseModel:
     properties:
       date:
+        type: string
+      id:
         type: string
       weight:
         type: number
@@ -248,6 +301,46 @@ paths:
       summary: Регистрация нового пользователя
       tags:
       - Auth
+  /avatars:
+    post:
+      consumes:
+      - application/json
+      description: Генерирует и скидывает ссылку для загрузки аватарки пользователя
+        со стороны клиента
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PresignAvatarRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная выдача публичной ссылки для загрузки
+          schema:
+            $ref: '#/definitions/models.PresignAvatarResponse'
+        "400":
+          description: Ошибка валидации
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Неверные учетные данные
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обработка аватарки
+      tags:
+      - Photo
   /crud/user/info:
     delete:
       description: Удаляет основную информацию о пользователе
@@ -490,41 +583,6 @@ paths:
       tags:
       - User Params
   /crud/user/weight:
-    delete:
-      description: Удаляет запись о весе пользователя по ID
-      parameters:
-      - description: ID записи о весе
-        in: query
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Успешное удаление
-          schema:
-            type: string
-        "400":
-          description: Неверный формат ID
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: Отсутствует авторизация
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Внутренняя ошибка сервера
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Удаление записи о весе пользователя
-      tags:
-      - User Weight
     get:
       description: Получает текущий вес пользователя
       produces:
@@ -621,6 +679,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Создание записи о весе пользователя
+      tags:
+      - User Weight
+  /crud/user/weight/{uuid}:
+    delete:
+      description: Удаляет запись о весе пользователя по ID
+      parameters:
+      - description: ID записи о весе
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешное удаление
+          schema:
+            type: string
+        "400":
+          description: Неверный формат ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удаление записи о весе пользователя
       tags:
       - User Weight
   /crud/user/weight/history:

@@ -20,13 +20,19 @@ const (
                                     "height",
                                     "photo",
                                     "wants",
-                                    "lifestyle") VALUES ($1, $2, $3, $4, $5, $6)`
+                                    "target_workouts_weeks",
+                                    "target_calories_daily",
+                                    "target_weight",
+                                    "lifestyle") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 	queryUpdateUserParams = `UPDATE bodyfuel.user_params SET
 									"id_user" = :id_user,
 									"height" = :height,
 									"photo" = :photo,
 									"wants" = :wants,
+									"target_workouts_weeks" = :target_workouts_weeks,
+                                    "target_calories_daily" = :target_calories_daily,
+                                    "target_weight" = :target_weight,
 									"lifestyle" = :lifestyle
 									WHERE id=:id`
 )
@@ -69,6 +75,9 @@ func (r *UserParamsRepo) Create(ctx context.Context, userParams *entities.UserPa
 		row.Height,
 		row.Photo,
 		row.Wants,
+		row.TargetWorkoutsWeeks,
+		row.TargetCaloriesDaily,
+		row.TargetWeight,
 		row.Lifestyle,
 	)
 	if err != nil {
@@ -103,6 +112,7 @@ func (r *UserParamsRepo) Delete(ctx context.Context, f dto.UserParamsFilter) err
 	if err != nil {
 		return fmt.Errorf("build sql: %w", err)
 	}
+	fmt.Println(query)
 
 	result, err := r.getter.Get(ctx).ExecContext(ctx, query, args...)
 	if err != nil {

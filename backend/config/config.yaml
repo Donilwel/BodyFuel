@@ -21,3 +21,12 @@ postgres:
   database: "backend_db"
   user: "d.y.maslov"
   password: "backend_pass"
+
+minio:
+  endpoint: "http://localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  bucket: "avatars"
+  region: "us-east-1"
+  public_url: "http://localhost:9000/avatars"
+  presign_ttl: "5m"

@@ -5,6 +5,7 @@ import (
 	"backend/internal/dto"
 	"backend/pkg/logging"
 	"context"
+	"github.com/google/uuid"
 )
 
 type (
@@ -30,6 +31,13 @@ type (
 		List(ctx context.Context, f dto.UserWeightFilter, withBlock bool) ([]*entities.UserWeight, error)
 	}
 
+	TasksRepository interface {
+		List(ctx context.Context, f dto.TasksFilter, withBlock bool) ([]*entities.Task, error)
+		Get(ctx context.Context, f dto.TasksFilter, withBlock bool) (*entities.Task, error)
+		Update(ctx context.Context, t *entities.Task) error
+		Delete(ctx context.Context, ids []uuid.UUID) error
+	}
+
 	TransactionManager interface {
 		Do(ctx context.Context, fn func(ctx context.Context) error) (err error)
 	}
@@ -40,6 +48,7 @@ type Config struct {
 	UserInfoRepository   UserInfoRepository
 	UserParamsRepository UserParamsRepository
 	UserWeightRepository UserWeightRepository
+	TasksRepository      TasksRepository
 	Log                  logging.Entry
 }
 
@@ -48,6 +57,7 @@ type Service struct {
 	userInfoRepository   UserInfoRepository
 	userParamsRepository UserParamsRepository
 	userWeightRepository UserWeightRepository
+	tasksRepository      TasksRepository
 	log                  logging.Entry
 }
 
@@ -57,6 +67,7 @@ func NewService(c *Config) *Service {
 		userInfoRepository:   c.UserInfoRepository,
 		userParamsRepository: c.UserParamsRepository,
 		userWeightRepository: c.UserWeightRepository,
+		tasksRepository:      c.TasksRepository,
 		log:                  c.Log,
 	}
 }

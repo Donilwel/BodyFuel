@@ -3,9 +3,7 @@ package v1
 import (
 	"backend/internal/dto"
 	"backend/internal/handlers/v1/models"
-	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"net/http"
 )
@@ -26,8 +24,13 @@ func (a *API) registerCRUDHandlers(router *gin.RouterGroup) {
 	user.GET("/weight", a.getUserWeight)
 	user.GET("/weight/history", a.getUserWeightHistory)
 	user.PATCH("/weight", a.updateUserWeight)
-	user.DELETE("/weight", a.deleteUserWeight)
+	user.DELETE("/weight/:uuid", a.deleteUserWeight)
 	user.POST("/weight", a.createUserWeight)
+
+	task := group.Group("/tasks")
+	task.DELETE("/:uuid", a.deleteTask)
+	task.POST("/:uuid/restart", a.restartTask)
+	task.GET("", a.listTasks)
 }
 
 // deleteUserInfo удаляет информацию о пользователе
@@ -320,42 +323,6 @@ func (a *API) updateUserParams(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully updated"})
 }
 
-func (a *API) handleValidationErrors(c *gin.Context, err error, contextKey string) {
-	var ve validator.ValidationErrors
-	if !errors.As(err, &ve) {
-		a.log.Errorf("crud error: %s: %s", contextKey, err.Error())
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error": "Internal validation error"})
-		return
-	}
-
-	out := make(map[string]string)
-	for _, fe := range ve {
-		field := fe.Field()
-		tag := fe.Tag()
-
-		switch tag {
-		case "required":
-			out[field] = field + " is required"
-		case "min":
-			out[field] = field + " is too small"
-		case "max":
-			out[field] = field + " is too big"
-		case "oneof":
-			out[field] = field + " is invalid"
-		default:
-			out[field] = field + " is invalid"
-		}
-	}
-
-	response := gin.H{
-		"crud error": gin.H{
-			contextKey: out,
-		},
-	}
-	a.log.Errorf("crud error: validation error: %s", response)
-	c.AbortWithStatusJSON(http.StatusBadRequest, response)
-}
-
 // deleteUserParams удаляет параметры пользователя
 // @Summary Удаление параметров пользователя
 // @Description Удаляет дополнительные параметры пользователя
@@ -600,13 +567,42 @@ func (a *API) updateUserWeight(ctx *gin.Context) {}
 // @Tags User Weight
 // @Security BearerAuth
 // @Produce json
-// @Param id query string true "ID записи о весе"
+// @Param uuid path string true "ID записи о весе"
 // @Success 200 {string} map[string]string "Успешное удаление"
 // @Failure 400 {object} map[string]interface{} "Неверный формат ID"
 // @Failure 401 {object} map[string]interface{} "Отсутствует авторизация"
 // @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
-// @Router /crud/user/weight [delete]
-func (a *API) deleteUserWeight(ctx *gin.Context) {}
+// @Router /crud/user/weight/{uuid} [delete]
+func (a *API) deleteUserWeight(ctx *gin.Context) {
+	id := ctx.Param("uuid")
+	if id == "" {
+		a.log.Errorf("crud error: create user weight: missing weight id in header")
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "missing weight id in header",
+		})
+		return
+	}
+
+	weightID, err := uuid.Parse(id)
+	if err != nil {
+		a.log.Errorf("crud error: delete user weight: invalid weight id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid id format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	err = a.CRUDService.DeleteWeightUser(ctx, dto.UserWeightFilter{ID: &weightID})
+	if err != nil {
+		a.log.Errorf("crud error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
+		return
+	}
+
+	a.log.Infof("crud info: delete user weight: success")
+	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully deleted"})
+}
 
 // createUserWeight создает запись о весе пользователя
 // @Summary Создание записи о весе пользователя

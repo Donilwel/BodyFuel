@@ -7,12 +7,14 @@ import (
 )
 
 type UserWeightResponseModel struct {
+	ID     uuid.UUID `json:"id"`
 	Weight float64   `json:"weight"`
 	Date   time.Time `json:"date"`
 }
 
 func NewUserWeightResponse(weight *entities.UserWeight) UserWeightResponseModel {
 	return UserWeightResponseModel{
+		weight.ID(),
 		weight.Weight(),
 		weight.Date(),
 	}

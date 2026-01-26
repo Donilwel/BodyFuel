@@ -1,6 +1,7 @@
 package config
 
 import (
+	"backend/internal/infrastructure/repositories/minio"
 	"backend/internal/infrastructure/repositories/postgres"
 	"backend/pkg/logging"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -18,14 +19,16 @@ type HTTPServerConfig struct {
 }
 
 type AppConfig struct {
-	HTTPServerConfig HTTPServerConfig `yaml:"http_server"`
-	GracefulTimeout  time.Duration    `yaml:"graceful_timeout" env:"GRACEFUL_TIMEOUT" envDefault:"5s"`
+	HTTPServerConfig      HTTPServerConfig `yaml:"http_server"`
+	GracefulTimeout       time.Duration    `yaml:"graceful_timeout" env:"GRACEFUL_TIMEOUT" envDefault:"5s"`
+	TasksTrackingDuration time.Duration    `yaml:"tasks_tracking_duration" env:"TASKS_TRACKING_DURATION" envDefault:"13s"`
 }
 
 type Config struct {
 	AppConfig AppConfig       `yaml:"app"`
 	Log       logging.Config  `yaml:"sage" env:"SAGE_"`
 	Postgres  postgres.Config `yaml:"postgres" env-prefix:"POSTGRES_"`
+	Minio     minio.Config    `yaml:"minio" env-prefix:"MINIO_"`
 }
 
 func ReadConfig(filePaths ...string) (*Config, error) {

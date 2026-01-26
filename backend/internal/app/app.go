@@ -6,6 +6,7 @@ import (
 	v1 "backend/internal/handlers/v1"
 	"backend/internal/infrastructure/repositories/postgres"
 	"backend/internal/service/auth"
+	"backend/internal/service/avatar"
 	"backend/internal/service/crud"
 	"backend/pkg/logging"
 	"context"
@@ -52,6 +53,11 @@ func NewApp(configPaths ...string) *App {
 		logger.Fatalf("Failed to init db: %v", err)
 	}
 
+	s3, err := initS3(cfg.Minio)
+	if err != nil {
+		logger.Fatalf("Failed to init minio: %v", err)
+	}
+
 	workers := make([]BackgroundWorker, 0, 8)
 
 	closers := make([]io.Closer, 0, 8)
@@ -60,6 +66,7 @@ func NewApp(configPaths ...string) *App {
 	userInfoRepository := postgres.NewUserInfoRepository(db)
 	userParamsRepository := postgres.NewUserParamsRepository(db)
 	userWeightRepository := postgres.NewUserWeightRepository(db)
+	//tasksRepository := postgres.NewTasksRepository(db)
 
 	authService := auth.NewService(&auth.Config{
 		TransactionManager: transactionManager,
@@ -74,6 +81,20 @@ func NewApp(configPaths ...string) *App {
 		Log:                  logger,
 	})
 
+	avatarService := avatar.NewService(avatar.Config{
+		S3:         s3,
+		Bucket:     cfg.Minio.Bucket,
+		PresignTTL: cfg.Minio.PresignTTL,
+		PublicURL:  cfg.Minio.PublicURL,
+	})
+
+	//executorService := executor.NewService(&executor.Config{
+	//	TransactionManager: transactionManager,
+	//	//TasksRepository:    tasksRepository,
+	//	QueryDelay: cfg.AppConfig.TasksTrackingDuration,
+	//})
+	//workers = append(workers, executorService)
+
 	validator := validator.New()
 
 	gin.SetMode(gin.ReleaseMode)
@@ -83,10 +104,11 @@ func NewApp(configPaths ...string) *App {
 		router.Group(""),
 		cfg.AppConfig.HTTPServerConfig.ApiHost,
 		v1.NewHandlers(v1.Config{
-			AuthService: authService,
-			CRUDService: crudService,
-			Validator:   *validator,
-			Log:         logger,
+			AuthService:   authService,
+			CRUDService:   crudService,
+			AvatarService: avatarService,
+			Validator:     *validator,
+			Log:           logger,
 		}),
 	)
 
