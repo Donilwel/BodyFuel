@@ -15,10 +15,14 @@ struct PrimaryButton: View {
             }
         }
         .padding(.horizontal)
-        .frame(height: 48)
-        .background(AppColors.primary)
+        .frame(height: 20)
         .foregroundColor(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding()
+        .glassEffect(.regular.tint(AppColors.primary).interactive(), in: .rect(cornerRadius: 12))
         .disabled(isLoading)
     }
+}
+
+#Preview {
+    AuthView()
 }

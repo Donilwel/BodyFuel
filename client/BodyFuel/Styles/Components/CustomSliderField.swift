@@ -12,6 +12,7 @@ struct CustomSliderField: View {
             Text(title)
                 .font(.headline.bold())
                 .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
             
             VStack(spacing: 6) {
                 Slider(
@@ -21,13 +22,13 @@ struct CustomSliderField: View {
                 ) {
                     Text(title)
                 } minimumValueLabel: {
-                    Text(from.formatted())
+                    Text(Int(from).description)
                 } maximumValueLabel: {
-                    Text(to.formatted())
+                    Text(Int(to).description)
                 }
                 .foregroundColor(.gray.opacity(0.6))
                 
-                Text("\(value.formatted())")
+                Text(Int(value).description)
                     .foregroundColor(value == 0 ? .gray.opacity(0.6) : .black)
                     .frame(alignment: .center)
             }

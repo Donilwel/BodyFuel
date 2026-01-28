@@ -1,7 +1,9 @@
 import SwiftUI
 
-struct PasswordField: View {
+struct PasswordField<Field: Hashable>: View {
     let title: String
+    let field: Field
+    var focusedField: FocusState<Field?>.Binding
     @Binding var text: String
 
     var body: some View {
@@ -9,10 +11,12 @@ struct PasswordField: View {
             Text(title)
                 .font(.headline.bold())
                 .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
             
             SecureField("", text: $text)
                 .padding()
                 .glassEffect(in: .rect(cornerRadius: 12.0))
+                .focused(focusedField, equals: field)
         }
     }
 }

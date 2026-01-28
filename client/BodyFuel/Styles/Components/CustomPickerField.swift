@@ -10,6 +10,7 @@ struct CustomPickerField: View {
             Text(title)
                 .font(.headline.bold())
                 .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
             Button(action: onTap) {
                 HStack {
                     Text(value)
