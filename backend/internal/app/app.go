@@ -66,6 +66,9 @@ func NewApp(configPaths ...string) *App {
 	userInfoRepository := postgres.NewUserInfoRepository(db)
 	userParamsRepository := postgres.NewUserParamsRepository(db)
 	userWeightRepository := postgres.NewUserWeightRepository(db)
+	exercisesRepository := postgres.NewExerciseRepository(db)
+	tasksRepository := postgres.NewTasksRepository(db)
+
 	//tasksRepository := postgres.NewTasksRepository(db)
 
 	authService := auth.NewService(&auth.Config{
@@ -78,6 +81,8 @@ func NewApp(configPaths ...string) *App {
 		UserInfoRepository:   userInfoRepository,
 		UserParamsRepository: userParamsRepository,
 		UserWeightRepository: userWeightRepository,
+		TasksRepository:      tasksRepository,
+		ExercisesRepository:  exercisesRepository,
 		Log:                  logger,
 	})
 

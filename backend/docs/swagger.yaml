@@ -249,18 +249,15 @@ paths:
         "400":
           description: Ошибка валидации
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Неверные учетные данные
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       summary: Аутентификация пользователя
       tags:
       - Auth
@@ -286,18 +283,15 @@ paths:
         "400":
           description: Ошибка валидации
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "409":
           description: Пользователь уже существует
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       summary: Регистрация нового пользователя
       tags:
       - Auth
@@ -324,18 +318,15 @@ paths:
         "400":
           description: Ошибка валидации
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Неверные учетные данные
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Обработка аватарки
@@ -354,18 +345,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Удаление информации пользователя
@@ -383,18 +371,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Получение информации пользователя
@@ -421,18 +406,15 @@ paths:
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Обновление информации пользователя
@@ -447,24 +429,19 @@ paths:
         "200":
           description: Успешное удаление
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            type: string
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Удаление параметров пользователя
@@ -483,18 +460,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Получение параметров пользователя
@@ -518,24 +492,19 @@ paths:
         "200":
           description: Успешное обновление
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            type: string
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Обновление параметров пользователя
@@ -559,24 +528,19 @@ paths:
         "200":
           description: Успешное создание
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            type: string
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Создание параметров пользователя
@@ -595,18 +559,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Получение текущего веса пользователя
@@ -626,18 +587,15 @@ paths:
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Обновление веса пользователя (пока нет)
@@ -664,18 +622,15 @@ paths:
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Создание записи о весе пользователя
@@ -700,18 +655,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Удаление записи о весе пользователя
@@ -732,18 +684,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "401":
           description: Отсутствует авторизация
           schema:
-            additionalProperties: true
-            type: object
+            type: string
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties: true
-            type: object
+            type: string
       security:
       - BearerAuth: []
       summary: Получение истории веса пользователя

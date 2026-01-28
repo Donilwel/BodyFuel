@@ -38,6 +38,14 @@ type (
 		Delete(ctx context.Context, ids []uuid.UUID) error
 	}
 
+	ExercisesRepository interface {
+		Get(ctx context.Context, f dto.ExerciseFilter, withBlock bool) (*entities.Exercise, error)
+		Create(ctx context.Context, exercise *entities.Exercise) error
+		Update(ctx context.Context, exercise *entities.Exercise) error
+		Delete(ctx context.Context, f dto.ExerciseFilter) error
+		List(ctx context.Context, f dto.ExerciseFilter, withBlock bool) ([]*entities.Exercise, error)
+	}
+
 	TransactionManager interface {
 		Do(ctx context.Context, fn func(ctx context.Context) error) (err error)
 	}
@@ -49,6 +57,7 @@ type Config struct {
 	UserParamsRepository UserParamsRepository
 	UserWeightRepository UserWeightRepository
 	TasksRepository      TasksRepository
+	ExercisesRepository  ExercisesRepository
 	Log                  logging.Entry
 }
 
@@ -58,6 +67,7 @@ type Service struct {
 	userParamsRepository UserParamsRepository
 	userWeightRepository UserWeightRepository
 	tasksRepository      TasksRepository
+	exercisesRepository  ExercisesRepository
 	log                  logging.Entry
 }
 
@@ -68,6 +78,7 @@ func NewService(c *Config) *Service {
 		userParamsRepository: c.UserParamsRepository,
 		userWeightRepository: c.UserWeightRepository,
 		tasksRepository:      c.TasksRepository,
+		exercisesRepository:  c.ExercisesRepository,
 		log:                  c.Log,
 	}
 }

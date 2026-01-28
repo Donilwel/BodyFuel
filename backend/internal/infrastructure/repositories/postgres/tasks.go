@@ -1,7 +1,15 @@
 package postgres
 
+import (
+	"backend/internal/domain/entities"
+	"backend/internal/dto"
+	"context"
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+)
+
+// const (
 //
-//const (
 //	queryTaskCUpdate = `UPDATE bodyfuel.tasks SET
 //		task_type_nm=:task_type_nm,
 //		task_state=:task_state,
@@ -26,15 +34,36 @@ package postgres
 //		"updated_at",
 //		"attribute"
 //		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-//)
 //
-//type TasksRepo struct {
-//	getter dbClientGetter
-//}
-//
-//func NewTasksRepository(db *sqlx.DB) *TasksRepo {
-//	return &TasksRepo{getter: dbClientGetter{db: db}}
-//}
+// )
+type TasksRepo struct {
+	getter dbClientGetter
+}
+
+func (t TasksRepo) List(ctx context.Context, f dto.TasksFilter, withBlock bool) ([]*entities.Task, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t TasksRepo) Get(ctx context.Context, f dto.TasksFilter, withBlock bool) (*entities.Task, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t TasksRepo) Update(ctx context.Context, task *entities.Task) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t TasksRepo) Delete(ctx context.Context, ids []uuid.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func NewTasksRepository(db *sqlx.DB) *TasksRepo {
+	return &TasksRepo{getter: dbClientGetter{db: db}}
+}
+
 //
 //func (r *TasksRepo) Get(ctx context.Context, f dto.TasksFilter, withBlock bool) (*entities.Task, error) {
 //	b := builders.NewTasksSelectBuilder().
