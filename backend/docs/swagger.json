@@ -165,6 +165,309 @@
                 }
             }
         },
+        "/exercises": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Получает список упражнений с возможностью фильтрации",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exercises"
+                ],
+                "summary": "Получение списка упражнений",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уровень подготовки (beginner, medium, sportsman)",
+                        "name": "level_preparation",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Тип упражнения (cardio, upper_body, lower_body, full_body, flexibility)",
+                        "name": "type_exercise",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Место выполнения (home, gym, street)",
+                        "name": "place_exercise",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список упражнений",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ExerciseResponseModel"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID пользователя",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создает новое упражнение с указанными параметрами",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exercises"
+                ],
+                "summary": "Создание нового упражнения",
+                "parameters": [
+                    {
+                        "description": "Данные для создания упражнения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ExerciseRequestModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Упражнение успешно создано",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или неверный формат данных",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/exercises/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Получает детальную информацию об упражнении по его ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exercises"
+                ],
+                "summary": "Получение упражнения по ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID упражнения",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Детальная информация об упражнении",
+                        "schema": {
+                            "$ref": "#/definitions/models.ExerciseResponseModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Упражнение не найдено",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет упражнение по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exercises"
+                ],
+                "summary": "Удаление упражнения",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID упражнения",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Упражнение успешно удалено",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Упражнение не найдено",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет существующее упражнение по ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exercises"
+                ],
+                "summary": "Обновление упражнения",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID упражнения",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления упражнения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ExerciseResponseModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Упражнение успешно обновлено",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Упражнение не найдено",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/info": {
             "get": {
                 "security": [
@@ -743,6 +1046,36 @@
         }
     },
     "definitions": {
+        "entities.ExerciseType": {
+            "type": "string",
+            "enum": [
+                "cardio",
+                "upper_body",
+                "lower_body",
+                "full_body",
+                "flexibility"
+            ],
+            "x-enum-varnames": [
+                "Cardio",
+                "UpperBody",
+                "LowerBody",
+                "FullBody",
+                "Flexibility"
+            ]
+        },
+        "entities.LevelPreparation": {
+            "type": "string",
+            "enum": [
+                "beginner",
+                "medium",
+                "sportsman"
+            ],
+            "x-enum-varnames": [
+                "Beginner",
+                "Medium",
+                "Sportsman"
+            ]
+        },
         "entities.Lifestyle": {
             "type": "string",
             "enum": [
@@ -754,6 +1087,19 @@
                 "NotActive",
                 "Active",
                 "Sportive"
+            ]
+        },
+        "entities.PlaceExercise": {
+            "type": "string",
+            "enum": [
+                "street",
+                "gym",
+                "home"
+            ],
+            "x-enum-varnames": [
+                "Street",
+                "Gym",
+                "Home"
             ]
         },
         "entities.Want": {
@@ -775,6 +1121,118 @@
                 "{route} error": {
                     "type": "string",
                     "example": "{method}: {crud}: error message"
+                }
+            }
+        },
+        "models.ExerciseRequestModel": {
+            "type": "object",
+            "required": [
+                "avg_calories_per",
+                "base_count_reps",
+                "base_relax_time",
+                "level_preparation",
+                "name",
+                "place_exercise",
+                "steps",
+                "type_exercise"
+            ],
+            "properties": {
+                "avg_calories_per": {
+                    "type": "number",
+                    "maximum": 1000,
+                    "minimum": 0
+                },
+                "base_count_reps": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 1
+                },
+                "base_relax_time": {
+                    "type": "integer",
+                    "maximum": 3600,
+                    "minimum": 0
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "minLength": 1
+                },
+                "level_preparation": {
+                    "type": "string",
+                    "enum": [
+                        "beginner",
+                        "medium",
+                        "sportsman"
+                    ]
+                },
+                "link_gif": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "place_exercise": {
+                    "type": "string",
+                    "enum": [
+                        "home",
+                        "gym",
+                        "street"
+                    ]
+                },
+                "steps": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 1
+                },
+                "type_exercise": {
+                    "type": "string",
+                    "enum": [
+                        "cardio",
+                        "upper_body",
+                        "lower_body",
+                        "full_body",
+                        "flexibility"
+                    ]
+                }
+            }
+        },
+        "models.ExerciseResponseModel": {
+            "type": "object",
+            "properties": {
+                "avg_calories_per": {
+                    "type": "number"
+                },
+                "base_count_reps": {
+                    "type": "integer"
+                },
+                "base_relax_time": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "level_preparation": {
+                    "$ref": "#/definitions/entities.LevelPreparation"
+                },
+                "link_gif": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "place_exercise": {
+                    "$ref": "#/definitions/entities.PlaceExercise"
+                },
+                "steps": {
+                    "type": "integer"
+                },
+                "type_exercise": {
+                    "$ref": "#/definitions/entities.ExerciseType"
                 }
             }
         },

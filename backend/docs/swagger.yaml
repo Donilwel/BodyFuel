@@ -1,4 +1,28 @@
 definitions:
+  entities.ExerciseType:
+    enum:
+    - cardio
+    - upper_body
+    - lower_body
+    - full_body
+    - flexibility
+    type: string
+    x-enum-varnames:
+    - Cardio
+    - UpperBody
+    - LowerBody
+    - FullBody
+    - Flexibility
+  entities.LevelPreparation:
+    enum:
+    - beginner
+    - medium
+    - sportsman
+    type: string
+    x-enum-varnames:
+    - Beginner
+    - Medium
+    - Sportsman
   entities.Lifestyle:
     enum:
     - not_active
@@ -9,6 +33,16 @@ definitions:
     - NotActive
     - Active
     - Sportive
+  entities.PlaceExercise:
+    enum:
+    - street
+    - gym
+    - home
+    type: string
+    x-enum-varnames:
+    - Street
+    - Gym
+    - Home
   entities.Want:
     enum:
     - lose_weight
@@ -24,6 +58,89 @@ definitions:
       '{route} error':
         example: '{method}: {crud}: error message'
         type: string
+    type: object
+  models.ExerciseRequestModel:
+    properties:
+      avg_calories_per:
+        maximum: 1000
+        minimum: 0
+        type: number
+      base_count_reps:
+        maximum: 1000
+        minimum: 1
+        type: integer
+      base_relax_time:
+        maximum: 3600
+        minimum: 0
+        type: integer
+      description:
+        maxLength: 1000
+        minLength: 1
+        type: string
+      level_preparation:
+        enum:
+        - beginner
+        - medium
+        - sportsman
+        type: string
+      link_gif:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      place_exercise:
+        enum:
+        - home
+        - gym
+        - street
+        type: string
+      steps:
+        maximum: 100
+        minimum: 1
+        type: integer
+      type_exercise:
+        enum:
+        - cardio
+        - upper_body
+        - lower_body
+        - full_body
+        - flexibility
+        type: string
+    required:
+    - avg_calories_per
+    - base_count_reps
+    - base_relax_time
+    - level_preparation
+    - name
+    - place_exercise
+    - steps
+    - type_exercise
+    type: object
+  models.ExerciseResponseModel:
+    properties:
+      avg_calories_per:
+        type: number
+      base_count_reps:
+        type: integer
+      base_relax_time:
+        type: integer
+      description:
+        type: string
+      id:
+        type: string
+      level_preparation:
+        $ref: '#/definitions/entities.LevelPreparation'
+      link_gif:
+        type: string
+      name:
+        type: string
+      place_exercise:
+        $ref: '#/definitions/entities.PlaceExercise'
+      steps:
+        type: integer
+      type_exercise:
+        $ref: '#/definitions/entities.ExerciseType'
     type: object
   models.JWTModel:
     properties:
@@ -344,6 +461,200 @@ paths:
       summary: Обработка аватарки
       tags:
       - Photo
+  /exercises:
+    get:
+      description: Получает список упражнений с возможностью фильтрации
+      parameters:
+      - description: Уровень подготовки (beginner, medium, sportsman)
+        in: query
+        name: level_preparation
+        type: string
+      - description: Тип упражнения (cardio, upper_body, lower_body, full_body, flexibility)
+        in: query
+        name: type_exercise
+        type: string
+      - description: Место выполнения (home, gym, street)
+        in: query
+        name: place_exercise
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список упражнений
+          schema:
+            items:
+              $ref: '#/definitions/models.ExerciseResponseModel'
+            type: array
+        "400":
+          description: Неверный формат ID пользователя
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение списка упражнений
+      tags:
+      - Exercises
+    post:
+      consumes:
+      - application/json
+      description: Создает новое упражнение с указанными параметрами
+      parameters:
+      - description: Данные для создания упражнения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExerciseRequestModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Упражнение успешно создано
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Ошибка валидации или неверный формат данных
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создание нового упражнения
+      tags:
+      - Exercises
+  /exercises/{uuid}:
+    delete:
+      description: Удаляет упражнение по ID
+      parameters:
+      - description: ID упражнения
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Упражнение успешно удалено
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Упражнение не найдено
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление упражнения
+      tags:
+      - Exercises
+    get:
+      description: Получает детальную информацию об упражнении по его ID
+      parameters:
+      - description: ID упражнения
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Детальная информация об упражнении
+          schema:
+            $ref: '#/definitions/models.ExerciseResponseModel'
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Упражнение не найдено
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение упражнения по ID
+      tags:
+      - Exercises
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет существующее упражнение по ID
+      parameters:
+      - description: ID упражнения
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Данные для обновления упражнения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExerciseResponseModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Упражнение успешно обновлено
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Ошибка валидации или неверный формат ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Упражнение не найдено
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление упражнения
+      tags:
+      - Exercises
   /user/info:
     delete:
       description: Удаляет основную информацию о пользователе
