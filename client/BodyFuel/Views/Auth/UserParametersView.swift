@@ -7,6 +7,13 @@ struct UserParametersView: View {
     @State private var isLifestylePickerPresented = false
     @State private var isGoalPickerPresented = false
     
+    @FocusState private var parametersFocused: ParametersField?
+    
+    private enum ParametersField: Hashable {
+        case height
+        case weight
+    }
+    
     private var parametersFields: some View {
         VStack(spacing: 16) {
             PhotosPicker(selection: $viewModel.avatarItem, matching: .images) {
@@ -20,6 +27,8 @@ struct UserParametersView: View {
                 CustomTextField(
                     title: "Рост",
                     keyboardType: .numberPad,
+                    field: ParametersField.height,
+                    focusedField: $parametersFocused,
                     text: $viewModel.heightString.onChange {
                         viewModel.validateLive()
                     }
@@ -27,7 +36,13 @@ struct UserParametersView: View {
             }
             
             ValidatedField(error: viewModel.weightError) {
-                CustomTextField(title: "Вес", keyboardType: .numberPad, text: $viewModel.weightString)
+                CustomTextField(
+                    title: "Вес",
+                    keyboardType: .numberPad,
+                    field: ParametersField.weight,
+                    focusedField: $parametersFocused,
+                    text: $viewModel.weightString
+                )
             }
             
             CustomPickerField(
@@ -39,7 +54,7 @@ struct UserParametersView: View {
             .confirmationDialog(
                 "Образ жизни",
                 isPresented: $isLifestylePickerPresented,
-                titleVisibility: .visible
+                titleVisibility: .hidden
             ) {
                 ForEach(Lifestyle.allCases) { lifestyle in
                     Button(lifestyle.title) {
@@ -63,7 +78,7 @@ struct UserParametersView: View {
                 isPresented: $isGoalPickerPresented,
                 titleVisibility: .visible
             ) {
-                ForEach(Goal.allCases) { goal in
+                ForEach(MainGoal.allCases) { goal in
                     Button(goal.title) {
                         viewModel.goal = goal
                     }
@@ -87,14 +102,6 @@ struct UserParametersView: View {
                     )
                 }
             }
-            
-            CustomSliderField(
-                title: "Количество шагов в день",
-                from: 0,
-                to: 30000,
-                step: 1000,
-                value: $viewModel.targetStepsDaily
-            )
             
             CustomSliderField(
                 title: "Количество тренировок в неделю",
@@ -132,12 +139,122 @@ struct UserParametersView: View {
                 
                 goalsFields
             }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 28)
+                .fill(.ultraThinMaterial)
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 40)
+    }
+    
+    private var caloriesPreviewContent: some View {
+        VStack(alignment: .center, spacing: 24) {
+            VStack(alignment: .leading, spacing: 24) {
+                Text("Давай рассчитаем твою норму калорий для достижения цели")
+                    .font(.title2.bold())
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                Text("Убедись, что ты ответил на все вопросы, они нужны нам для расчетов")
+                    .font(.headline.bold())
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+            }
+            
+            PrimaryButton(
+                title: "Рассчитать",
+                isLoading: false
+            ) {
+                Task {
+                    await viewModel.countRecommendedCalories()
+                    viewModel.caloriesFormState = .counting
+                }
+            }
+        }
+    }
+    
+    private var caloriesCountContent: some View {
+        VStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 24) {
+                Text("Чтобы безопасно двигаться к цели, мы рекомендуем придерживаться")
+                    .foregroundColor((.white))
+                    .font(.title3.bold())
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                Text("\(Int(viewModel.targetCaloriesDaily)) ккал/день.")
+                    .foregroundColor((.white))
+                    .font(.title2.bold())
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                Text("Рассчитано на основе роста, веса, возраста, активности и цели")
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+            }
+            
+            Spacer()
+                .frame(height: 8)
             
             PrimaryButton(
                 title: "Отправить",
                 isLoading: viewModel.screenState == .loading
             ) {
                 Task { await viewModel.submit() }
+            }
+            
+            Button("Изменить норму") {
+                viewModel.caloriesFormState = .editing
+            }
+            .padding(.horizontal)
+            .frame(height: 20)
+            .foregroundColor(.white.opacity(0.75))
+            .fontWeight(.semibold)
+            .padding()
+        }
+    }
+    
+    private var caloriesEditingContent: some View {
+        VStack(spacing: 24) {
+            VStack(alignment: .leading, spacing: 24) {
+                CustomSliderField(
+                    title: "Количество калорий в день",
+                    from: viewModel.dailyEnergyExpenditure * 0.5,
+                    to: viewModel.dailyEnergyExpenditure * 1.5,
+                    step: 100,
+                    value: $viewModel.targetCaloriesDaily
+                )
+                
+                Text(viewModel.validateCaloriesNorm())
+                    .font(.title3.bold())
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                Text("Твое тело тратит в среднем \(Int(viewModel.dailyEnergyExpenditure)) калорий в день. Слишком сильное отклонение от этого значения может повлиять на твое здоровье.")
+                    .font(.headline.bold())
+                    .foregroundColor(.white)
+            }
+            
+            PrimaryButton(
+                title: "Отправить",
+                isLoading: viewModel.screenState == .loading
+            ) {
+                Task { await viewModel.submit() }
+            }
+        }
+    }
+    
+    private var caloriesFormContent: some View {
+        VStack(spacing: 24) {
+            switch viewModel.caloriesFormState {
+            case .preview:
+                caloriesPreviewContent
+            case .counting:
+                caloriesCountContent
+            case .editing:
+                caloriesEditingContent
             }
         }
         .padding(24)
@@ -153,10 +270,10 @@ struct UserParametersView: View {
         ZStack {
             AnimatedBackground()
 
-            CustomCarousel {
+            CustomCarousel(totalPages: 3) {
                 parametersFormContent
-            } secondView: {
                 goalsFormContent
+                caloriesFormContent
             }
         }
         .alert("Что-то пошло не так", isPresented: .constant(isError)) {
@@ -165,6 +282,9 @@ struct UserParametersView: View {
             if case let .error(message) = viewModel.screenState {
                 Text(message)
             }
+        }
+        .onTapGesture {
+            parametersFocused = nil
         }
     }
 
@@ -176,4 +296,25 @@ struct UserParametersView: View {
 
 #Preview {
     UserParametersView()
+}
+struct SecondaryButton: View {
+    let title: String
+    let isLoading: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            if isLoading {
+                ProgressView()
+            } else {
+                Text(title)
+                    .fontWeight(.semibold)
+            }
+        }
+        .padding(.horizontal)
+        .frame(height: 20)
+        .foregroundColor(.white.opacity(0.75))
+        .padding()
+        .disabled(isLoading)
+    }
 }

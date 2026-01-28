@@ -2,6 +2,17 @@ import SwiftUI
 
 struct PasswordRecoveryView: View {
     @StateObject private var viewModel = PasswordRecoveryViewModel()
+    
+    @FocusState private var loginEnterFocused: LoginEnterField?
+    @FocusState private var passwordRecoveryFocused: PasswordRecoveryField?
+    
+    private enum LoginEnterField: Hashable {
+        case login
+    }
+    private enum PasswordRecoveryField: Hashable {
+        case smsCode
+        case password
+    }
 
     var body: some View {
         ZStack {
@@ -20,12 +31,25 @@ struct PasswordRecoveryView: View {
                     Group {
                         switch viewModel.step {
                         case .enterLogin:
-                            CustomTextField(title: "Логин", text: $viewModel.login)
+                            CustomTextField(
+                                title: "Логин",
+                                field: LoginEnterField.login,
+                                focusedField: $loginEnterFocused,
+                                text: $viewModel.login
+                            )
                         case .enterCode:
-                            CustomTextField(title: "Код из СМС", keyboardType: .numberPad, text: $viewModel.code)
+                            CustomTextField(
+                                title: "Код из СМС",
+                                keyboardType: .numberPad,
+                                field: PasswordRecoveryField.smsCode,
+                                focusedField: $passwordRecoveryFocused,
+                                text: $viewModel.code
+                            )
                             ValidatedField(error: viewModel.passwordError) {
                                 PasswordField(
                                     title: "Новый пароль",
+                                    field: PasswordRecoveryField.password,
+                                    focusedField: $passwordRecoveryFocused,
                                     text: $viewModel.newPassword.onChange {
                                         viewModel.validateLive()
                                     }
@@ -59,11 +83,22 @@ struct PasswordRecoveryView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: viewModel.step) {
+            resetFocusStates()
+        }
+        .onTapGesture {
+            resetFocusStates()
+        }
     }
     
     private var isError: Bool {
         if case .error = viewModel.screenState { return true }
         return false
+    }
+    
+    private func resetFocusStates() {
+        loginEnterFocused = nil
+        passwordRecoveryFocused = nil
     }
 }
 

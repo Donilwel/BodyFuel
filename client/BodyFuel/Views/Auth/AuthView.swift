@@ -8,22 +8,66 @@ struct AuthView: View {
     @StateObject private var viewModel = AuthViewModel()
     @State private var path = NavigationPath()
     
+    @FocusState private var loginFocused: LoginField?
+    @FocusState private var registerFocused: RegisterField?
+    
+    private enum LoginField: Hashable {
+        case login
+        case password
+    }
+    private enum RegisterField: Hashable {
+        case login
+        case name
+        case surname
+        case phone
+        case email
+        case password
+        case passwordConfirmation
+    }
+    
     private var loginForm: some View {
         VStack(spacing: 16) {
-            CustomTextField(title: "Логин", text: $viewModel.login)
-            PasswordField(title: "Пароль", text: $viewModel.password)
+            CustomTextField(
+                title: "Логин",
+                field: LoginField.login,
+                focusedField: $loginFocused,
+                text: $viewModel.login
+            )
+            PasswordField(
+                title: "Пароль",
+                field: LoginField.password,
+                focusedField: $loginFocused,
+                text: $viewModel.password
+            )
         }
     }
     
     private var registerForm: some View {
         VStack(spacing: 16) {
-            CustomTextField(title: "Логин", text: $viewModel.login)
-            CustomTextField(title: "Имя", text: $viewModel.name)
-            CustomTextField(title: "Фамилия", text: $viewModel.surname)
+            CustomTextField(
+                title: "Логин",
+                field: RegisterField.login,
+                focusedField: $registerFocused,
+                text: $viewModel.login
+            )
+            CustomTextField(
+                title: "Имя",
+                field: RegisterField.name,
+                focusedField: $registerFocused,
+                text: $viewModel.name
+            )
+            CustomTextField(
+                title: "Фамилия",
+                field: RegisterField.surname,
+                focusedField: $registerFocused,
+                text: $viewModel.surname
+            )
             ValidatedField(error: viewModel.phoneError) {
                 CustomTextField(
                     title: "Телефон",
                     keyboardType: .phonePad,
+                    field: RegisterField.phone,
+                    focusedField: $registerFocused,
                     text: $viewModel.phone.onChange {
                         viewModel.validateLive()
                     }
@@ -33,6 +77,8 @@ struct AuthView: View {
                 CustomTextField(
                     title: "Почта",
                     keyboardType: .emailAddress,
+                    field: RegisterField.email,
+                    focusedField: $registerFocused,
                     text: $viewModel.email.onChange {
                         viewModel.validateLive()
                     }
@@ -41,6 +87,8 @@ struct AuthView: View {
             ValidatedField(error: viewModel.passwordError) {
                 PasswordField(
                     title: "Пароль",
+                    field: RegisterField.password,
+                    focusedField: $registerFocused,
                     text: $viewModel.password.onChange {
                         viewModel.validateLive()
                     }
@@ -49,6 +97,8 @@ struct AuthView: View {
             ValidatedField(error: viewModel.confirmPasswordError) {
                 PasswordField(
                     title: "Повторите пароль",
+                    field: RegisterField.passwordConfirmation,
+                    focusedField: $registerFocused,
                     text: $viewModel.confirmPassword.onChange {
                         viewModel.validateLive()
                     }
@@ -127,10 +177,16 @@ struct AuthView: View {
                 }
             }
             .onChange(of: viewModel.event) { event in
-                if case .registrationSuccess = event {
+                if case .loginSuccess = event {
                     path.append(AuthDestination.userParameters)
                 }
                 viewModel.event = .idle
+            }
+            .onChange(of: viewModel.mode) {
+                resetFocusStates()
+            }
+            .onTapGesture {
+                resetFocusStates()
             }
         }
     }
@@ -138,6 +194,11 @@ struct AuthView: View {
     private var isError: Bool {
         if case .error = viewModel.screenState { return true }
         return false
+    }
+    
+    private func resetFocusStates() {
+        loginFocused = nil
+        registerFocused = nil
     }
 }
 
