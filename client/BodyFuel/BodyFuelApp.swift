@@ -2,6 +2,8 @@ import SwiftUI
 
 @main
 struct BodyFuelApp: App {
+    @StateObject private var router = AppRouter()
+    
     init() {
         Task {
             try? await HealthKitService.shared.requestAuthorization()
@@ -11,7 +13,8 @@ struct BodyFuelApp: App {
     var body: some Scene {
         WindowGroup {
 //            UserParametersView()
-            AuthView()
+            RootView()
+                .environmentObject(router)
                 .preferredColorScheme(.light)
         }
     }

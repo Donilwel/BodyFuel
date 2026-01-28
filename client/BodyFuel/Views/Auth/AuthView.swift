@@ -1,12 +1,8 @@
 import SwiftUI
 
-enum AuthDestination: Hashable {
-    case userParameters
-}
-
 struct AuthView: View {
+    @EnvironmentObject var router: AppRouter
     @StateObject private var viewModel = AuthViewModel()
-    @State private var path = NavigationPath()
     
     @FocusState private var loginFocused: LoginField?
     @FocusState private var registerFocused: RegisterField?
@@ -150,15 +146,15 @@ struct AuthView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            ZStack {
+        NavigationStack() {
+            ZStack(alignment: .center) {
                 AnimatedBackground()
 
                 ScrollView {
-                    Image("emblema")
-                        .clipShape(.rect(cornerRadius: 12))
-                    
-                    Spacer()
+//                    Image("emblema")
+//                        .clipShape(.rect(cornerRadius: 12))
+//                    
+//                    Spacer()
                     
                     formContent
                 }
@@ -170,16 +166,16 @@ struct AuthView: View {
                     Text(message)
                 }
             }
-            .navigationDestination(for: AuthDestination.self) { destination in
-                switch destination {
-                case .userParameters:
-                    UserParametersView()
-                }
-            }
             .onChange(of: viewModel.event) { event in
-                if case .loginSuccess = event {
-                    path.append(AuthDestination.userParameters)
+                switch event {
+                case .loginSuccess:
+                    router.currentFlow = .main
+                case .registrationSuccess:
+                    router.currentFlow = .onboarding
+                default:
+                    break
                 }
+                
                 viewModel.event = .idle
             }
             .onChange(of: viewModel.mode) {
