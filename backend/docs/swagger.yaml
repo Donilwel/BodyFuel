@@ -19,6 +19,12 @@ definitions:
     - LoseWeight
     - BuildMuscle
     - StayFit
+  models.ErrorResponse:
+    properties:
+      '{route} error':
+        example: '{method}: {crud}: error message'
+        type: string
+    type: object
   models.JWTModel:
     properties:
       jwt:
@@ -78,6 +84,12 @@ definitions:
     - phone
     - surname
     - username
+    type: object
+  models.SuccessResponse:
+    properties:
+      message:
+        example: Successfully {action}
+        type: string
     type: object
   models.UserInfoResponseModel:
     properties:
@@ -249,15 +261,15 @@ paths:
         "400":
           description: Ошибка валидации
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Неверные учетные данные
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Аутентификация пользователя
       tags:
       - Auth
@@ -279,19 +291,19 @@ paths:
         "201":
           description: Пользователь успешно зарегистрирован
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Ошибка валидации
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "409":
           description: Пользователь уже существует
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Регистрация нового пользователя
       tags:
       - Auth
@@ -318,21 +330,21 @@ paths:
         "400":
           description: Ошибка валидации
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Неверные учетные данные
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Обработка аватарки
       tags:
       - Photo
-  /crud/user/info:
+  /user/info:
     delete:
       description: Удаляет основную информацию о пользователе
       produces:
@@ -345,15 +357,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Удаление информации пользователя
@@ -371,15 +383,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Получение информации пользователя
@@ -406,21 +418,21 @@ paths:
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Обновление информации пользователя
       tags:
       - User Info
-  /crud/user/params:
+  /user/params:
     delete:
       description: Удаляет дополнительные параметры пользователя
       produces:
@@ -429,19 +441,19 @@ paths:
         "200":
           description: Успешное удаление
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Удаление параметров пользователя
@@ -460,15 +472,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Получение параметров пользователя
@@ -492,19 +504,19 @@ paths:
         "200":
           description: Успешное обновление
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Обновление параметров пользователя
@@ -528,25 +540,25 @@ paths:
         "200":
           description: Успешное создание
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Создание параметров пользователя
       tags:
       - User Params
-  /crud/user/weight:
+  /user/weight:
     get:
       description: Получает текущий вес пользователя
       produces:
@@ -559,15 +571,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Получение текущего веса пользователя
@@ -587,15 +599,15 @@ paths:
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Обновление веса пользователя (пока нет)
@@ -622,21 +634,21 @@ paths:
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Создание записи о весе пользователя
       tags:
       - User Weight
-  /crud/user/weight/{uuid}:
+  /user/weight/{uuid}:
     delete:
       description: Удаляет запись о весе пользователя по ID
       parameters:
@@ -655,21 +667,21 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Удаление записи о весе пользователя
       tags:
       - User Weight
-  /crud/user/weight/history:
+  /user/weight/history:
     get:
       description: Получает всю историю изменений веса пользователя
       produces:
@@ -679,20 +691,22 @@ paths:
           description: История веса пользователя
           schema:
             items:
-              $ref: '#/definitions/models.UserWeightResponseModel'
+              items:
+                $ref: '#/definitions/models.UserWeightResponseModel'
+              type: array
             type: array
         "400":
           description: Неверный формат ID
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Отсутствует авторизация
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            type: string
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Получение истории веса пользователя

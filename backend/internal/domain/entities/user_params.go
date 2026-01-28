@@ -36,6 +36,19 @@ func (c Lifestyle) ToString() string {
 	return string(c)
 }
 
+func (c Lifestyle) ToLevelPreparation() (LevelPreparation, error) {
+	switch c {
+	case NotActive:
+		return Beginner, nil
+	case Active:
+		return Medium, nil
+	case Sportive:
+		return Sportsman, nil
+	default:
+		return "", fmt.Errorf("%s : %s", "mathing Lifestyle to LevelPreparation unknown type", c)
+	}
+}
+
 func ToWant(s string) (Want, error) {
 	switch s {
 	case LoseWeight.ToString():

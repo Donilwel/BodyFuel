@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"net/http"
 	"regexp"
 )
@@ -40,6 +41,16 @@ type (
 		CreateWeightUser(ctx context.Context, weight entities.UserWeightInitSpec) error
 		UpdateWeightUser(ctx context.Context, f dto.UserWeightFilter, weight entities.UserWeightUpdateParams) error
 		DeleteWeightUser(ctx context.Context, f dto.UserWeightFilter) error
+
+		GetExercise(ctx context.Context, f dto.ExerciseFilter, withBlock bool) (*entities.Exercise, error)
+		CreateExercise(ctx context.Context, params entities.ExerciseInitSpec) error
+		UpdateExercise(ctx context.Context, f dto.ExerciseFilter, exercise entities.ExerciseUpdateParams) error
+		DeleteExercise(ctx context.Context, f dto.ExerciseFilter) error
+		ListExercise(ctx context.Context, userID uuid.UUID, f dto.ExerciseFilter, withBlock bool) ([]*entities.Exercise, error)
+
+		DeleteTask(ctx context.Context, id uuid.UUID) error
+		ListTasks(ctx context.Context, filter dto.TasksFilter) ([]*entities.Task, error)
+		RestartTask(ctx context.Context, id uuid.UUID) error
 	}
 
 	AvatarService interface {
@@ -81,7 +92,12 @@ func (a *API) RegisterHandlers(r *gin.RouterGroup) {
 	a.registerAuthHandlers(r)
 
 	protected := r.Group("", JWT.JWTAuthMiddleware())
-	a.registerCRUDHandlers(protected)
+	a.registerExerciseHandlers(protected)
+	a.registerWorkoutsHandlers(protected)
+	a.registerUserInfoHandlers(protected)
+	a.registerUserParamsHandlers(protected)
+	a.registerUserWeightHandlers(protected)
+	a.registerTasksHandlers(protected)
 	a.registerAvatarsHandlers(protected)
 
 }

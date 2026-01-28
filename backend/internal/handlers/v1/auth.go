@@ -20,10 +20,10 @@ func (a *API) registerAuthHandlers(router *gin.RouterGroup) {
 // @Accept json
 // @Produce json
 // @Param request body models.RegisterRequestModel true "Данные для регистрации"
-// @Success 201 {string} string	"Пользователь успешно зарегистрирован"
-// @Failure 400 {object} string "Ошибка валидации"
-// @Failure 409 {object} string "Пользователь уже существует"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
+// @Success 201 {object} models.SuccessResponse	"Пользователь успешно зарегистрирован"
+// @Failure 400 {object} models.ErrorResponse "Ошибка валидации"
+// @Failure 409 {object} models.ErrorResponse "Пользователь уже существует"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /auth/register [post]
 func (a *API) register(ctx *gin.Context) {
 	var r models.RegisterRequestModel
@@ -62,9 +62,9 @@ func (a *API) register(ctx *gin.Context) {
 // @Produce json
 // @Param request body models.LoginRequestModel true "Данные для входа"
 // @Success 200 {object} models.JWTModel "Успешная аутентификация"
-// @Failure 400 {object} string "Ошибка валидации"
-// @Failure 401 {object} string "Неверные учетные данные"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
+// @Failure 400 {object} models.ErrorResponse "Ошибка валидации"
+// @Failure 401 {object} models.ErrorResponse "Неверные учетные данные"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /auth/login [post]
 func (a *API) login(ctx *gin.Context) {
 	var m models.LoginRequestModel

@@ -20,9 +20,9 @@ func (a *API) registerAvatarsHandlers(router *gin.RouterGroup) {
 // @Security BearerAuth
 // @Param request body models.PresignAvatarRequest true "Request body"
 // @Success 200 {object} models.PresignAvatarResponse "Успешная выдача публичной ссылки для загрузки"
-// @Failure 400 {object} string "Ошибка валидации"
-// @Failure 401 {object} string "Неверные учетные данные"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
+// @Failure 400 {object} models.ErrorResponse "Ошибка валидации"
+// @Failure 401 {object} models.ErrorResponse "Неверные учетные данные"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /avatars [post]
 func (a *API) presignAvatar(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")

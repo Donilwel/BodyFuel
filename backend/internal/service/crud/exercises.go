@@ -6,6 +6,7 @@ import (
 	"backend/internal/errors"
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 )
 
 func (s *Service) GetExercise(ctx context.Context, f dto.ExerciseFilter, withBlock bool) (*entities.Exercise, error) {
@@ -19,7 +20,7 @@ func (s *Service) GetExercise(ctx context.Context, f dto.ExerciseFilter, withBlo
 func (s *Service) CreateExercise(ctx context.Context, params entities.ExerciseInitSpec) error {
 	return s.transactionManager.Do(ctx, func(ctx context.Context) error {
 		if _, err := s.exercisesRepository.Get(ctx, dto.ExerciseFilter{Name: &params.Name}, false); err == nil {
-			return fmt.Errorf("create user params: %w", errors.ErrExerciseAlreadyExists)
+			return fmt.Errorf("create exercise: %w", errors.ErrExerciseAlreadyExists)
 		}
 
 		if err := s.exercisesRepository.Create(ctx, entities.NewExercise(entities.WithExerciseInitSpec(params))); err != nil {
@@ -33,7 +34,7 @@ func (s *Service) UpdateExercise(ctx context.Context, f dto.ExerciseFilter, exer
 	return s.transactionManager.Do(ctx, func(ctx context.Context) error {
 		e, err := s.exercisesRepository.Get(ctx, f, false)
 		if err != nil {
-			return fmt.Errorf("update user params: get user params: %w", err)
+			return fmt.Errorf("update exercise: get exercise: %w", err)
 		}
 		e.Update(exercise)
 
@@ -51,4 +52,23 @@ func (s *Service) DeleteExercise(ctx context.Context, f dto.ExerciseFilter) erro
 		}
 		return nil
 	})
+}
+
+func (s *Service) ListExercise(ctx context.Context, userID uuid.UUID, f dto.ExerciseFilter, withBlock bool) ([]*entities.Exercise, error) {
+	user, err := s.userParamsRepository.Get(ctx, dto.UserParamsFilter{UserID: &userID}, false)
+	if err != nil {
+		fmt.Errorf("list exercise: get: %w", err)
+	}
+
+	userLevel, err := user.Lifestyle().ToLevelPreparation()
+	if err != nil {
+		fmt.Errorf("list exercise: to level preparation: %w", err)
+	}
+	f.LevelPreparation = &userLevel
+	e, err := s.exercisesRepository.List(ctx, f, withBlock)
+	if err != nil {
+		return nil, fmt.Errorf("list exercise: %w", err)
+	}
+
+	return e, nil
 }

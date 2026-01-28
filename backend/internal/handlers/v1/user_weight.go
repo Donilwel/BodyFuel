@@ -8,6 +8,15 @@ import (
 	"net/http"
 )
 
+func (a *API) registerUserWeightHandlers(router *gin.RouterGroup) {
+	user := router.Group("/user")
+	user.GET("/weight", a.getUserWeight)
+	user.GET("/weight/history", a.getUserWeightHistory)
+	user.PATCH("/weight", a.updateUserWeight)
+	user.DELETE("/weight/:uuid", a.deleteUserWeight)
+	user.POST("/weight", a.createUserWeight)
+}
+
 // getUserWeight получает текущий вес пользователя
 // @Summary Получение текущего веса пользователя
 // @Description Получает текущий вес пользователя
@@ -15,14 +24,14 @@ import (
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} models.UserWeightResponseModel "Актуальный (последний) вес пользователя"
-// @Failure 400 {object} string "Неверный формат ID"
-// @Failure 401 {object} string "Отсутствует авторизация"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
-// @Router /crud/user/weight [get]
+// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /user/weight [get]
 func (a *API) getUserWeight(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
-		a.log.Errorf("crud error: get user weight: missing user_id in context")
+		a.log.Errorf("user weight error: get user weight: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -31,7 +40,7 @@ func (a *API) getUserWeight(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		a.log.Errorf("crud error: get user weight: invalid user_id type in context")
+		a.log.Errorf("user weight error: get user weight: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -40,7 +49,7 @@ func (a *API) getUserWeight(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		a.log.Errorf("crud error: get user weight: invalid user_id format: %s", err.Error())
+		a.log.Errorf("user weight error: get user weight: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -50,12 +59,12 @@ func (a *API) getUserWeight(ctx *gin.Context) {
 
 	uw, err := a.CRUDService.GetWeightUser(ctx, dto.UserWeightFilter{UserID: &userID}, false)
 	if err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
+		a.log.Errorf("user weight error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
-	a.log.Infof("crud info: get user weight: success")
+	a.log.Infof("user weight: get user weight: success")
 	ctx.JSON(http.StatusOK, models.NewUserWeightResponse(uw))
 }
 
@@ -65,15 +74,15 @@ func (a *API) getUserWeight(ctx *gin.Context) {
 // @Tags User Weight
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {object} []models.UserWeightResponseModel "История веса пользователя"
-// @Failure 400 {object} string "Неверный формат ID"
-// @Failure 401 {object} string "Отсутствует авторизация"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
-// @Router /crud/user/weight/history [get]
+// @Success 200 {array} []models.UserWeightResponseModel "История веса пользователя"
+// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /user/weight/history [get]
 func (a *API) getUserWeightHistory(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
-		a.log.Errorf("crud error: get user weight: missing user_id in context")
+		a.log.Errorf("user weight error: get user weight: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -82,7 +91,7 @@ func (a *API) getUserWeightHistory(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		a.log.Errorf("crud error: get user weight history: invalid user_id type in context")
+		a.log.Errorf("user weight error: get user weight history: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -91,7 +100,7 @@ func (a *API) getUserWeightHistory(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		a.log.Errorf("crud error: get user weight history: invalid user_id format: %s", err.Error())
+		a.log.Errorf("user weight error: get user weight history: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -101,12 +110,12 @@ func (a *API) getUserWeightHistory(ctx *gin.Context) {
 
 	uwl, err := a.CRUDService.ListWeightsUser(ctx, dto.UserWeightFilter{UserID: &userID}, false)
 	if err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
+		a.log.Errorf("user weight error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"user weight error: internal error": err.Error()})
 		return
 	}
 
-	a.log.Infof("crud info: get user weight history: success")
+	a.log.Infof("user weight: get user weight history: success")
 	ctx.JSON(http.StatusOK, models.NewUserWeightResponseList(uwl))
 }
 
@@ -117,29 +126,29 @@ func (a *API) getUserWeightHistory(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {string} string "Успешное обновление"
-// @Failure 400 {object} string "Ошибка валидации или неверный формат ID"
-// @Failure 401 {object} string "Отсутствует авторизация"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
-// @Router /crud/user/weight [patch]
+// @Success 200 {string} models.SuccessResponse "Успешное обновление"
+// @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /user/weight [patch]
 func (a *API) updateUserWeight(ctx *gin.Context) {}
 
-// deleteUserWeight удаляет запись о весе пользователя по айди записи (пока нет)
+// deleteUserWeight удаляет запись о весе пользователя по айди записи
 // @Summary Удаление записи о весе пользователя
 // @Description Удаляет запись о весе пользователя по ID
 // @Tags User Weight
 // @Security BearerAuth
 // @Produce json
 // @Param uuid path string true "ID записи о весе"
-// @Success 200 {string} string "Успешное удаление"
-// @Failure 400 {object} string "Неверный формат ID"
-// @Failure 401 {object} string "Отсутствует авторизация"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
-// @Router /crud/user/weight/{uuid} [delete]
+// @Success 200 {string} models.SuccessResponse "Успешное удаление"
+// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /user/weight/{uuid} [delete]
 func (a *API) deleteUserWeight(ctx *gin.Context) {
 	id := ctx.Param("uuid")
 	if id == "" {
-		a.log.Errorf("crud error: create user weight: missing weight id in header")
+		a.log.Errorf("user weight error: create user weight: missing weight id in header")
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": "missing weight id in header",
 		})
@@ -148,7 +157,7 @@ func (a *API) deleteUserWeight(ctx *gin.Context) {
 
 	weightID, err := uuid.Parse(id)
 	if err != nil {
-		a.log.Errorf("crud error: delete user weight: invalid weight id format: %s", err.Error())
+		a.log.Errorf("user weight error: delete user weight: invalid weight id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid id format",
 			"details": err.Error(),
@@ -158,12 +167,12 @@ func (a *API) deleteUserWeight(ctx *gin.Context) {
 
 	err = a.CRUDService.DeleteWeightUser(ctx, dto.UserWeightFilter{ID: &weightID})
 	if err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
+		a.log.Errorf("user weight error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"user weight error: internal error": err.Error()})
 		return
 	}
 
-	a.log.Infof("crud info: delete user weight: success")
+	a.log.Infof("user weight: delete user weight: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully deleted"})
 }
 
@@ -175,15 +184,15 @@ func (a *API) deleteUserWeight(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body models.UserWeightCreateRequestModel true "Данные веса для создания"
-// @Success 200 {string} string "Успешное создание"
-// @Failure 400 {object} string "Ошибка валидации или неверный формат ID"
-// @Failure 401 {object} string "Отсутствует авторизация"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
-// @Router /crud/user/weight [post]
+// @Success 200 {string} models.SuccessResponse "Успешное создание"
+// @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /user/weight [post]
 func (a *API) createUserWeight(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
-		a.log.Errorf("crud error: create user weight: missing user_id in context")
+		a.log.Errorf("user weight error: create user weight: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -192,7 +201,7 @@ func (a *API) createUserWeight(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		a.log.Errorf("crud error: create user weight: invalid user_id type in context")
+		a.log.Errorf("user weight error: create user weight: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -201,7 +210,7 @@ func (a *API) createUserWeight(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		a.log.Errorf("crud error: create user weight: invalid user_id format: %s", err.Error())
+		a.log.Errorf("user weight error: create user weight: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -211,8 +220,8 @@ func (a *API) createUserWeight(ctx *gin.Context) {
 
 	var m models.UserWeightCreateRequestModel
 	if err := ctx.ShouldBindJSON(&m); err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
+		a.log.Errorf("user weight error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"user weight error: internal error": err.Error()})
 		return
 	}
 
@@ -222,18 +231,18 @@ func (a *API) createUserWeight(ctx *gin.Context) {
 	}
 	uw := m.ToSpec()
 	if err != nil {
-		a.log.Errorf("crud error: create user weight: invalid data: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: create user weight: invalid data": err.Error()})
+		a.log.Errorf("user weight error: create user weight: invalid data: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"user weight error: create user weight: invalid data": err.Error()})
 		return
 	}
 	uw.UserID = userID
 
 	if err := a.CRUDService.CreateWeightUser(ctx, uw); err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
+		a.log.Errorf("user weight error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"user weight error: internal error": err.Error()})
 		return
 	}
 
-	a.log.Infof("crud info: create user weight: success")
+	a.log.Infof("user weight info: create user weight: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully created"})
 }

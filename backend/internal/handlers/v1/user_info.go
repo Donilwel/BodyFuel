@@ -8,21 +8,28 @@ import (
 	"net/http"
 )
 
+func (a *API) registerUserInfoHandlers(router *gin.RouterGroup) {
+	user := router.Group("/user")
+	user.DELETE("/info", a.deleteUserInfo)
+	user.PATCH("/info", a.updateUserInfo)
+	user.GET("/info", a.getUserInfo)
+}
+
 // deleteUserInfo удаляет информацию о пользователе
 // @Summary Удаление информации пользователя
 // @Description Удаляет основную информацию о пользователе
 // @Tags User Info
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {string} string "Успешное удаление"
-// @Failure 400 {object} string "Неверный формат ID"
-// @Failure 401 {object} string "Отсутствует авторизация"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
-// @Router /crud/user/info [delete]
+// @Success 200 {string} models.SuccessResponse "Успешное удаление"
+// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /user/info [delete]
 func (a *API) deleteUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
-		a.log.Errorf("crud error: delete user info: missing user_id in context")
+		a.log.Errorf("user info error: delete user info: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -31,7 +38,7 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		a.log.Errorf("crud error: delete user info: invalid user_id type in context")
+		a.log.Errorf("user info error: delete user info: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -40,7 +47,7 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		a.log.Errorf("crud error: delete user info: invalid user_id format: %s", err.Error())
+		a.log.Errorf("user info error: delete user info: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -50,12 +57,12 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 
 	err = a.CRUDService.DeleteInfoUser(ctx, dto.UserInfoFilter{ID: &userID})
 	if err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
+		a.log.Errorf("user info error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
 		return
 	}
 
-	a.log.Infof("crud info: delete user info: success")
+	a.log.Infof("user info: delete user info: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully deleted"})
 }
 
@@ -67,15 +74,15 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body models.UserInfoUpdateRequestModel true "Данные для обновления"
-// @Success 200 {string} string "Успешное обновление"
-// @Failure 400 {object} string "Ошибка валидации или неверный формат ID"
-// @Failure 401 {object} string "Отсутствует авторизация"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
-// @Router /crud/user/info [patch]
+// @Success 200 {string} models.SuccessResponse "Успешное обновление"
+// @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /user/info [patch]
 func (a *API) updateUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
-		a.log.Errorf("crud error: update user info: missing user_id in context")
+		a.log.Errorf("user info error: update user info: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -84,7 +91,7 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		a.log.Errorf("crud error: update user info: invalid user_id type in context")
+		a.log.Errorf("user info error: update user info: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -93,7 +100,7 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		a.log.Errorf("crud error: update user info: invalid user_id format: %s", err.Error())
+		a.log.Errorf("user info error: update user info: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -103,8 +110,8 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 
 	var m models.UserInfoUpdateRequestModel
 	if err := ctx.ShouldBindJSON(&m); err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
+		a.log.Errorf("user info error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"user info error: internal error": err.Error()})
 		return
 	}
 
@@ -115,12 +122,12 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 
 	err = a.CRUDService.UpdateInfoUser(ctx, dto.UserInfoFilter{ID: &userID}, m.ToParam())
 	if err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"crud error: internal error": err.Error()})
+		a.log.Errorf("user info error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"user info error: internal error": err.Error()})
 		return
 	}
 
-	a.log.Infof("crud info: update user info: success")
+	a.log.Infof("user info: update user info: success")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully updated"})
 }
 
@@ -131,14 +138,14 @@ func (a *API) updateUserInfo(ctx *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} models.UserInfoResponseModel "Информация о пользователе"
-// @Failure 400 {object} string "Неверный формат ID"
-// @Failure 401 {object} string "Отсутствует авторизация"
-// @Failure 500 {object} string "Внутренняя ошибка сервера"
-// @Router /crud/user/info [get]
+// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /user/info [get]
 func (a *API) getUserInfo(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
-		a.log.Errorf("crud error: get user info: missing user_id in context")
+		a.log.Errorf("user info error: get user info: missing user_id in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "missing user_id in context",
 		})
@@ -147,7 +154,7 @@ func (a *API) getUserInfo(ctx *gin.Context) {
 
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		a.log.Errorf("crud error: get user info: invalid user_id type in context")
+		a.log.Errorf("user info error: get user info: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid user_id type in context",
 		})
@@ -156,7 +163,7 @@ func (a *API) getUserInfo(ctx *gin.Context) {
 
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		a.log.Errorf("crud error: get user info: invalid user_id format: %s", err.Error())
+		a.log.Errorf("user info error: get user info: invalid user_id format: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid user_id format",
 			"details": err.Error(),
@@ -166,11 +173,11 @@ func (a *API) getUserInfo(ctx *gin.Context) {
 
 	ui, err := a.CRUDService.GetInfoUser(ctx, dto.UserInfoFilter{ID: &userID}, false)
 	if err != nil {
-		a.log.Errorf("crud error: internal error: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
+		a.log.Errorf("user info error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"user info error: internal error": err.Error()})
 		return
 	}
 
-	a.log.Infof("crud info: get user info: success")
+	a.log.Infof("user info: get user info: success")
 	ctx.JSON(http.StatusOK, models.NewUserInfoResponse(ui))
 }

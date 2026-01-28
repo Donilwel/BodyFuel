@@ -6,15 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserParamsRequestModel struct {
-}
-
-func (r *UserParamsRequestModel) ToSpec(userID uuid.UUID) entities.UserParamsInitSpec {
-	return entities.UserParamsInitSpec{
-		ID: uuid.New(),
-	}
-}
-
 type UserParamsResponseModel struct {
 	Height              int                `json:"height"`
 	Photo               string             `json:"photo"`

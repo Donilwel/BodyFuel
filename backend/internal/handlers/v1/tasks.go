@@ -5,6 +5,13 @@ import (
 	"net/http"
 )
 
+func (a *API) registerTasksHandlers(router *gin.RouterGroup) {
+	task := router.Group("/tasks")
+	task.DELETE("/:uuid", a.deleteTask)
+	task.POST("/:uuid/restart", a.restartTask)
+	task.GET("", a.listTasks)
+}
+
 func (a *API) listTasks(ctx *gin.Context) {
 	//tasks, err := a.crudService.ListTasks(ctx.Request.Context(), dto.TasksFilter{})
 	//if err != nil {
