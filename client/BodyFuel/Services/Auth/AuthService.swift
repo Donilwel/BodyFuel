@@ -45,7 +45,7 @@ final class AuthService: AuthServiceProtocol {
             
             tokenStorage.token = response.token
             
-            print("[INFO] [AuthService/login]: Successfully logged in")
+            print("[INFO] [AuthService/login]: Successfully logged in, token: \(response.token)")
         } catch {
             if error.localizedDescription.contains("401") {
                 throw AuthError.invalidCredentials

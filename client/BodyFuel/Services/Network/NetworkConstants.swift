@@ -5,6 +5,7 @@ enum API {
     
     static let userParameters = "/crud/user/params"
     static let weight = "/crud/user/weight"
+    static let uploadAvatar = "/avatars"
     
     enum Auth {
         static let register = "/auth/register"

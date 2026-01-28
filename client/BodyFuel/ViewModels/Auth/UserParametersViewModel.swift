@@ -97,7 +97,7 @@ final class UserParametersViewModel: ObservableObject {
             let userParametersPayload = UserParametersPayload(
                 height: height,
                 lifestyle: lifestyle,
-                photo: "url",
+                avatarData: avatarData ?? Data(),
                 targetCaloriesDaily: Int(targetCaloriesDaily),
                 targetWeight: targetWeight,
                 targetWorkoutsWeeks: Int(targetWorkoutsWeekly),

@@ -9,10 +9,10 @@ struct UserParametersRequestBody: Encodable {
 }
 
 extension UserParametersRequestBody {
-    init(from payload: UserParametersPayload) {
+    init(from payload: UserParametersPayload, avatarURL: String) {
         self.height = payload.height
         self.lifestyle = payload.lifestyle.backendValue
-        self.photo = payload.photo
+        self.photo = avatarURL
         self.targetCaloriesDaily = payload.targetCaloriesDaily
         self.targetWeight = payload.targetWeight
         self.targetWorkoutsWeeks = payload.targetWorkoutsWeeks

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct PrimaryButton: View {
+struct SecondaryButton: View {
     let title: String
     let isLoading: Bool
     let action: () -> Void
@@ -9,7 +9,6 @@ struct PrimaryButton: View {
         Button(action: action) {
             if isLoading {
                 ProgressView()
-                    .foregroundColor(.white)
             } else {
                 Text(title)
                     .fontWeight(.semibold)
@@ -17,13 +16,8 @@ struct PrimaryButton: View {
         }
         .padding(.horizontal)
         .frame(height: 20)
-        .foregroundColor(.white)
+        .foregroundColor(.white.opacity(0.75))
         .padding()
-        .glassEffect(.regular.tint(AppColors.primary).interactive(), in: .rect(cornerRadius: 12))
         .disabled(isLoading)
     }
-}
-
-#Preview {
-    AuthView()
 }

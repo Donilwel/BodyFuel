@@ -292,8 +292,12 @@ struct UserParametersView: View {
     }
     
     private func submit() {
-        Task { await viewModel.submit() }
-        router.currentFlow = .main
+        Task {
+            await viewModel.submit()
+            if viewModel.screenState == .idle {
+                router.currentFlow = .main
+            }
+        }
     }
 
     private var isError: Bool {
@@ -304,25 +308,4 @@ struct UserParametersView: View {
 
 #Preview {
     UserParametersView()
-}
-struct SecondaryButton: View {
-    let title: String
-    let isLoading: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            if isLoading {
-                ProgressView()
-            } else {
-                Text(title)
-                    .fontWeight(.semibold)
-            }
-        }
-        .padding(.horizontal)
-        .frame(height: 20)
-        .foregroundColor(.white.opacity(0.75))
-        .padding()
-        .disabled(isLoading)
-    }
 }

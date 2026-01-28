@@ -106,6 +106,28 @@ final class NetworkClient {
         }
     }
     
+    func uploadPhoto(data: Data, to url: URL) async throws {
+        do {
+            var request = URLRequest(url: url)
+            request.httpMethod = "PUT"
+            request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+            
+            let (_, response) = try await URLSession.shared.upload(for: request, from: data)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                let errorMessage = extractErrorMessage(from: data)
+                throw NetworkError.requestFailed(statusCode: -1, message: errorMessage)
+            }
+            
+            guard 200..<300 ~= httpResponse.statusCode else {
+                let errorMessage = extractErrorMessage(from: data)
+                throw NetworkError.requestFailed(statusCode: httpResponse.statusCode, message: errorMessage)
+            }
+        } catch {
+            throw NetworkError.network(error)
+        }
+    }
+    
     private func extractErrorMessage(from data: Data) -> String {
         if let apiError = try? JSONDecoder().decode(APIMessageResponse.self, from: data) {
             return apiError.message

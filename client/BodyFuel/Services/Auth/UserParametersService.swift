@@ -21,6 +21,8 @@ final class UserParametersService: UserParametersServiceProtocol {
     private let networkClient = NetworkClient.shared
     private let tokenStorage = TokenStorage.shared
     
+    private let photoService: PhotoServiceProtocol = PhotoService.shared
+    
     private init() {}
     
     func sendUserParameters(_ parametersPayload: UserParametersPayload) async throws {
@@ -32,7 +34,12 @@ final class UserParametersService: UserParametersServiceProtocol {
         }
         
         do {
-            let request = UserParametersRequestBody(from: parametersPayload)
+            let avatarURL = try await photoService.uploadUserAvatar(data: parametersPayload.avatarData)
+            
+            let request = UserParametersRequestBody(
+                from: parametersPayload,
+                avatarURL: avatarURL
+            )
 
             let response: APIMessageResponse = try await networkClient.request(
                 url: url,
@@ -40,7 +47,7 @@ final class UserParametersService: UserParametersServiceProtocol {
                 requestBody: request
             )
             
-            print("[INFO] [UserParametersService/sendUserParameters] Successfully sent user parameters")
+            print("[INFO] [UserParametersService/sendUserParameters]: Successfully sent user parameters: \(response.message)")
         } catch {
             throw UserParametersError.invalidData(error.localizedDescription)
         }
