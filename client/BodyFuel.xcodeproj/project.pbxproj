@@ -14,9 +14,22 @@
 		151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyFuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1500563E2F23E38100958BEB /* Exceptions for "BodyFuel" folder in "BodyFuel" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 151AD4D32F1E7C77002AB6B6 /* BodyFuel */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		151AD4D62F1E7C77002AB6B6 /* BodyFuel */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1500563E2F23E38100958BEB /* Exceptions for "BodyFuel" folder in "BodyFuel" target */,
+			);
 			path = BodyFuel;
 			sourceTree = "<group>";
 		};
@@ -260,11 +273,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = BodyFuel/BodyFuel.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GWV92276SN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BodyFuel/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложение использует данные здоровья для персонализации плана";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложение записывает данные о тренировках";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -292,11 +309,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = BodyFuel/BodyFuel.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GWV92276SN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BodyFuel/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложение использует данные здоровья для персонализации плана";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложение записывает данные о тренировках";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
