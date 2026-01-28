@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 
 struct UserParametersView: View {
+    @EnvironmentObject var router: AppRouter
     @StateObject private var viewModel = UserParametersViewModel()
     
     @State private var isLifestylePickerPresented = false
@@ -202,7 +203,7 @@ struct UserParametersView: View {
                 title: "Отправить",
                 isLoading: viewModel.screenState == .loading
             ) {
-                Task { await viewModel.submit() }
+                submit()
             }
             
             Button("Изменить норму") {
@@ -241,7 +242,7 @@ struct UserParametersView: View {
                 title: "Отправить",
                 isLoading: viewModel.screenState == .loading
             ) {
-                Task { await viewModel.submit() }
+                submit()
             }
         }
     }
@@ -267,25 +268,32 @@ struct UserParametersView: View {
     }
     
     var body: some View {
-        ZStack {
-            AnimatedBackground()
-
-            CustomCarousel(totalPages: 3) {
-                parametersFormContent
-                goalsFormContent
-                caloriesFormContent
+        NavigationStack {
+            ZStack {
+                AnimatedBackground()
+                
+                CustomCarousel(totalPages: 3) {
+                    parametersFormContent
+                    goalsFormContent
+                    caloriesFormContent
+                }
+            }
+            .alert("Что-то пошло не так", isPresented: .constant(isError)) {
+                Button("OK") { viewModel.screenState = .idle }
+            } message: {
+                if case let .error(message) = viewModel.screenState {
+                    Text(message)
+                }
+            }
+            .onTapGesture {
+                parametersFocused = nil
             }
         }
-        .alert("Что-то пошло не так", isPresented: .constant(isError)) {
-            Button("OK") { viewModel.screenState = .idle }
-        } message: {
-            if case let .error(message) = viewModel.screenState {
-                Text(message)
-            }
-        }
-        .onTapGesture {
-            parametersFocused = nil
-        }
+    }
+    
+    private func submit() {
+        Task { await viewModel.submit() }
+        router.currentFlow = .main
     }
 
     private var isError: Bool {

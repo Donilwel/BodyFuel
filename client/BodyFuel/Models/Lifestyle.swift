@@ -28,4 +28,12 @@ enum Lifestyle: String, CaseIterable, Identifiable {
         case .sporty: return 1.9
         }
     }
+    
+    var backendValue: String {
+        switch self {
+        case .sedentary: return "not_active"
+        case .active: return "active"
+        case .sporty: return "sportive"
+        }
+    }
 }

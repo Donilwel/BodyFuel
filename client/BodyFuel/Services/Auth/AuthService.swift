@@ -29,8 +29,8 @@ final class AuthService: AuthServiceProtocol {
     private init() {}
     
     func login(user: LoginPayload) async throws {
-        let urlComponents = URLComponents(string: API.baseURLString + API.Auth.login)!
-        guard let url = urlComponents.url else {
+        let urlComponents = URLComponents(string: API.baseURLString + API.Auth.login)
+        guard let urlComponents, let url = urlComponents.url else {
             print("[ERROR] [AuthService/login] Invalid login URL")
             throw NetworkError.invalidURL
         }

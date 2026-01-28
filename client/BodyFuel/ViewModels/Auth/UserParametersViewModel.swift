@@ -36,6 +36,7 @@ final class UserParametersViewModel: ObservableObject {
     }
     
     private let authService: AuthServiceProtocol = AuthService.shared
+    private let userParametersService: UserParametersServiceProtocol = UserParametersService.shared
     private let healthService: HealthKitServiceProtocol = HealthKitService.shared
     
     private var dateOfBirth: Date?
@@ -88,11 +89,25 @@ final class UserParametersViewModel: ObservableObject {
                 screenState = .idle
                 caloriesFormState = .preview
             }
-
-            try await authService.sendUserParameters()
-        }
-        catch let error as AuthError {
-            screenState = .error(error.errorDescription ?? "Заполните все поля")
+            
+            guard let lifestyle, let goal else {
+                return
+            }
+            
+            let userParametersPayload = UserParametersPayload(
+                height: height,
+                lifestyle: lifestyle,
+                photo: "url",
+                targetCaloriesDaily: Int(targetCaloriesDaily),
+                targetWeight: targetWeight,
+                targetWorkoutsWeeks: Int(targetWorkoutsWeekly),
+                mainGoal: goal
+            )
+            
+            async let sendUserWeight: () = userParametersService.sendCurrentWeight(weight)
+            async let sendUserParameters: () = userParametersService.sendUserParameters(userParametersPayload)
+            
+            let (_, _) = try await (sendUserWeight, sendUserParameters)
         } catch {
             print("[ERROR] [UserParametersViewModel/submit]: \(error.localizedDescription)")
             screenState = .error("Попробуйте еще раз позже")

@@ -54,7 +54,7 @@ final class NetworkClient {
                 throw NetworkError.missingToken
             }
             
-            request.setValue("OAuth \(token)", forHTTPHeaderField: "authorization")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         
         request.httpMethod = method.rawValue
@@ -64,7 +64,7 @@ final class NetworkClient {
             do {
                 let jsonEncoder = JSONEncoder()
                 jsonEncoder.dateEncodingStrategy = .iso8601
-                request.httpBody = try await JSONEncoder().encodeAsync(body)
+                request.httpBody = try await jsonEncoder.encodeAsync(body)
             } catch {
                 throw NetworkError.encodingFailed
             }

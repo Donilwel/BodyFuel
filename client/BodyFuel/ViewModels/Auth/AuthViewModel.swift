@@ -62,8 +62,6 @@ final class AuthViewModel: ObservableObject {
                 try await authService.login(user: LoginPayload(username: registerPayload.username, password: registerPayload.password))
                 event = .registrationSuccess
             }
-        } catch let error as AuthError {
-            screenState = .error(error.errorDescription ?? "Заполните все поля")
         } catch {
             print("[ERROR] [AuthViewModel/submit]: \(error.localizedDescription)")
             screenState = .error("Попробуйте еще раз позже")
