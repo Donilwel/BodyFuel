@@ -22,6 +22,11 @@ type AppConfig struct {
 	HTTPServerConfig      HTTPServerConfig `yaml:"http_server"`
 	GracefulTimeout       time.Duration    `yaml:"graceful_timeout" env:"GRACEFUL_TIMEOUT" envDefault:"5s"`
 	TasksTrackingDuration time.Duration    `yaml:"tasks_tracking_duration" env:"TASKS_TRACKING_DURATION" envDefault:"13s"`
+	WorkoutsConfig        WorkoutsConfig   `yaml:"workouts_config" env-prefix:"WORKOUTS_CONFIG_"`
+}
+
+type WorkoutsConfig struct {
+	WorkoutPullUserInterval time.Duration `yaml:"workout_pull_user_interval" env:"WORKOUT_PULL_USER_INTERVAL" envDefault:"60s"`
 }
 
 type Config struct {

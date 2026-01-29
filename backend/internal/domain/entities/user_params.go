@@ -26,6 +26,10 @@ const (
 	NotActive Lifestyle = "not_active"
 	Active    Lifestyle = "active"
 	Sportive  Lifestyle = "sportive"
+
+	CoefNotActive = 1.0
+	CoefActive    = 2.0
+	CoefSportive  = 3.0
 )
 
 func (c Want) ToString() string {
@@ -46,6 +50,19 @@ func (c Lifestyle) ToLevelPreparation() (LevelPreparation, error) {
 		return Sportsman, nil
 	default:
 		return "", fmt.Errorf("%s : %s", "mathing Lifestyle to LevelPreparation unknown type", c)
+	}
+}
+
+func (c Lifestyle) ToCoef() (float64, error) {
+	switch c {
+	case NotActive:
+		return CoefNotActive, nil
+	case Active:
+		return CoefActive, nil
+	case Sportive:
+		return CoefSportive, nil
+	default:
+		return 0, fmt.Errorf("%s : %s", "mathing Lifestyle to Coef unknown type", c)
 	}
 }
 

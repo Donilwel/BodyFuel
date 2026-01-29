@@ -1,6 +1,5 @@
 package crud
 
-//
 //workout с параметрами
 //(15 - 30 - 1ч - 1.30ч - 2ч.)
 //Уровень нагрузки (слабый,умеренный, сильный),
@@ -12,13 +11,13 @@ package crud
 //	отдается массив из упражнений, а также, сколько минут на каждое, дальше есть кнопка начать, где каждые 10 минут собираются данные с пульсометра.
 //
 //	упражненение - таблица следующего вида:
-
+//
 //Exercise
 //		ui упражнения
 //		level_training
 //		name - название упражнения
 //	    (cardio, upper_body, lower_body, full_body, flexibility) тип упражнения
-//        (описание упражнения) text
+//       (описание упражнения) text
 //		base_count_reps()
 //		steps
 //		(link gif)
@@ -37,7 +36,7 @@ package crud
 //		"0,3"
 //		"3"
 //
-//        "beginner"
+//       "beginner"
 //		"pull_ups"
 //		"upper_body"
 //		"TEXT"
@@ -51,14 +50,3 @@ package crud
 //
 //
 //
-//workout
-//	UUID
-//	uuid_user
-//	[]exercise
-//	level
-//	time.Duration()
-//	total_calories
-//	predictiction_calories
-//	user_condition->user_info
-//	status="in_progress, canceled, finished"
-//	Date

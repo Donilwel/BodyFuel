@@ -7,7 +7,7 @@ func (a *API) registerWorkoutsHandlers(router *gin.RouterGroup) {
 	workout.GET("/:uuid", a.getUserWorkout)
 	workout.DELETE("/:uuid", a.deleteUserWorkout)
 	workout.PATCH("/:uuid", a.updateUserWorkout)
-	workout.POST("", a.createUserWorkout)
+	workout.POST("", a.generateWorkout)
 	workout.GET("/history", a.getUserWorkouts)
 }
 
@@ -27,6 +27,6 @@ func (a *API) deleteUserWorkout(ctx *gin.Context) {
 
 }
 
-func (a *API) createUserWorkout(ctx *gin.Context) {
+func (a *API) generateWorkout(ctx *gin.Context) {
 
 }

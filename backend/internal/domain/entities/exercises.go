@@ -24,6 +24,12 @@ func (p PlaceExercise) String() string {
 	return string(p)
 }
 
+type ExerciseStatus string
+
+func (e ExerciseStatus) String() string {
+	return string(e)
+}
+
 const (
 	Beginner  LevelPreparation = "beginner"
 	Medium    LevelPreparation = "medium"
@@ -38,6 +44,11 @@ const (
 	Street PlaceExercise = "street"
 	Gym    PlaceExercise = "gym"
 	Home   PlaceExercise = "home"
+
+	NotStarted ExerciseStatus = "not_started"
+	InProgress ExerciseStatus = "in_progress"
+	Completed  ExerciseStatus = "completed"
+	Skipped    ExerciseStatus = "skipped"
 )
 
 func (l LevelPreparation) ToString() string {
@@ -50,6 +61,10 @@ func (e ExerciseType) ToString() string {
 
 func (p PlaceExercise) ToString() string {
 	return string(p)
+}
+
+func (e ExerciseStatus) ToString() string {
+	return string(e)
 }
 
 func ToLevelPreparation(s string) (LevelPreparation, error) {
@@ -79,6 +94,21 @@ func ToExerciseType(s string) (ExerciseType, error) {
 		return Flexibility, nil
 	default:
 		return "", fmt.Errorf("%w : %s", errors.ErrUnknownExerciseType, s)
+	}
+}
+
+func ToExerciseStatus(s string) (ExerciseStatus, error) {
+	switch s {
+	case NotStarted.ToString():
+		return NotStarted, nil
+	case InProgress.ToString():
+		return InProgress, nil
+	case Completed.ToString():
+		return Completed, nil
+	case Skipped.ToString():
+		return Skipped, nil
+	default:
+		return "", fmt.Errorf("%w : %s", errors.ErrUnknownExerciseStatus, s)
 	}
 }
 
