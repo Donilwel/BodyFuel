@@ -8,6 +8,7 @@ import (
 	"backend/internal/service/auth"
 	"backend/internal/service/avatar"
 	"backend/internal/service/crud"
+	"backend/internal/service/workouts"
 	"backend/pkg/logging"
 	"context"
 	"errors"
@@ -68,6 +69,7 @@ func NewApp(configPaths ...string) *App {
 	userWeightRepository := postgres.NewUserWeightRepository(db)
 	exercisesRepository := postgres.NewExerciseRepository(db)
 	tasksRepository := postgres.NewTasksRepository(db)
+	workoutsRepository := postgres.NewWorkoutRepository(db)
 
 	//tasksRepository := postgres.NewTasksRepository(db)
 
@@ -92,6 +94,17 @@ func NewApp(configPaths ...string) *App {
 		PresignTTL: cfg.Minio.PresignTTL,
 		PublicURL:  cfg.Minio.PublicURL,
 	})
+
+	workoutService := workouts.NewService(&workouts.Config{
+		TransactionManager:      transactionManager,
+		TasksRepository:         tasksRepository,
+		ExerciseRepository:      exercisesRepository,
+		UserInfoRepository:      userInfoRepository,
+		UserParamsRepository:    userParamsRepository,
+		WorkoutsRepository:      workoutsRepository,
+		WorkoutPullUserInterval: cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
+	})
+	workers = append(workers, workoutService)
 
 	//executorService := executor.NewService(&executor.Config{
 	//	TransactionManager: transactionManager,

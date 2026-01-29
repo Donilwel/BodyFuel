@@ -159,7 +159,6 @@ func WithTaskInitSpec(s TaskInitSpec) TaskOption {
 
 		t.uuid = uuid.New()
 		t.typeNm = s.TypeNm
-		//t.clusterNm = s.ClusterNm
 		t.state = TaskStateRunning
 		t.maxAttempts = s.MaxAttempts
 		t.attempts = 0
