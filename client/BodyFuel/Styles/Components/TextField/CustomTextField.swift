@@ -16,6 +16,7 @@ struct CustomTextField<Field: Hashable>: View {
                 .fixedSize(horizontal: false, vertical: true)
             
             TextField("", text: $text)
+                .typesettingLanguage(Locale.Language(identifier: "en"))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(keyboardType)
