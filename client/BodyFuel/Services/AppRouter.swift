@@ -1,4 +1,5 @@
 import Combine
+import Foundation
 
 final class AppRouter: ObservableObject {
     @Published var currentFlow: AppFlow?
@@ -7,6 +8,12 @@ final class AppRouter: ObservableObject {
     
     init() {
         currentFlow = .auth
-//        currentFlow = tokenStorage.token == nil ? .auth : .main
+//        if tokenStorage.token == nil {
+//            currentFlow = .auth
+//        } else if UserDefaults.standard.hasCompletedProfileSetup == false {
+//            currentFlow = .profileSetup
+//        } else {
+//            currentFlow = .main
+//        }
     }
 }

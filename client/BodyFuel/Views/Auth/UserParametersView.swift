@@ -42,7 +42,9 @@ struct UserParametersView: View {
                     keyboardType: .numberPad,
                     field: ParametersField.weight,
                     focusedField: $parametersFocused,
-                    text: $viewModel.weightString
+                    text: $viewModel.weightString.onChange {
+                        viewModel.validateLive()
+                    }
                 )
             }
             

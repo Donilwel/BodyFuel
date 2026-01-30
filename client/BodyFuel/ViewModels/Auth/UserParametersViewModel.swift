@@ -108,6 +108,8 @@ final class UserParametersViewModel: ObservableObject {
             async let sendUserParameters: () = userParametersService.sendUserParameters(userParametersPayload)
             
             let (_, _) = try await (sendUserWeight, sendUserParameters)
+            
+            UserDefaults.standard.hasCompletedProfileSetup = true
         } catch {
             print("[ERROR] [UserParametersViewModel/submit]: \(error.localizedDescription)")
             screenState = .error("Попробуйте еще раз позже")
@@ -135,7 +137,7 @@ final class UserParametersViewModel: ObservableObject {
         let diff = Int((targetCaloriesDaily - dailyEnergyExpenditure) / dailyEnergyExpenditure * 100)
         
         switch diff {
-        case ..<(-41):
+        case ..<(-40):
             return "Критический дефицит — может быть опасно для здоровья, советуем вернуться к более безопасному уровню"
         case -40..<(-30):
             return "Сильный дефицит — рекомендуем увеличить норму, чтобы избежать замедления обмена веществ и потери мышечной массы"

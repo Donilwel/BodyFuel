@@ -171,7 +171,7 @@ struct AuthView: View {
                 case .loginSuccess:
                     router.currentFlow = .main
                 case .registrationSuccess:
-                    router.currentFlow = .onboarding
+                    router.currentFlow = .profileSetup
                 default:
                     break
                 }

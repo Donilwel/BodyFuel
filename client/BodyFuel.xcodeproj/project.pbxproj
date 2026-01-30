@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		150A3F332F2C574400E52218 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 150A3F322F2C574400E52218 /* Kingfisher */; };
 		151AD6252F1E8DEC002AB6B6 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */; };
 /* End PBXBuildFile section */
 
@@ -40,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				150A3F332F2C574400E52218 /* Kingfisher in Frameworks */,
 				151AD6252F1E8DEC002AB6B6 /* SwiftKeychainWrapper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -84,6 +86,7 @@
 			name = BodyFuel;
 			packageProductDependencies = (
 				151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */,
+				150A3F322F2C574400E52218 /* Kingfisher */,
 			);
 			productName = BodyFuel;
 			productReference = 151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */;
@@ -115,6 +118,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				151AD6232F1E8DEC002AB6B6 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+				150A3F312F2C574400E52218 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 151AD4D52F1E7C77002AB6B6 /* Products */;
@@ -364,6 +368,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		150A3F312F2C574400E52218 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
 		151AD6232F1E8DEC002AB6B6 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
@@ -375,6 +387,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		150A3F322F2C574400E52218 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 150A3F312F2C574400E52218 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
 		151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 151AD6232F1E8DEC002AB6B6 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;

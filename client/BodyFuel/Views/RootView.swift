@@ -8,7 +8,7 @@ struct RootView: View {
         case .auth:
             AuthView()
 
-        case .onboarding:
+        case .profileSetup:
             UserParametersView()
 
         default:

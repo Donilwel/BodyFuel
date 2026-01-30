@@ -45,16 +45,16 @@ struct ErrorMapper {
             }
         }
         
-//        if let profile = error as? ProfileError {
-//            switch profile {
-//            case .uploadFailed:
-//                return .serverUnavailable
-//            case .invalidData:
-//                return .validation(message: "Некорректные данные профиля")
-//            case .unknown:
-//                return .unknown
-//            }
-//        }
+        if let profile = error as? ProfileError {
+            switch profile {
+            case .validation:
+                return .serverUnavailable
+            case .unauthorized:
+                return .unauthorized
+            case .invalidData(let message):
+                return .validation(message: message)
+            }
+        }
         
         return .unknown
     }

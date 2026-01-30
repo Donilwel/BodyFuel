@@ -1,5 +1,5 @@
 enum AppFlow {
     case auth
-    case onboarding
+    case profileSetup
     case main
 }
