@@ -11,8 +11,8 @@ struct RootView: View {
         case .onboarding:
             UserParametersView()
 
-        case .main:
-            MainScreenView()
+        default:
+            ProfileView()
         }
     }
 }
