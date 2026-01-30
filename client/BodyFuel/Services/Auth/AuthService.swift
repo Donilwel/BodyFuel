@@ -10,11 +10,15 @@ protocol AuthServiceProtocol {
 
 enum AuthError: LocalizedError {
     case invalidCredentials
+    case validation
+    case userExists
     case invalidData(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidCredentials: return "Неверный логин или пароль"
+        case .validation: return "Проверьте корректность данных"
+        case .userExists: return "Пользователь с таким логином уже существует"
         case .invalidData(let message): return message
         }
     }
@@ -29,13 +33,13 @@ final class AuthService: AuthServiceProtocol {
     private init() {}
     
     func login(user: LoginPayload) async throws {
-        let urlComponents = URLComponents(string: API.baseURLString + API.Auth.login)
-        guard let urlComponents, let url = urlComponents.url else {
-            print("[ERROR] [AuthService/login] Invalid login URL")
-            throw NetworkError.invalidURL
-        }
-        
         do {
+            let urlComponents = URLComponents(string: API.baseURLString + API.Auth.login)
+            guard let urlComponents, let url = urlComponents.url else {
+                print("[ERROR] [AuthService/login] Invalid login URL")
+                throw NetworkError.invalidURL
+            }
+            
             let response: LoginResponseBody = try await networkClient.request(
                 requiresAuthorization: false,
                 url: url,
@@ -47,32 +51,59 @@ final class AuthService: AuthServiceProtocol {
             
             print("[INFO] [AuthService/login]: Successfully logged in, token: \(response.token)")
         } catch {
-            if error.localizedDescription.contains("401") {
-                throw AuthError.invalidCredentials
-            } else {
-                throw AuthError.invalidData(error.localizedDescription)
-            }
+            print("[ERROR] [AuthService/login]: \(error.localizedDescription)")
+            throw mapToAuthError(error)
         }
     }
 
     func register(user: RegisterPayload) async throws {
-        let urlComponents = URLComponents(string: API.baseURLString + API.Auth.register)!
-        guard let url = urlComponents.url else {
-            print("[ERROR] [AuthService/register] Invalid register URL")
-            throw NetworkError.invalidURL
+        do {
+            let urlComponents = URLComponents(string: API.baseURLString + API.Auth.register)!
+            guard let url = urlComponents.url else {
+                print("[ERROR] [AuthService/register] Invalid register URL")
+                throw NetworkError.invalidURL
+            }
+            
+            let response: APIMessageResponse = try await networkClient.request(
+                requiresAuthorization: false,
+                url: url,
+                method: .post,
+                requestBody: user
+            )
+            
+            print("[INFO] [AuthService/register]: \(response.message)")
+        } catch {
+            print("[ERROR] [AuthService/register]: \(error.localizedDescription)")
+            throw mapToAuthError(error)
         }
-        
-        let response: APIMessageResponse = try await networkClient.request(
-            requiresAuthorization: false,
-            url: url,
-            method: .post,
-            requestBody: user
-        )
-        
-        print("[INFO] [AuthService/register]: \(response.message)")
     }
 
     func sendRecoveryCode(login: String) async throws { }
     func confirmRecovery(code: String, newPassword: String) async throws { }
     func sendUserParameters() async throws {}
+}
+
+extension AuthService {
+    private func mapToAuthError(_ error: Error) -> AuthError {
+        guard let networkError = error as? NetworkError else {
+            return .invalidData(error.localizedDescription)
+        }
+        
+        switch networkError {
+        case .requestFailed(let statusCode, let message):
+            switch statusCode {
+            case 400:
+                return .validation
+            case 401:
+                return .invalidCredentials
+            case 409:
+                return .userExists
+            default:
+                return .invalidData(message)
+            }
+            
+        default:
+            return .invalidData(error.localizedDescription)
+        }
+    }
 }

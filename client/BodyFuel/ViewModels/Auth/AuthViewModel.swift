@@ -63,8 +63,8 @@ final class AuthViewModel: ObservableObject {
                 event = .registrationSuccess
             }
         } catch {
-            print("[ERROR] [AuthViewModel/submit]: \(error.localizedDescription)")
-            screenState = .error("Попробуйте еще раз позже")
+            let appError = ErrorMapper.map(error)
+            screenState = .error(appError.errorDescription ?? "Попробуйте еще раз позже")
         }
     }
     

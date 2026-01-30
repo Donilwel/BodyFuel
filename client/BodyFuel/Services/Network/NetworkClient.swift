@@ -101,6 +101,8 @@ final class NetworkClient {
             } catch {
                 throw NetworkError.decodingFailed
             }
+        } catch let error as NetworkError {
+            throw error
         } catch {
             throw NetworkError.network(error)
         }
@@ -123,6 +125,8 @@ final class NetworkClient {
                 let errorMessage = extractErrorMessage(from: data)
                 throw NetworkError.requestFailed(statusCode: httpResponse.statusCode, message: errorMessage)
             }
+        } catch let error as NetworkError {
+            throw error
         } catch {
             throw NetworkError.network(error)
         }
