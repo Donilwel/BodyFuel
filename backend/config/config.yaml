@@ -16,13 +16,12 @@ sage:
   stand_type: test
   pod_name: bodyfuel-0
 
-
 postgres:
   host: "localhost"
   port: 5432
   database: "backend_db"
-  user: "d.y.maslov"
-  password: "backend_pass"
+  user: "danila"
+  password: "postgres"
 
 minio:
   endpoint: "http://localhost:9000"
