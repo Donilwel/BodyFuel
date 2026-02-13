@@ -18,14 +18,14 @@ postgres:
   host: "localhost"
   port: 5432
   database: "backend_db"
-  user: "drobysheva.daria"
-  password: "backend_pass"
+  user: "danila"
+  password: "postgres"
 
 minio:
-  endpoint: "http://172.20.10.12:9000"
+  endpoint: "http://localhost:9000"
   access_key: "minioadmin"
   secret_key: "minioadmin"
   bucket: "avatars"
   region: "us-east-1"
-  public_url: "http://172.20.10.12:9000/avatars"
+  public_url: "http://localhost:9000/avatars"
   presign_ttl: "5m"
