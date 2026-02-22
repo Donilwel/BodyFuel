@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PrimaryButton: View {
     let title: String
-    let isLoading: Bool
+    var isLoading: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -12,6 +12,7 @@ struct PrimaryButton: View {
                     .foregroundColor(.white)
             } else {
                 Text(title)
+                    .multilineTextAlignment(.center)
                     .fontWeight(.semibold)
             }
         }
@@ -25,5 +26,5 @@ struct PrimaryButton: View {
 }
 
 #Preview {
-    AuthView()
+    HomeView()
 }

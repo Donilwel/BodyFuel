@@ -12,7 +12,7 @@ struct RootView: View {
             UserParametersView()
 
         default:
-            ProfileView()
+            TabBarView()
         }
     }
 }

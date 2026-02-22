@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SecondaryButton: View {
     let title: String
-    let isLoading: Bool
+    var isLoading: Bool = false
     let action: () -> Void
 
     var body: some View {

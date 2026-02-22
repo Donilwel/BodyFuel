@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppColors {
-    static let backgroundGradient = LinearGradient(
+    static let gradient = LinearGradient(
         colors: [Color.blue.opacity(0.9), Color.indigo.opacity(0.9)],
         startPoint: .topTrailing,
         endPoint: .bottom
