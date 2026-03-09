@@ -4,15 +4,16 @@ struct ErrorMapper {
     static func map(_ error: Error) -> AppError {
         if let error = error as? NetworkError {
             switch error {
-            case .network:
-                return .noInternet
-                
-            case .requestFailed(let status, _):
+            case .requestFailed(let status, let message):
                 switch status {
                 case 401: return .unauthorized
                 case 404: return .notFound
-                case 500...599: return .serverUnavailable
-                default: return .unknown
+                case 400...499:
+                    return .validation(message: message)
+                case 500...599:
+                    return .serverUnavailable
+                default:
+                    return .unknown
                 }
                 
             case .decodingFailed:
@@ -27,7 +28,7 @@ struct ErrorMapper {
             case .invalidURL:
                 return .serverUnavailable
                 
-            default:
+            case .network:
                 return .unknown
             }
         }
@@ -35,11 +36,11 @@ struct ErrorMapper {
         if let auth = error as? AuthError {
             switch auth {
             case .invalidCredentials:
-                return .validation(message: "Неверный логин или пароль")
+                return .validation(message: error.localizedDescription)
             case .validation:
-                return .validation(message: "Проверьте введённые данные")
+                return .validation(message: error.localizedDescription)
             case .userExists:
-                return .validation(message: "Пользователь уже существует")
+                return .validation(message: error.localizedDescription)
             case .invalidData(let message):
                 return .validation(message: message)
             }

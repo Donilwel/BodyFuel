@@ -70,20 +70,25 @@ struct UserParametersView: View {
     
     private var goalsFields: some View {
         VStack(spacing: 16) {
-            CustomPickerField(
-                title: "Цель",
-                value: viewModel.goal?.title ?? ""
+            ValidatedField(
+                error: viewModel.goalError
             ) {
-                isGoalPickerPresented = true
-            }
-            .confirmationDialog(
-                "Цель",
-                isPresented: $isGoalPickerPresented,
-                titleVisibility: .visible
-            ) {
-                ForEach(MainGoal.allCases) { goal in
-                    Button(goal.title) {
-                        viewModel.goal = goal
+                CustomPickerField(
+                    title: "Цель",
+                    value: viewModel.goal?.title ?? ""
+                ) {
+                    isGoalPickerPresented = true
+                }
+                .confirmationDialog(
+                    "Цель",
+                    isPresented: $isGoalPickerPresented,
+                    titleVisibility: .visible
+                ) {
+                    ForEach(MainGoal.allCases) { goal in
+                        Button(goal.title) {
+                            viewModel.goal = goal
+                            viewModel.validateLive()
+                        }
                     }
                 }
             }
@@ -187,13 +192,19 @@ struct UserParametersView: View {
                     .font(.title3.bold())
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("\(Int(viewModel.targetCaloriesDaily)) ккал/день.")
+                Text("\(Int(viewModel.dailyEnergyExpenditure)) ккал/день.")
                     .foregroundColor((.white))
                     .font(.title2.bold())
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("Рассчитано на основе роста, веса, возраста, активности и цели")
+                Text("Для этого тебе ежедневно необходимо тратить примерно \(Int(viewModel.dailyEnergyExpenditure - viewModel.basalMetabolicRate)) и потреблять \(Int(viewModel.basalMetabolicRate)) калорий")
                     .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+                
+                Text("Рассчитано на основе роста, веса, возраста, активности, цели и данных о поле и дате рождения из приложения Здоровье")
+                    .foregroundColor(.white)
+                    .font(.footnote)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
             }
@@ -208,14 +219,21 @@ struct UserParametersView: View {
                 submit()
             }
             
-            Button("Изменить норму") {
-                viewModel.caloriesFormState = .editing
+            VStack(spacing: 4) {
+                SecondaryButton(
+                    title: "Изменить норму"
+                ) {
+                    viewModel.caloriesFormState = .editing
+                }
+                
+                SecondaryButton(
+                    title: "Рассчитать заново"
+                ) {
+                    Task {
+                        await viewModel.countRecommendedCalories()
+                    }
+                }
             }
-            .padding(.horizontal)
-            .frame(height: 20)
-            .foregroundColor(.white.opacity(0.75))
-            .fontWeight(.semibold)
-            .padding()
         }
     }
     
@@ -235,16 +253,27 @@ struct UserParametersView: View {
                     .foregroundColor(.white)
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("Твое тело тратит в среднем \(Int(viewModel.dailyEnergyExpenditure)) калорий в день. Слишком сильное отклонение от этого значения может повлиять на твое здоровье.")
+                Text("Без движения твое тело тратит в среднем \(Int(viewModel.basalMetabolicRate)), с учетом твоей активности - \(Int(viewModel.dailyEnergyExpenditure)) калорий в день. Слишком сильное отклонение от этого значения может повлиять на твое здоровье.")
                     .font(.headline.bold())
                     .foregroundColor(.white)
             }
             
-            PrimaryButton(
-                title: "Отправить",
-                isLoading: viewModel.screenState == .loading
-            ) {
-                submit()
+            VStack(spacing: 4) {
+                PrimaryButton(
+                    title: "Отправить",
+                    isLoading: viewModel.screenState == .loading
+                ) {
+                    submit()
+                }
+                
+                SecondaryButton(
+                    title: "Рассчитать заново"
+                ) {
+                    Task {
+                        await viewModel.countRecommendedCalories()
+                        viewModel.caloriesFormState = .counting
+                    }
+                }
             }
         }
     }
@@ -293,6 +322,11 @@ struct UserParametersView: View {
         }
     }
     
+    private var isError: Bool {
+        if case .error = viewModel.screenState { return true }
+        return false
+    }
+    
     private func submit() {
         Task {
             await viewModel.submit()
@@ -300,11 +334,6 @@ struct UserParametersView: View {
                 router.currentFlow = .main
             }
         }
-    }
-
-    private var isError: Bool {
-        if case .error = viewModel.screenState { return true }
-        return false
     }
 }
 

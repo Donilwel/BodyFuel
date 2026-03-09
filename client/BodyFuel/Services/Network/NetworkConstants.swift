@@ -1,7 +1,7 @@
 import Foundation
 
 enum API {
-    static let baseURLString = "http://127.0.0.1:8080/api/v1"
+    static let baseURLString = "http://192.168.1.101:8080/api/v1"
     
     static let userParameters = "/user/params"
     static let weight = "/user/weight"

@@ -23,9 +23,11 @@ final class UserParametersViewModel: ObservableObject {
     @Published var weightError: String? = nil
     @Published var lifestyle: Lifestyle?
     @Published var goal: MainGoal?
+    @Published var goalError: String? = nil
     @Published var targetWeight: Float = 0.0
     @Published var targetWeightError: String? = nil
     @Published var targetCaloriesDaily: Float = 0.0
+    @Published var basalMetabolicRate: Float = 0.0
     @Published var dailyEnergyExpenditure: Float = 0.0
     @Published var targetCaloriesError: String? = nil
     @Published var targetWorkoutsWeekly: Float = 0.0
@@ -38,6 +40,7 @@ final class UserParametersViewModel: ObservableObject {
     private let authService: AuthServiceProtocol = AuthService.shared
     private let userParametersService: UserParametersServiceProtocol = UserParametersService.shared
     private let healthService: HealthKitServiceProtocol = HealthKitService.shared
+    private let userParametersValidator: UserParametersValidatorProtocol = UserParametersValidator.shared
     
     private var dateOfBirth: Date?
     private var gender: HKBiologicalSex?
@@ -59,7 +62,7 @@ final class UserParametersViewModel: ObservableObject {
         
         let age = dateOfBirth != nil ? Float(Calendar.current.dateComponents([.year], from: dateOfBirth!, to: Date()).year!) : 30
         
-        var basalMetabolicRate = (10 * weight) + (6.25 * Float(height)) - (5 * age)
+        basalMetabolicRate = (10 * weight) + (6.25 * Float(height)) - (5 * age)
         
         switch gender {
         case .female: basalMetabolicRate -= 161
@@ -117,49 +120,14 @@ final class UserParametersViewModel: ObservableObject {
     }
     
     func validateLive() {
-        heightError = height >= 100 && height <= 250 ? nil : "Введите корректное значение"
-        weightError = weight > 40 ? nil : "Введите корректное значение"
-        
-        switch goal {
-        case .loseWeight:
-            targetWeightError = weight > targetWeight ? nil : "Введите корректное значение"
-        case .gainMuscle:
-            targetWeightError = weight < targetWeight ? nil : "Введите корректное значение"
-        case .maintain:
-            targetWeightError = nil
-            targetWeight = weight
-        default:
-            break
-        }
+        heightError = userParametersValidator.validateHeight(height)
+        weightError = userParametersValidator.validateWeight(weight)
+        targetWeightError = userParametersValidator.validateTargetWeight(targetWeight, weight: weight, goal: goal ?? .maintain)
+        goalError = userParametersValidator.validateGoal(goal ?? .maintain, weight: weight, targetWeight: targetWeight)
     }
     
     func validateCaloriesNorm() -> String {
-        let diff = Int((targetCaloriesDaily - dailyEnergyExpenditure) / dailyEnergyExpenditure * 100)
-        
-        switch diff {
-        case ..<(-40):
-            return "Критический дефицит — может быть опасно для здоровья, советуем вернуться к более безопасному уровню"
-        case -40..<(-30):
-            return "Сильный дефицит — рекомендуем увеличить норму, чтобы избежать замедления обмена веществ и потери мышечной массы"
-        case -30..<(-20):
-            return "Выраженный дефицит — возможно снижение энергии и повышенная утомляемость, стоит следить за самочувствием"
-        case -20..<(-10):
-            return "Умеренный дефицит — подходит для стабильного снижения веса без сильного стресса для организма"
-        case -10..<0:
-            return "Небольшой дефицит — комфортный и безопасный темп снижения веса"
-        case 0:
-            return "Идеальный баланс для поддержания веса"
-        case 0...10:
-            return "Небольшой профицит — оптимально для постепенного и контролируемого набора массы"
-        case 10..<20:
-            return "Умеренный профицит — подходит для роста мышц при регулярных тренировках"
-        case 20..<30:
-            return "Повышенный профицит — часть избытка будет откладываться в виде жира, стоит скорректировать рацион"
-        case 30..<40:
-            return "Сильный профицит — рекомендуем снизить норму, чтобы уменьшить нагрузку на организм"
-        default:
-            return "Критический профицит — может негативно сказаться на здоровье, лучше выбрать более умеренное значение"
-        }
+        return userParametersValidator.validateCaloriesNorm(targetCaloriesDaily, dailyEnergyExpenditure: dailyEnergyExpenditure)
     }
     
     private func fetchHealthInfo() async {
