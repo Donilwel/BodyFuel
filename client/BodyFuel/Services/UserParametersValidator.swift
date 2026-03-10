@@ -6,6 +6,7 @@ protocol UserParametersValidatorProtocol {
     func validateGoal(_ goal: MainGoal, weight: Float, targetWeight: Float) -> String?
     func validateTargetWeight(_ targetWeight: Float, weight: Float, goal: MainGoal) -> String?
     func validateTargetWorkoutsWeekly(_ targetWorkoutsWeekly: Int) -> String?
+    func getCaloriesNormHint(_ targetCaloriesDaily: Float, basalMetabolicRate: Float, goal: MainGoal) -> String
     func validateCaloriesNorm(_ targetCaloriesDaily: Float, dailyEnergyExpenditure: Float) -> String
 }
 
@@ -51,6 +52,26 @@ final class UserParametersValidator: UserParametersValidatorProtocol {
     
     func validateTargetWorkoutsWeekly(_ targetWorkoutsWeekly: Int) -> String? {
         return targetWorkoutsWeekly < 0 || targetWorkoutsWeekly > 7 ? "Введите значение от 0 до 7" : nil
+    }
+    
+    func getCaloriesNormHint(_ targetCaloriesDaily: Float, basalMetabolicRate: Float, goal: MainGoal) -> String {
+        return "ИЗМЕНИТЬ ПОДСКАЗКУ Я УСТАЛА И НИЧЕГО НЕ ПОНИМАЮ"
+//        var hint = "Без движения твое тело тратит в среднем \(Int(basalMetabolicRate))."
+//        let difference = Int(targetCaloriesDaily) - Int(basalMetabolicRate)
+//        switch goal {
+//        case .loseWeight:
+//            if difference > 0 {
+//                hint.append("Для выбранного значения тебе нужно будет ежедневно питаться на \(difference) калорий больше.")
+//            }
+//        }
+//        if difference < 0 {
+//            hint.append("Для выбранного значения тебе нужно будет ежедневно тратить на тренировках около \(-difference) калорий.")
+//        } else if difference > 0 {
+//            hint.append("Для выбранного значения тебе нужно будет ежедневно питаться на \(abs(difference)) калорий больше.")
+//        } else {
+//            hint.append("Для выбранного значения тебе нужно будет ежедневно питаться на столько же калорий.")
+//        }
+//        return hint
     }
     
     func validateCaloriesNorm(_ targetCaloriesDaily: Float, dailyEnergyExpenditure: Float) -> String {

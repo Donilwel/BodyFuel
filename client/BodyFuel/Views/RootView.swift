@@ -1,17 +1,18 @@
 import SwiftUI
+import Foundation
 
 struct RootView: View {
     @EnvironmentObject var router: AppRouter
 
     var body: some View {
-        switch router.currentFlow {
+        switch router.rootRoute {
         case .auth:
             AuthView()
 
-        case .profileSetup:
+        case .parametersSetup:
             UserParametersView()
 
-        default:
+        case .main:
             TabBarView()
         }
     }

@@ -19,7 +19,6 @@ final class UserParametersService: UserParametersServiceProtocol {
     static let shared = UserParametersService()
     
     private let networkClient = NetworkClient.shared
-    private let tokenStorage = TokenStorage.shared
     
     private let photoService: PhotoServiceProtocol = PhotoService.shared
     

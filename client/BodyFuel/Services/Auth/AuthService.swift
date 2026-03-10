@@ -12,7 +12,6 @@ final class AuthService: AuthServiceProtocol {
     static let shared = AuthService()
     
     private let networkClient = NetworkClient.shared
-    private let tokenStorage = TokenStorage.shared
     
     private init() {}
     
@@ -31,7 +30,7 @@ final class AuthService: AuthServiceProtocol {
                 requestBody: user
             )
             
-            tokenStorage.token = response.token
+            UserSessionManager.shared.login(userId: user.username, token: response.token)
             
             print("[INFO] [AuthService/login]: Successfully logged in, token: \(response.token)")
         } catch {

@@ -112,7 +112,7 @@ final class UserParametersViewModel: ObservableObject {
             
             let (_, _) = try await (sendUserWeight, sendUserParameters)
             
-            UserDefaults.standard.hasCompletedProfileSetup = true
+            UserSessionManager.shared.hasCompletedParametersSetup = true
         } catch {
             print("[ERROR] [UserParametersViewModel/submit]: \(error.localizedDescription)")
             screenState = .error("Попробуйте еще раз позже")
@@ -122,12 +122,27 @@ final class UserParametersViewModel: ObservableObject {
     func validateLive() {
         heightError = userParametersValidator.validateHeight(height)
         weightError = userParametersValidator.validateWeight(weight)
+        if goal == nil {
+            goalError = "Выберите цель"
+        } else {
+            goalError = userParametersValidator.validateGoal(goal ?? .maintain, weight: weight, targetWeight: targetWeight)
+        }
         targetWeightError = userParametersValidator.validateTargetWeight(targetWeight, weight: weight, goal: goal ?? .maintain)
-        goalError = userParametersValidator.validateGoal(goal ?? .maintain, weight: weight, targetWeight: targetWeight)
     }
     
     func validateCaloriesNorm() -> String {
-        return userParametersValidator.validateCaloriesNorm(targetCaloriesDaily, dailyEnergyExpenditure: dailyEnergyExpenditure)
+        userParametersValidator.validateCaloriesNorm(
+            targetCaloriesDaily,
+            dailyEnergyExpenditure: dailyEnergyExpenditure
+        )
+    }
+    
+    func getCaloriesNormHint() -> String {
+        userParametersValidator.getCaloriesNormHint(
+            targetCaloriesDaily,
+            basalMetabolicRate: basalMetabolicRate,
+            goal: goal ?? .maintain
+        )
     }
     
     private func fetchHealthInfo() async {
@@ -142,7 +157,7 @@ final class UserParametersViewModel: ObservableObject {
     private func validate() throws {
         let hasEmptyFields = height == 0 || weight == 0.0 || lifestyle == .none || goal == .none || targetWeight == 0.0
         
-        let hasErrors = [heightError, weightError, healthIntegrationError, targetCaloriesError].contains { $0 != nil }
+        let hasErrors = [heightError, weightError, healthIntegrationError, targetCaloriesError, goalError].contains { $0 != nil }
         
         guard targetWeightError == nil else {
             throw AuthError.invalidData("Введите корректное значение желаемого веса и/или цели")

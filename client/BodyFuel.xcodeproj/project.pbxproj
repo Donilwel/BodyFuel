@@ -9,10 +9,46 @@
 /* Begin PBXBuildFile section */
 		150A3F332F2C574400E52218 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 150A3F322F2C574400E52218 /* Kingfisher */; };
 		151AD6252F1E8DEC002AB6B6 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */; };
+		15A741A42F5F8392003DC0B9 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A7414B2F5F8392003DC0B9 /* AppColors.swift */; };
+		15A742442F608214003DC0B9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1510CF032F5F104E004CAE54 /* WidgetKit.framework */; };
+		15A742452F608214003DC0B9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1510CF052F5F104E004CAE54 /* SwiftUI.framework */; };
+		15A742562F608215003DC0B9 /* BodyFuelWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		15A742852F609640003DC0B9 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A7414B2F5F8392003DC0B9 /* AppColors.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		15A742542F608215003DC0B9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 151AD4CC2F1E7C77002AB6B6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 15A742422F608214003DC0B9;
+			remoteInfo = BodyFuelWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		15A741FA2F60818A003DC0B9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				15A742562F608215003DC0B9 /* BodyFuelWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		1510CF032F5F104E004CAE54 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		1510CF052F5F104E004CAE54 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyFuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		153D0B462F5F7E8400A1C7BF /* BodyFuelWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BodyFuelWidgetsExtension.entitlements; sourceTree = "<group>"; };
+		15A7414B2F5F8392003DC0B9 /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+		15A742222F6081AA003DC0B9 /* BodyFuelWidgetsExtension copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "BodyFuelWidgetsExtension copy-Info.plist"; path = "/Users/drobysheva.daria/Projects/BodyFuel/client/BodyFuelWidgetsExtension copy-Info.plist"; sourceTree = "<absolute>"; };
+		15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BodyFuelWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		15C6BA632F5F808E00DF35E7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -23,6 +59,13 @@
 			);
 			target = 151AD4D32F1E7C77002AB6B6 /* BodyFuel */;
 		};
+		15A7425A2F608215003DC0B9 /* Exceptions for "BodyFuelWidgets" folder in "BodyFuelWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +75,14 @@
 				1500563E2F23E38100958BEB /* Exceptions for "BodyFuel" folder in "BodyFuel" target */,
 			);
 			path = BodyFuel;
+			sourceTree = "<group>";
+		};
+		15A742462F608214003DC0B9 /* BodyFuelWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				15A7425A2F608215003DC0B9 /* Exceptions for "BodyFuelWidgets" folder in "BodyFuelWidgetsExtension" target */,
+			);
+			path = BodyFuelWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -46,13 +97,37 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		15A742402F608214003DC0B9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				15A742452F608214003DC0B9 /* SwiftUI.framework in Frameworks */,
+				15A742442F608214003DC0B9 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1510CF022F5F104E004CAE54 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				15C6BA632F5F808E00DF35E7 /* Foundation.framework */,
+				1510CF032F5F104E004CAE54 /* WidgetKit.framework */,
+				1510CF052F5F104E004CAE54 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		151AD4CB2F1E7C77002AB6B6 = {
 			isa = PBXGroup;
 			children = (
+				15A742842F608FBD003DC0B9 /* Shared */,
+				153D0B462F5F7E8400A1C7BF /* BodyFuelWidgetsExtension.entitlements */,
 				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
+				15A742462F608214003DC0B9 /* BodyFuelWidgets */,
+				1510CF022F5F104E004CAE54 /* Frameworks */,
+				15A742222F6081AA003DC0B9 /* BodyFuelWidgetsExtension copy-Info.plist */,
 				151AD4D52F1E7C77002AB6B6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,8 +136,17 @@
 			isa = PBXGroup;
 			children = (
 				151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */,
+				15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		15A742842F608FBD003DC0B9 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				15A7414B2F5F8392003DC0B9 /* AppColors.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -75,10 +159,12 @@
 				151AD4D02F1E7C77002AB6B6 /* Sources */,
 				151AD4D12F1E7C77002AB6B6 /* Frameworks */,
 				151AD4D22F1E7C77002AB6B6 /* Resources */,
+				15A741FA2F60818A003DC0B9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				15A742552F608215003DC0B9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
@@ -92,6 +178,28 @@
 			productReference = 151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */;
 			productType = "com.apple.product-type.application";
 		};
+		15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 15A742572F608215003DC0B9 /* Build configuration list for PBXNativeTarget "BodyFuelWidgetsExtension" */;
+			buildPhases = (
+				15A7423F2F608214003DC0B9 /* Sources */,
+				15A742402F608214003DC0B9 /* Frameworks */,
+				15A742412F608214003DC0B9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				15A742462F608214003DC0B9 /* BodyFuelWidgets */,
+			);
+			name = BodyFuelWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = BodyFuelWidgetsExtension;
+			productReference = 15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -99,11 +207,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
+				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					151AD4D32F1E7C77002AB6B6 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					15A742422F608214003DC0B9 = {
+						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -126,12 +237,20 @@
 			projectRoot = "";
 			targets = (
 				151AD4D32F1E7C77002AB6B6 /* BodyFuel */,
+				15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		151AD4D22F1E7C77002AB6B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		15A742412F608214003DC0B9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -145,10 +264,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				15A741A42F5F8392003DC0B9 /* AppColors.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		15A7423F2F608214003DC0B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				15A742852F609640003DC0B9 /* AppColors.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		15A742552F608215003DC0B9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */;
+			targetProxy = 15A742542F608215003DC0B9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		151AD4DD2F1E7C78002AB6B6 /* Debug */ = {
@@ -344,6 +480,66 @@
 			};
 			name = Release;
 		};
+		15A742582F608215003DC0B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GWV92276SN;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BodyFuelWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BodyFuelWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.lordofmops.BodyFuel.BodyFuelWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		15A742592F608215003DC0B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GWV92276SN;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BodyFuelWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BodyFuelWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.lordofmops.BodyFuel.BodyFuelWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -361,6 +557,15 @@
 			buildConfigurations = (
 				151AD4E02F1E7C78002AB6B6 /* Debug */,
 				151AD4E12F1E7C78002AB6B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		15A742572F608215003DC0B9 /* Build configuration list for PBXNativeTarget "BodyFuelWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				15A742582F608215003DC0B9 /* Debug */,
+				15A742592F608215003DC0B9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

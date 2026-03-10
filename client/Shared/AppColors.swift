@@ -9,7 +9,3 @@ enum AppColors {
     static let background =  Color.blue
     static let primary = Color.indigo
 }
-
-#Preview {
-    AuthView()
-}

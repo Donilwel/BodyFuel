@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct BodyFuelApp: App {
-    @StateObject private var router = AppRouter()
+    @StateObject private var router = AppRouter.shared
     
     init() {
         Task {
@@ -12,10 +12,12 @@ struct BodyFuelApp: App {
     
     var body: some Scene {
         WindowGroup {
-//            UserParametersView()
             RootView()
                 .environmentObject(router)
                 .preferredColorScheme(.light)
+                .onOpenURL { url in
+                    router.handleDeepLink(url)
+                }
         }
     }
 }

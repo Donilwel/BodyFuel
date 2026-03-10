@@ -2,7 +2,8 @@ import SwiftUI
 import PhotosUI
 
 struct UserParametersView: View {
-    @EnvironmentObject var router: AppRouter
+    @ObservedObject var router = AppRouter.shared
+    
     @StateObject private var viewModel = UserParametersViewModel()
     
     @State private var isLifestylePickerPresented = false
@@ -197,7 +198,7 @@ struct UserParametersView: View {
                     .font(.title2.bold())
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("Для этого тебе ежедневно необходимо тратить примерно \(Int(viewModel.dailyEnergyExpenditure - viewModel.basalMetabolicRate)) и потреблять \(Int(viewModel.basalMetabolicRate)) калорий")
+                Text("Для этого тебе ежедневно необходимо тратить примерно \(Int(viewModel.dailyEnergyExpenditure - viewModel.basalMetabolicRate)) калорий")
                     .foregroundColor(.white)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
@@ -253,9 +254,15 @@ struct UserParametersView: View {
                     .foregroundColor(.white)
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("Без движения твое тело тратит в среднем \(Int(viewModel.basalMetabolicRate)), с учетом твоей активности - \(Int(viewModel.dailyEnergyExpenditure)) калорий в день. Слишком сильное отклонение от этого значения может повлиять на твое здоровье.")
+                Text(viewModel.getCaloriesNormHint())
                     .font(.headline.bold())
                     .foregroundColor(.white)
+                
+                Text("Слишком сильный дефицит или профицит калорий может повлиять на твое здоровье")
+                    .foregroundColor(.white)
+                    .font(.footnote)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
             }
             
             VStack(spacing: 4) {
@@ -331,7 +338,7 @@ struct UserParametersView: View {
         Task {
             await viewModel.submit()
             if viewModel.screenState == .idle {
-                router.currentFlow = .main
+                router.selectedTab = .home
             }
         }
     }

@@ -24,6 +24,7 @@ struct ValidatedField<Field: View>: View {
                 Text(error)
                     .font(.caption)
                     .foregroundColor(.red)
+                    .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
             }
         }

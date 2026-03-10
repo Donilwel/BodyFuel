@@ -1,11 +1,12 @@
 import SwiftUI
 
 struct AuthView: View {
-    @EnvironmentObject var router: AppRouter
     @StateObject private var viewModel = AuthViewModel()
     
     @FocusState private var loginFocused: LoginField?
     @FocusState private var registerFocused: RegisterField?
+    
+    @ObservedObject private var router = AppRouter.shared
     
     private enum LoginField: Hashable {
         case login
@@ -169,9 +170,9 @@ struct AuthView: View {
             .onChange(of: viewModel.event) { event in
                 switch event {
                 case .loginSuccess:
-                    router.currentFlow = .main
+                    router.updateRoute()
                 case .registrationSuccess:
-                    router.currentFlow = .profileSetup
+                    router.selectedTab = .parametersSetup
                 default:
                     break
                 }

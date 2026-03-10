@@ -1,9 +1,12 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @EnvironmentObject var router: AppRouter
+    @ObservedObject var router = AppRouter.shared
+    
     @StateObject private var viewModel = ProfileViewModel()
+    
     @FocusState private var parametersFocused: ParameterField?
+    
     @State private var isLifestylePickerPresented = false
     @State private var isGoalPickerPresented = false
     
@@ -179,7 +182,7 @@ struct ProfileView: View {
         .onChange(of: viewModel.event) { event in
             switch event {
             case .logoutSuccess:
-                router.currentFlow = .auth
+                router.selectedTab = .auth
             default:
                 break
             }
