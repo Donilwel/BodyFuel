@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 struct CaloriesRingProgressView: View {
     let consumed: Int
@@ -11,7 +12,7 @@ struct CaloriesRingProgressView: View {
     }
     
     private var progress: Double {
-        Double(consumed) / Double(total)
+        min(Double(consumed) / Double(total), 1)
     }
     
     var body: some View {
@@ -22,34 +23,25 @@ struct CaloriesRingProgressView: View {
                         .multilineTextAlignment(.center)
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.8))
+                        .widgetAccentable()
+                        .symbolRenderingMode(.hierarchical)
                     
                     Text(consumed.description)
                         .font(.title3.bold())
                         .foregroundColor(.white.opacity(0.8))
+                        .widgetAccentable()
+                        .symbolRenderingMode(.hierarchical)
                 }
                 .frame(width: 100, height: 100)
                 
                 Spacer()
-                ZStack {
-                    CaloriesRingView(
-                        progress: progress
-                    )
-                    .frame(width: 140, height: 140)
-                    
-                    VStack {
-                        Text("Осталось")
-                            .font(.subheadline)
-                            .opacity(0.7)
-                        Text("\(total - consumed) ккал")
-                            .font(.title3.bold())
-                            .lineLimit(1)
-                        Text("из \(total)")
-                            .font(.subheadline)
-                            .opacity(0.7)
-                            .lineLimit(1)
-                    }
-                    .foregroundColor(.white)
-                }
+                
+                CaloriesDiagramView(
+                    consumed: consumed,
+                    burned: burned,
+                    basalMetabolicRate: basalMetabolicRate
+                )
+                .frame(width: 110, height: 110)
             
                 Spacer()
                 
@@ -58,21 +50,27 @@ struct CaloriesRingProgressView: View {
                         .multilineTextAlignment(.center)
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.8))
+                        .widgetAccentable()
+                        .symbolRenderingMode(.hierarchical)
                     
                     Text(burned.description)
                         .font(.title3.bold())
                         .foregroundColor(.white.opacity(0.8))
+                        .widgetAccentable()
+                        .symbolRenderingMode(.hierarchical)
                 }
                 .frame(width: 100, height: 100)
             }
             
             Text("Цель - \(goal.description) ккал")
                 .multilineTextAlignment(.center)
+                .lineLimit(1)
                 .font(.subheadline)
                 .foregroundColor(.white.opacity(0.8))
+                .widgetAccentable()
+                .symbolRenderingMode(.hierarchical)
         }
         .padding()
-        .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
 }

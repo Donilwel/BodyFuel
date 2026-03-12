@@ -1,8 +1,11 @@
 import SwiftUI
+import WidgetKit
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     @State private var path = NavigationPath()
+    
+    private let sharedWidgetStorage = SharedWidgetStorage.shared
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -18,23 +21,33 @@ struct HomeView: View {
                 }
                 .padding()
             }
-            .task { await viewModel.load() }
+            .task {
+                await viewModel.load()
+                WidgetCenter.shared.reloadAllTimelines()
+            }
             .navigationDestination(for: String.self) { route in
                 if route == "workouts" { Text("Экран тренировок") }
                 if route == "nutrition" { Text("Экран питания") }
+            }
+        }
+        .refreshable {
+            Task {
+                await viewModel.load()
+                WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }
     
     private var caloriesRingBlock: some View {
         VStack {
-            if let stats = viewModel.stats, let goals = viewModel.goals {
+            if let stats = viewModel.stats,
+                let goals = viewModel.goals,
+                let basalMetabolicRate = viewModel.basalMetabolicRate {
                 CaloriesRingProgressView(
-                    title: "Калории",
-                    consumed: 1267,
-                    goal: 2437,
-                    burned: 476,
-                    bmi: 1572
+                    consumed: stats.caloriesConsumed,
+                    goal: goals.calories,
+                    burned: stats.caloriesBurned,
+                    basalMetabolicRate: basalMetabolicRate
                 )
             }
         }
@@ -48,11 +61,11 @@ struct HomeView: View {
                         .font(.headline)
                         .foregroundColor(.white)
 
-                    Text(workout.title)
+                    Text(workout.name)
                         .font(.title3.bold())
                         .foregroundColor(.white)
 
-                    Text("\(workout.durationMinutes) мин • ~\(workout.caloriesBurn) ккал")
+                    Text("\(workout.duration) мин • ~\(workout.calories) ккал")
                         .foregroundColor(.white.opacity(0.7))
 
                     HStack {

@@ -9,11 +9,11 @@
 /* Begin PBXBuildFile section */
 		150A3F332F2C574400E52218 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 150A3F322F2C574400E52218 /* Kingfisher */; };
 		151AD6252F1E8DEC002AB6B6 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */; };
-		15A741A42F5F8392003DC0B9 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A7414B2F5F8392003DC0B9 /* AppColors.swift */; };
+		156DAEC02F61BA7E0087C2D1 /* SharedWidgetStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */; };
+		156DAEC12F61BA7E0087C2D1 /* SharedWidgetStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */; };
 		15A742442F608214003DC0B9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1510CF032F5F104E004CAE54 /* WidgetKit.framework */; };
 		15A742452F608214003DC0B9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1510CF052F5F104E004CAE54 /* SwiftUI.framework */; };
 		15A742562F608215003DC0B9 /* BodyFuelWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		15A742852F609640003DC0B9 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A7414B2F5F8392003DC0B9 /* AppColors.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,7 +45,7 @@
 		1510CF052F5F104E004CAE54 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyFuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		153D0B462F5F7E8400A1C7BF /* BodyFuelWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BodyFuelWidgetsExtension.entitlements; sourceTree = "<group>"; };
-		15A7414B2F5F8392003DC0B9 /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+		156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedWidgetStorage.swift; sourceTree = "<group>"; };
 		15A742222F6081AA003DC0B9 /* BodyFuelWidgetsExtension copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "BodyFuelWidgetsExtension copy-Info.plist"; path = "/Users/drobysheva.daria/Projects/BodyFuel/client/BodyFuelWidgetsExtension copy-Info.plist"; sourceTree = "<absolute>"; };
 		15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BodyFuelWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		15C6BA632F5F808E00DF35E7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -75,6 +75,16 @@
 				1500563E2F23E38100958BEB /* Exceptions for "BodyFuel" folder in "BodyFuel" target */,
 			);
 			path = BodyFuel;
+			sourceTree = "<group>";
+		};
+		156DAEC42F61D0520087C2D1 /* Styles */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Styles;
+			sourceTree = "<group>";
+		};
+		156DAEC82F61D07B0087C2D1 /* Models */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Models;
 			sourceTree = "<group>";
 		};
 		15A742462F608214003DC0B9 /* BodyFuelWidgets */ = {
@@ -144,7 +154,9 @@
 		15A742842F608FBD003DC0B9 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				15A7414B2F5F8392003DC0B9 /* AppColors.swift */,
+				156DAEC82F61D07B0087C2D1 /* Models */,
+				156DAEC42F61D0520087C2D1 /* Styles */,
+				156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -168,6 +180,8 @@
 			);
 			fileSystemSynchronizedGroups = (
 				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
+				156DAEC42F61D0520087C2D1 /* Styles */,
+				156DAEC82F61D07B0087C2D1 /* Models */,
 			);
 			name = BodyFuel;
 			packageProductDependencies = (
@@ -191,6 +205,8 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				156DAEC42F61D0520087C2D1 /* Styles */,
+				156DAEC82F61D07B0087C2D1 /* Models */,
 				15A742462F608214003DC0B9 /* BodyFuelWidgets */,
 			);
 			name = BodyFuelWidgetsExtension;
@@ -264,7 +280,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				15A741A42F5F8392003DC0B9 /* AppColors.swift in Sources */,
+				156DAEC02F61BA7E0087C2D1 /* SharedWidgetStorage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -272,7 +288,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				15A742852F609640003DC0B9 /* AppColors.swift in Sources */,
+				156DAEC12F61BA7E0087C2D1 /* SharedWidgetStorage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -485,6 +501,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = BodyFuelWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GWV92276SN;
@@ -515,6 +532,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = BodyFuelWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GWV92276SN;

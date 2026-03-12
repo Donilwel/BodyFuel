@@ -3,6 +3,7 @@ import HealthKit
 import Combine
 import PhotosUI
 import SwiftUI
+import WidgetKit
 
 @MainActor
 final class UserParametersViewModel: ObservableObject {
@@ -111,6 +112,11 @@ final class UserParametersViewModel: ObservableObject {
             async let sendUserParameters: () = userParametersService.sendUserParameters(userParametersPayload)
             
             let (_, _) = try await (sendUserWeight, sendUserParameters)
+            
+            SharedWidgetStorage.shared.saveTargetCalories(Int(targetCaloriesDaily))
+            SharedWidgetStorage.shared.saveBasalMetabolicRate(Int(basalMetabolicRate))
+            
+            WidgetCenter.shared.reloadAllTimelines()
             
             UserSessionManager.shared.hasCompletedParametersSetup = true
         } catch {

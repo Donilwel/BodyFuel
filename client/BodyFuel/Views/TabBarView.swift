@@ -12,14 +12,6 @@ struct TabBarView: View {
                         .tint(.white)
                     Text("Главный экран")
                 }
-
-            ProfileView()
-                .tag(TabRoute.profile)
-                .tabItem {
-                    Image(systemName: "person.crop.circle.fill")
-                        .tint(.white)
-                    Text("Профиль")
-                }
             
             WorkoutsView()
                 .tag(TabRoute.workouts)
@@ -35,6 +27,14 @@ struct TabBarView: View {
                     Image(systemName: "carrot.fill")
                         .tint(.white)
                     Text("Питание")
+                }
+            
+            ProfileView()
+                .tag(TabRoute.profile)
+                .tabItem {
+                    Image(systemName: "person.crop.circle.fill")
+                        .tint(.white)
+                    Text("Профиль")
                 }
         }
         .tint(AppColors.primary)

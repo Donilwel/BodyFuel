@@ -172,7 +172,7 @@ struct AuthView: View {
                 case .loginSuccess:
                     router.updateRoute()
                 case .registrationSuccess:
-                    router.selectedTab = .parametersSetup
+                    router.rootRoute = .parametersSetup
                 default:
                     break
                 }

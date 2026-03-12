@@ -1,14 +1,10 @@
 import WidgetKit
 
 struct WorkoutProvider: TimelineProvider {
+    private let sharedWidgetStorage = SharedWidgetStorage.shared
+    
     func placeholder(in context: Context) -> WorkoutEntry {
-        let workoutModel = WorkoutWidgetModel(
-            name: "Full Body",
-            duration: 45,
-            calories: 320,
-            location: "Gym",
-            type: "Strength"
-        )
+        let workoutModel = sharedWidgetStorage.getWorkout()
         return WorkoutEntry(
             date: .now,
             workout: workoutModel
@@ -30,7 +26,7 @@ struct WorkoutProvider: TimelineProvider {
 
         let timeline = Timeline(
             entries: [entry],
-            policy: .after(Date().addingTimeInterval(3600))
+            policy: .after(Date().addingTimeInterval(1800))
         )
 
         completion(timeline)

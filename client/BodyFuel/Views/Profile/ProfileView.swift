@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 struct ProfileView: View {
     @ObservedObject var router = AppRouter.shared
@@ -133,6 +134,7 @@ struct ProfileView: View {
                             if viewModel.isEditing {
                                 Task {
                                     await viewModel.save()
+                                    WidgetCenter.shared.reloadAllTimelines()
                                 }
                             } else {
                                 viewModel.isEditing = true
@@ -171,8 +173,12 @@ struct ProfileView: View {
         }
         .task { await viewModel.load() }
         .alert("Что-то пошло не так", isPresented: .constant(isError)) {
-            Button("OK") {
+            Button("Отменить") {
                 viewModel.screenState = .idle
+            }
+            Button("ОК") {
+                viewModel.screenState = .idle
+                viewModel.isEditing = false
             }
         } message: {
             if case let .error(message) = viewModel.screenState {
@@ -182,7 +188,7 @@ struct ProfileView: View {
         .onChange(of: viewModel.event) { event in
             switch event {
             case .logoutSuccess:
-                router.selectedTab = .auth
+                router.rootRoute = .auth
             default:
                 break
             }

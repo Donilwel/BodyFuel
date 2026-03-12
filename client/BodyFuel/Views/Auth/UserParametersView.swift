@@ -338,7 +338,7 @@ struct UserParametersView: View {
         Task {
             await viewModel.submit()
             if viewModel.screenState == .idle {
-                router.selectedTab = .home
+                router.rootRoute = .main
             }
         }
     }

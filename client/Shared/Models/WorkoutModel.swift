@@ -1,4 +1,4 @@
-struct WorkoutWidgetModel {
+struct WorkoutModel: Codable {
     let name: String
     let duration: Int
     let calories: Int

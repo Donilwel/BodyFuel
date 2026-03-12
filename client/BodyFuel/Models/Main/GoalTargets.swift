@@ -8,6 +8,7 @@ struct GoalTargets {
 struct DayStats {
     let steps: Int
     let caloriesConsumed: Int
+    let caloriesBurned: Int
 }
 
 struct WorkoutPreview {

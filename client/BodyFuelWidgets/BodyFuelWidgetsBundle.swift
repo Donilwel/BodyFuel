@@ -5,5 +5,6 @@ import SwiftUI
 struct BodyFuelWidgetsBundle: WidgetBundle {
     var body: some Widget {
         WorkoutTodayWidget()
+        CaloriesRingWidget()
     }
 }

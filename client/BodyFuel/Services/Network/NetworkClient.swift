@@ -38,6 +38,7 @@ final class NetworkClient {
     static let shared = NetworkClient()
 
     private let session = URLSession(configuration: .default)
+    private let userSessionManager = UserSessionManager.shared
 
     private init() {}
 
@@ -50,7 +51,8 @@ final class NetworkClient {
         var request = URLRequest(url: url)
         
         if requiresAuthorization {
-            guard let token = TokenStorage.shared.token else {
+            guard let currentUserId = userSessionManager.currentUserId,
+                  let token = userSessionManager.authToken(for: currentUserId) else {
                 throw NetworkError.missingToken
             }
             

@@ -1,4 +1,5 @@
 import Foundation
+import HealthKit
 import Combine
 import SwiftUI
 
@@ -85,7 +86,11 @@ final class ProfileViewModel: ObservableObject {
     @Published var screenState: ScreenState = .idle
     @Published var event: ProfileEvent = .idle
     @Published var isEditing = false
+    
+    private var dateOfBirth: Date?
+    private var gender: HKBiologicalSex?
 
+    private let healthService: HealthKitServiceProtocol = HealthKitService.shared
     private let service: ProfileServiceProtocol = ProfileService.shared
 
     func load() async {
@@ -116,6 +121,11 @@ final class ProfileViewModel: ObservableObject {
             )
             
             try await service.updateProfile(profile)
+            let basalMetabolicRate = await calculateBasalMetabolicRate()
+            
+            SharedWidgetStorage.shared.saveTargetCalories(Int(targetCaloriesDaily))
+            SharedWidgetStorage.shared.saveBasalMetabolicRate(Int(basalMetabolicRate))
+            
             isEditing = false
             screenState = .idle
         } catch {
@@ -148,6 +158,30 @@ final class ProfileViewModel: ObservableObject {
         
         guard !hasEmptyFields, !hasErrors else {
             throw AuthError.invalidData("Заполните все поля")
+        }
+    }
+
+    private func calculateBasalMetabolicRate() async -> Float {
+        await fetchHealthInfo()
+        
+        let age = dateOfBirth != nil ? Float(Calendar.current.dateComponents([.year], from: dateOfBirth!, to: Date()).year!) : 30
+        
+        var basalMetabolicRate = (10 * weight) + (6.25 * Float(height)) - (5 * age)
+        
+        switch gender {
+        case .female: basalMetabolicRate -= 161
+        default: basalMetabolicRate += 5
+        }
+        
+        return basalMetabolicRate
+    }
+
+    private func fetchHealthInfo() async {
+        do {
+            dateOfBirth = try healthService.fetchDateOfBirth()
+            gender = try healthService.fetchGender()
+        } catch {
+            screenState = .error(error.localizedDescription)
         }
     }
 }
