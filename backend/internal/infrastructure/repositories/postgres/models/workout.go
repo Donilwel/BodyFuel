@@ -2,8 +2,9 @@ package models
 
 import (
 	"backend/internal/domain/entities"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type WorkoutRow struct {
@@ -13,7 +14,7 @@ type WorkoutRow struct {
 	Status             entities.WorkoutsStatus `db:"status"`
 	TotalCalories      int                     `db:"total_calories"`
 	PredictionCalories int                     `db:"prediction_calories"`
-	Duration           time.Duration           `db:"duration"`
+	Duration           int64                   `db:"duration"`
 	CreatedAt          time.Time               `db:"created_at"`
 	UpdatedAt          time.Time               `db:"updated_at"`
 }

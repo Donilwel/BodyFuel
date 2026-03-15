@@ -2,8 +2,9 @@ package dto
 
 import (
 	"backend/internal/domain/entities"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type AnalyzeWorkoutStats struct {
@@ -16,6 +17,7 @@ type AnalyzeWorkoutStats struct {
 	AWGLevel                     entities.WorkoutsLevel
 	PopularExerciseType          entities.ExerciseType
 	PopularPlaceExercise         entities.PlaceExercise
+	TargetWorkoutsPerWeek        int
 	LastTimeGenerateWorkout      time.Time
 	SkipGeneration               bool
 	SkipReason                   string

@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -95,7 +96,6 @@ func (r *WorkoutRepository) TopListWithLimit(ctx context.Context, f dto.Workouts
 
 func (r *WorkoutRepository) Create(ctx context.Context, workout *entities.Workout) error {
 	row := models.NewWorkoutRow(workout)
-
 	_, err := r.getter.Get(ctx).ExecContext(
 		ctx,
 		queryCreateWorkout,
@@ -103,6 +103,7 @@ func (r *WorkoutRepository) Create(ctx context.Context, workout *entities.Workou
 		row.UserID,
 		row.Level,
 		row.Status,
+		row.TotalCalories,
 		row.PredictionCalories,
 		row.Duration,
 		row.CreatedAt,

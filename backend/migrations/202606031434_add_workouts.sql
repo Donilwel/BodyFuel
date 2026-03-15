@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS bodyfuel.workout (
     status bodyfuel.workouts_status NOT NULL,
     total_calories INT NOT NULL,
     prediction_calories INT NOT NULL,
-    duration INTERVAL NOT NULL,
+    duration INT NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
     );

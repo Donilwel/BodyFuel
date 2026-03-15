@@ -3,6 +3,7 @@ package entities
 import (
 	"backend/internal/errors"
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -24,12 +25,6 @@ func (p PlaceExercise) String() string {
 	return string(p)
 }
 
-type ExerciseStatus string
-
-func (e ExerciseStatus) String() string {
-	return string(e)
-}
-
 const (
 	Beginner  LevelPreparation = "beginner"
 	Medium    LevelPreparation = "medium"
@@ -44,11 +39,6 @@ const (
 	Street PlaceExercise = "street"
 	Gym    PlaceExercise = "gym"
 	Home   PlaceExercise = "home"
-
-	NotStarted ExerciseStatus = "not_started"
-	InProgress ExerciseStatus = "in_progress"
-	Completed  ExerciseStatus = "completed"
-	Skipped    ExerciseStatus = "skipped"
 )
 
 func (l LevelPreparation) ToString() string {
@@ -94,21 +84,6 @@ func ToExerciseType(s string) (ExerciseType, error) {
 		return Flexibility, nil
 	default:
 		return "", fmt.Errorf("%w : %s", errors.ErrUnknownExerciseType, s)
-	}
-}
-
-func ToExerciseStatus(s string) (ExerciseStatus, error) {
-	switch s {
-	case NotStarted.ToString():
-		return NotStarted, nil
-	case InProgress.ToString():
-		return InProgress, nil
-	case Completed.ToString():
-		return Completed, nil
-	case Skipped.ToString():
-		return Skipped, nil
-	default:
-		return "", fmt.Errorf("%w : %s", errors.ErrUnknownExerciseStatus, s)
 	}
 }
 
@@ -299,13 +274,20 @@ func (e *Exercise) IsStrength() bool {
 		e.typeExercise == FullBody
 }
 
-func (e *Exercise) CalculateCalories(durationMinutes int, repetitions int) float64 {
+func (e *Exercise) CalculateCalories(coef float64) float64 {
+	return e.avgCaloriesPer * float64(e.baseCountReps) * coef
+}
+
+func (e *Exercise) CalculateDuration(coef float64) int {
 	if e.IsCardio() {
-		return e.avgCaloriesPer * float64(durationMinutes)
-	} else if e.IsStrength() {
-		return e.avgCaloriesPer * float64(repetitions)
+		return int(float64(e.baseRelaxTime)*coef) * e.baseCountReps * e.steps
 	}
-	return e.avgCaloriesPer * float64(durationMinutes)
+	timePerRep := e.baseRelaxTime
+	if timePerRep <= 0 {
+		timePerRep = 3
+	}
+
+	return int(float64(timePerRep)*coef) * e.baseCountReps * e.steps
 }
 
 func (e *Exercise) GetRecommendedRestTime() int {

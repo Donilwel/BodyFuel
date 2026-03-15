@@ -13,8 +13,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"io"
 	"log"
 	"net/http"
@@ -22,6 +20,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type BackgroundWorker interface {
@@ -70,6 +71,7 @@ func NewApp(configPaths ...string) *App {
 	exercisesRepository := postgres.NewExerciseRepository(db)
 	tasksRepository := postgres.NewTasksRepository(db)
 	workoutsRepository := postgres.NewWorkoutRepository(db)
+	workoutsExerciseRepository := postgres.NewWorkoutsExerciseRepository(db)
 
 	//tasksRepository := postgres.NewTasksRepository(db)
 
@@ -79,13 +81,15 @@ func NewApp(configPaths ...string) *App {
 	})
 
 	crudService := crud.NewService(&crud.Config{
-		TransactionManager:   transactionManager,
-		UserInfoRepository:   userInfoRepository,
-		UserParamsRepository: userParamsRepository,
-		UserWeightRepository: userWeightRepository,
-		TasksRepository:      tasksRepository,
-		ExercisesRepository:  exercisesRepository,
-		Log:                  logger,
+		TransactionManager:         transactionManager,
+		UserInfoRepository:         userInfoRepository,
+		UserParamsRepository:       userParamsRepository,
+		UserWeightRepository:       userWeightRepository,
+		TasksRepository:            tasksRepository,
+		ExercisesRepository:        exercisesRepository,
+		WorkoutsRepository:         workoutsRepository,
+		WorkoutsExerciseRepository: workoutsExerciseRepository,
+		Log:                        logger,
 	})
 
 	avatarService := avatar.NewService(avatar.Config{
@@ -103,6 +107,7 @@ func NewApp(configPaths ...string) *App {
 		UserParamsRepository:    userParamsRepository,
 		WorkoutsRepository:      workoutsRepository,
 		WorkoutPullUserInterval: cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
+		LimitGenerateWorkouts:   cfg.AppConfig.WorkoutsConfig.LimitGenerateWorkouts,
 	})
 	workers = append(workers, workoutService)
 

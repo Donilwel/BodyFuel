@@ -4,8 +4,9 @@ import (
 	"backend/internal/infrastructure/repositories/minio"
 	"backend/internal/infrastructure/repositories/postgres"
 	"backend/pkg/logging"
-	"github.com/ilyakaznacheev/cleanenv"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type HTTPServerConfig struct {
@@ -27,6 +28,7 @@ type AppConfig struct {
 
 type WorkoutsConfig struct {
 	WorkoutPullUserInterval time.Duration `yaml:"workout_pull_user_interval" env:"WORKOUT_PULL_USER_INTERVAL" envDefault:"60s"`
+	LimitGenerateWorkouts   int           `yaml:"limit_generate_workouts,omitempty" env:"LIMIT_GENERATE_WORKS" envDefault:"3"`
 }
 
 type Config struct {

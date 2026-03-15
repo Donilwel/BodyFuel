@@ -3,8 +3,9 @@ package entities
 import (
 	"backend/internal/errors"
 	"fmt"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type WorkoutsLevel string
@@ -58,7 +59,7 @@ type Workout struct {
 	status             WorkoutsStatus
 	totalCalories      int
 	predictionCalories int
-	duration           time.Duration
+	duration           int64
 	createdAt          time.Time
 	updatedAt          time.Time
 }
@@ -87,7 +88,7 @@ func (w *Workout) PredictionCalories() int {
 	return w.predictionCalories
 }
 
-func (w *Workout) Duration() time.Duration {
+func (w *Workout) Duration() int64 {
 	return w.duration
 }
 
@@ -113,8 +114,9 @@ type WorkoutInitSpec struct {
 	Level              WorkoutsLevel
 	Status             WorkoutsStatus
 	PredictionCalories int
-	Duration           time.Duration
+	Duration           int64
 	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 type WorkoutRestoreSpec struct {
@@ -124,7 +126,7 @@ type WorkoutRestoreSpec struct {
 	Status             WorkoutsStatus
 	TotalCalories      int
 	PredictionCalories int
-	Duration           time.Duration
+	Duration           int64
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
@@ -161,7 +163,7 @@ type WorkoutUpdateParams struct {
 	Status             *WorkoutsStatus
 	TotalCalories      *int
 	PredictionCalories *int
-	Duration           *time.Duration
+	Duration           *int64
 	UpdatedAt          *time.Time
 }
 

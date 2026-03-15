@@ -2,8 +2,9 @@ package dto
 
 import (
 	"backend/internal/domain/entities"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type WorkoutsFilter struct {
@@ -16,14 +17,4 @@ type WorkoutsFilter struct {
 	Duration           *time.Duration
 	CreatedAt          *time.Time
 	UpdatedAt          *time.Time
-}
-
-type WorkoutsExercise struct {
-	WorkoutID       *uuid.UUID
-	ExerciseID      *uuid.UUID
-	ModifyReps      int
-	ModifyRelaxTime int
-	Calories        int
-	Status          *entities.ExerciseStatus
-	UpdateAt        *time.Time
 }

@@ -1,9 +1,10 @@
 package entities
 
 import (
-	"github.com/google/uuid"
 	"math/rand"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type TaskState string
@@ -30,10 +31,20 @@ const (
 	TaskTypeSendNotificationPhone TaskType = "send_notification_phone_task"
 )
 
+type TaskMessage string
+
+func (t TaskMessage) String() string {
+	return string(t)
+}
+
+const (
+	TaskMessageSendAuthomaticGeneratedWorkout TaskMessage = "Новая тренировка автоматически сгенерирована и уже доступна в вашем профиле!"
+)
+
 type Task struct {
 	uuid        uuid.UUID
 	typeNm      TaskType
-	message     string
+	message     TaskMessage
 	state       TaskState
 	maxAttempts int
 	attempts    int
@@ -58,7 +69,7 @@ func (t *Task) TypeNm() TaskType {
 	return t.typeNm
 }
 
-func (t *Task) Message() string {
+func (t *Task) Message() TaskMessage {
 	return t.message
 }
 
@@ -171,7 +182,7 @@ func WithTaskInitSpec(s TaskInitSpec) TaskOption {
 
 type TaskInitSpec struct {
 	TypeNm      TaskType
-	Message     string
+	Message     TaskMessage
 	MaxAttempts int
 	Attribute   any
 }
