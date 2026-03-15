@@ -71,7 +71,6 @@ type (
 
 	WorkoutExerciseRepository interface {
 		CreateBulk(ctx context.Context, workoutExercises []*entities.WorkoutsExercise) error
-		ListByWorkoutID(ctx context.Context, workoutID uuid.UUID, withBlock bool) ([]*entities.WorkoutsExercise, error)
 	}
 )
 

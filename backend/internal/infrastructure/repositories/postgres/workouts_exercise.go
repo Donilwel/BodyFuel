@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -109,6 +110,153 @@ func (r *WorkoutsExerciseRepo) Create(ctx context.Context, workoutsExercise *ent
 		return fmt.Errorf("exec context: %w", err)
 	}
 	return nil
+}
+
+// CreateBulk создает несколько упражнений для тренировки одним запросом
+func (r *WorkoutsExerciseRepo) CreateBulk(ctx context.Context, workoutExercises []*entities.WorkoutsExercise) error {
+	if len(workoutExercises) == 0 {
+		return nil
+	}
+
+	// Проверяем, что все упражнения принадлежат одной тренировке (опционально)
+	workoutID := workoutExercises[0].WorkoutID()
+	for _, we := range workoutExercises {
+		if we.WorkoutID() != workoutID {
+			return fmt.Errorf("all exercises must belong to the same workout")
+		}
+	}
+
+	// Строим массовый INSERT запрос
+	valueStrings := make([]string, 0, len(workoutExercises))
+	valueArgs := make([]interface{}, 0, len(workoutExercises)*7) // 7 полей
+
+	for i, we := range workoutExercises {
+		row := models.NewWorkoutsExerciseRow(we)
+
+		// Создаем плейсхолдеры для каждого набора значений
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7))
+
+		// Добавляем аргументы
+		valueArgs = append(valueArgs,
+			row.WorkoutID,
+			row.ExerciseID,
+			row.ModifyReps,
+			row.ModifyRelaxTime,
+			row.Calories,
+			row.Status,
+			row.UpdatedAt,
+		)
+	}
+
+	// Формируем финальный запрос
+	query := fmt.Sprintf(`INSERT INTO bodyfuel.workouts_exercise (
+		"workout_id",
+		"exercise_id",
+		"modify_reps",
+		"modify_relax_time",
+		"calories",
+		"status",
+		"updated_at"
+	) VALUES %s`, strings.Join(valueStrings, ","))
+
+	// Выполняем запрос
+	_, err := r.getter.Get(ctx).ExecContext(ctx, query, valueArgs...)
+	if err != nil {
+		return fmt.Errorf("bulk insert exec context: %w", err)
+	}
+
+	return nil
+}
+
+// CreateBulkNamed создает несколько упражнений для тренировки используя NamedExec (альтернативный вариант)
+func (r *WorkoutsExerciseRepo) CreateBulkNamed(ctx context.Context, workoutExercises []*entities.WorkoutsExercise) error {
+	if len(workoutExercises) == 0 {
+		return nil
+	}
+
+	// Конвертируем entity в row модели для NamedExec
+	rows := make([]*models.WorkoutsExerciseRow, len(workoutExercises))
+	for i, we := range workoutExercises {
+		rows[i] = models.NewWorkoutsExerciseRow(we)
+	}
+
+	// Используем NamedExec для массовой вставки
+	_, err := r.getter.Get(ctx).NamedExecContext(ctx, queryCreateWorkoutsExercise, rows)
+	if err != nil {
+		return fmt.Errorf("bulk insert named exec: %w", err)
+	}
+
+	return nil
+}
+
+// CreateBulkWithReturning создает несколько упражнений и возвращает созданные записи
+func (r *WorkoutsExerciseRepo) CreateBulkWithReturning(ctx context.Context, workoutExercises []*entities.WorkoutsExercise) ([]*entities.WorkoutsExercise, error) {
+	if len(workoutExercises) == 0 {
+		return []*entities.WorkoutsExercise{}, nil
+	}
+
+	// Проверяем, что все упражнения принадлежат одной тренировке
+	workoutID := workoutExercises[0].WorkoutID()
+	for _, we := range workoutExercises {
+		if we.WorkoutID() != workoutID {
+			return nil, fmt.Errorf("all exercises must belong to the same workout")
+		}
+	}
+
+	// Строим массовый INSERT запрос с RETURNING
+	valueStrings := make([]string, 0, len(workoutExercises))
+	valueArgs := make([]interface{}, 0, len(workoutExercises)*7)
+
+	for i, we := range workoutExercises {
+		row := models.NewWorkoutsExerciseRow(we)
+
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7))
+
+		valueArgs = append(valueArgs,
+			row.WorkoutID,
+			row.ExerciseID,
+			row.ModifyReps,
+			row.ModifyRelaxTime,
+			row.Calories,
+			row.Status,
+			row.UpdatedAt,
+		)
+	}
+
+	query := fmt.Sprintf(`INSERT INTO bodyfuel.workouts_exercise (
+		"workout_id",
+		"exercise_id",
+		"modify_reps",
+		"modify_relax_time",
+		"calories",
+		"status",
+		"updated_at"
+	) VALUES %s 
+	RETURNING 
+		workout_id,
+		exercise_id,
+		modify_reps,
+		modify_relax_time,
+		calories,
+		status,
+		updated_at`, strings.Join(valueStrings, ","))
+
+	// Выполняем запрос и сканируем результаты
+	var rows []*models.WorkoutsExerciseRow
+	err := r.getter.Get(ctx).SelectContext(ctx, &rows, query, valueArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("bulk insert with returning: %w", err)
+	}
+
+	// Конвертируем в entity
+	result := make([]*entities.WorkoutsExercise, len(rows))
+	for i := range rows {
+		result[i] = rows[i].ToEntity()
+	}
+
+	return result, nil
 }
 
 func (r *WorkoutsExerciseRepo) Update(ctx context.Context, workoutsExercise *entities.WorkoutsExercise) error {
