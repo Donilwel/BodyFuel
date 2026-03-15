@@ -249,34 +249,9 @@ func (s *Service) GenerateWorkoutForUser(ctx context.Context, userID uuid.UUID) 
 		return nil, fmt.Errorf("generate workout: %w", err)
 	}
 
-	// Получаем упражнения для тренировки
-	exercises, err := s.getWorkoutExercises(ctx, workout.ID())
-	if err != nil {
-		s.log.Errorf("Failed to get workout exercises: %v", err)
-	} else {
-		workout.SetExercises(exercises)
-	}
-
 	return workout, nil
 }
 
-// GetWorkoutWithExercises получает тренировку со всеми упражнениями
-func (s *Service) GetWorkoutWithExercises(ctx context.Context, workoutID uuid.UUID) (*entities.Workout, error) {
-	workout, err := s.workoutsRepository.Get(ctx, workoutID, false)
-	if err != nil {
-		return nil, fmt.Errorf("get workout: %w", err)
-	}
-
-	exercises, err := s.getWorkoutExercises(ctx, workoutID)
-	if err != nil {
-		return nil, fmt.Errorf("get workout exercises: %w", err)
-	}
-
-	workout.SetExercises(exercises)
-	return workout, nil
-}
-
-// GetUserWorkoutStats получает статистику тренировок пользователя
 func (s *Service) GetUserWorkoutStats(ctx context.Context, userID uuid.UUID) (*dto.AnalyzeWorkoutStats, error) {
 	userInfoFilter := dto.UserInfoFilter{
 		ID: &userID,
@@ -453,10 +428,9 @@ func (s *Service) analyzeWorkoutStats(ctx context.Context, userInfo *entities.Us
 	targetWorkoutsWeek := userParams.TargetWorkoutsWeeks()
 	// Значения по умолчанию
 	targetWorkoutsPerWeek := 3
-	if userParams != nil && targetWorkoutsWeek != nil {
+	if userParams != nil && &targetWorkoutsWeek != nil {
 		targetWorkoutsPerWeek = targetWorkoutsWeek
 	}
-
 	// Анализируем популярные типы упражнений и места
 	popularExerciseType, popularPlaceExercise := s.analyzeUserPreferences(ctx, userID, workouts)
 
@@ -553,14 +527,9 @@ func (s *Service) generateWorkout(ctx context.Context, userParams *entities.User
 		return nil, fmt.Errorf("parsing lifestyle to coef: %w", err)
 	}
 
-	// Определяем уровень подготовки
-	userLevel := stats.AWGLevel
-	if userLevel == "" {
-		var err error
-		userLevel, err = userParams.Lifestyle().ToLevelPreparation()
-		if err != nil {
-			return nil, fmt.Errorf("failed to determine user level: %w", err)
-		}
+	userLevel, err := userParams.Lifestyle().ToLevelPreparation()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine user level: %w", err)
 	}
 
 	// Получаем упражнения для данного уровня
@@ -597,7 +566,7 @@ func (s *Service) generateWorkout(ctx context.Context, userParams *entities.User
 	workout := entities.NewWorkout(entities.WithWorkoutInitSpec(entities.WorkoutInitSpec{
 		ID:                 uuid.New(),
 		UserID:             stats.IDUser,
-		Level:              s.determineWorkoutLevel(selectedExercises, userLevel),
+		Level:              s.determineWorkoutLevel(selectedExercises, entities.WorkoutsLevel(userLevel)),
 		Status:             entities.WorkoutStatusCreated,
 		PredictionCalories: totalCalories,
 		Duration:           int64(totalDuration),
@@ -614,11 +583,14 @@ func (s *Service) generateWorkout(ctx context.Context, userParams *entities.User
 		// Создаем связи тренировки с упражнениями
 		workoutExercises := make([]*entities.WorkoutsExercise, 0, len(selectedExercises))
 		for i, ex := range selectedExercises {
-			workoutExercises = append(workoutExercises, entities.NewWorkoutsExercise(
-				workout.ID(),
-				ex.ID(),
-				i+1, // порядковый номер
-			))
+			entities.NewWorkoutsExercise(entities.WithWorkoutsExerciseInitSpec(entities.WorkoutsExerciseInitSpec{
+				WorkoutID:  workout.ID(),
+				ExerciseID: ex.ID(),
+				Calories:   323,
+				Status:     entities.ExerciseStatusPending,
+				OrderIndex: i + 1,
+				CreatedAt:  time.Time{},
+			}))
 		}
 
 		if err := s.workoutExerciseRepository.CreateBulk(ctx, workoutExercises); err != nil {
@@ -751,7 +723,7 @@ func (s *Service) determineWorkoutLevel(exercises []*entities.Exercise, baseLeve
 func (s *Service) determinePreferredLevel(userInfo *entities.UserInfo, userParams *entities.UserParams, workouts []*entities.Workout) entities.WorkoutsLevel {
 	if len(workouts) == 0 {
 		// Для нового пользователя определяем начальный уровень
-		return s.getInitialLevel(userInfo, userParams)
+		return s.getInitialLevel(userParams)
 	}
 
 	// Анализируем успешность тренировок разного уровня
@@ -797,26 +769,7 @@ func (s *Service) getInitialLevel(userParams *entities.UserParams) entities.Work
 			return entities.WorkoutsLevel(level)
 		}
 	}
-}
-
-func (s *Service) getWorkoutExercises(ctx context.Context, workoutID uuid.UUID) ([]*entities.Exercise, error) {
-	// Получаем связи тренировки с упражнениями
-	workoutExercises, err := s.workoutExerciseRepository.ListByWorkoutID(ctx, workoutID, false)
-	if err != nil {
-		return nil, fmt.Errorf("list workout exercises: %w", err)
-	}
-
-	// Получаем сами упражнения
-	exercises := make([]*entities.Exercise, 0, len(workoutExercises))
-	for _, we := range workoutExercises {
-		exercise, err := s.exerciseRepository.Get(ctx, we.ExerciseID(), false)
-		if err != nil {
-			return nil, fmt.Errorf("get exercise %s: %w", we.ExerciseID(), err)
-		}
-		exercises = append(exercises, exercise)
-	}
-
-	return exercises, nil
+	return entities.WorkoutLight
 }
 
 func (s *Service) countWorkoutsByStatus(workouts []*entities.Workout, status entities.WorkoutsStatus) int {

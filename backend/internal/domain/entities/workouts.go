@@ -167,6 +167,9 @@ type WorkoutUpdateParams struct {
 	UpdatedAt          *time.Time
 }
 
+func (w *Workout) SetExercises(exercises []*Exercise) {
+}
+
 func (w *Workout) Update(p WorkoutUpdateParams) {
 	if p.Level != nil {
 		w.level = *p.Level
