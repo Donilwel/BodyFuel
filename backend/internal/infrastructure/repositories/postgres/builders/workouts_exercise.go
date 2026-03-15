@@ -72,7 +72,6 @@ type WorkoutsExerciseSelectBuilder struct {
 func NewWorkoutsExerciseSelectBuilder() *WorkoutsExerciseSelectBuilder {
 	selectBuilder := newQueryBuilder().Select(
 		"workouts_exercise.workout_id",
-		"workouts_exercise.user_id",
 		"workouts_exercise.exercise_id",
 		"workouts_exercise.modify_reps",
 		"workouts_exercise.modify_relax_time",

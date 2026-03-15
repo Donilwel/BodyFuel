@@ -24,8 +24,31 @@ func (a *API) registerWorkoutsHandlers(router *gin.RouterGroup) {
 }
 
 func (a *API) getUserWorkout(ctx *gin.Context) {
-	userID, err := a.getUserIDFromContext(ctx)
+	userIDRaw, ok := ctx.Get("user_id")
+	if !ok {
+		a.log.Errorf("user params error: get user params: missing user_id in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "missing user_id in context",
+		})
+		return
+	}
+
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		a.log.Errorf("user params error: get user params: invalid user_id type in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user_id type in context",
+		})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		a.log.Errorf("crud error: get user params: invalid user_id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid user_id format",
+			"details": err.Error(),
+		})
 		return
 	}
 
