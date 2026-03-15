@@ -31,7 +31,7 @@ struct CaloriesRingProgressView: View {
                 
                 Spacer()
                 ZStack {
-                    CaloriesRingView(
+                    RingDiagramView(
                         progress: progress
                     )
                     .frame(width: 140, height: 140)

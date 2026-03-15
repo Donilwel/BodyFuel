@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CaloriesRingView: View {
+struct RingDiagramView: View {
     let progress: Double
     
     @State private var head: Double = 0
@@ -58,27 +58,30 @@ struct CaloriesRingView: View {
         }
         .padding(ringWidth / 2)
         .onAppear {
-            animateSnake()
+            animateSnake(to: progress)
+        }
+        .onChange(of: progress) { newValue in
+            animateSnake(to: newValue)
         }
     }
     
-    private func animateSnake() {
-        let stepDuration = 1.0 * ceil(progress)
+    private func animateSnake(to value: Double) {
+        let stepDuration = 1.0 * ceil(value)
         
-        if progress < 1 {
+        if value < 1 {
             withAnimation(.easeOut(duration: stepDuration)) {
-                head = min(progress, 1)
+                head = min(value, 1)
             }
             return
         }
 
-        for i in 1...Int(ceil(progress)) {
+        for i in 1...Int(ceil(value)) {
             withAnimation(.easeOut(duration: stepDuration)) {
-                head = min(progress, Double(i))
+                head = min(value, Double(i))
             }
 
             withAnimation(.easeOut(duration: stepDuration)) {
-                tail = max(0, min(progress - Double(i), 0))
+                tail = max(0, min(value - Double(i), 0))
             }
         }
     }

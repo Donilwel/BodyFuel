@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct BodyFuelApp: App {
     @StateObject private var router = AppRouter.shared
+    @StateObject var workoutViewModel = WorkoutViewModel()
     
     init() {
         Task {
@@ -14,6 +15,7 @@ struct BodyFuelApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(router)
+                .environmentObject(workoutViewModel)
                 .preferredColorScheme(.light)
                 .onOpenURL { url in
                     router.handleDeepLink(url)

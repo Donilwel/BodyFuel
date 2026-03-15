@@ -2,6 +2,7 @@ import SwiftUI
 import WidgetKit
 
 struct HomeView: View {
+    @EnvironmentObject var workoutViewModel: WorkoutViewModel
     @StateObject private var viewModel = HomeViewModel()
     @State private var path = NavigationPath()
     
@@ -11,29 +12,40 @@ struct HomeView: View {
         NavigationStack(path: $path) {
             ZStack {
                 AnimatedBackground()
-
-                VStack(spacing: 20) {
-                    caloriesRingBlock
-                    workoutCard
-                    nutritionCard
-                    
-                    Spacer()
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        caloriesRingBlock
+                        workoutCard
+                        nutritionCard
+                        
+                        Spacer()
+                    }
+                    .padding()
                 }
-                .padding()
             }
             .task {
                 await viewModel.load()
+                await workoutViewModel.load()
                 WidgetCenter.shared.reloadAllTimelines()
             }
             .navigationDestination(for: String.self) { route in
                 if route == "workouts" { Text("Экран тренировок") }
                 if route == "nutrition" { Text("Экран питания") }
             }
-        }
-        .refreshable {
-            Task {
-                await viewModel.load()
-                WidgetCenter.shared.reloadAllTimelines()
+            .navigationDestination(isPresented: $workoutViewModel.isWorkoutActive) {
+                WorkoutExecutionView()
+                    .environmentObject(workoutViewModel)
+            }
+            .navigationDestination(isPresented: $workoutViewModel.showWorkoutSummary) {
+                WorkoutSummaryView()
+                    .environmentObject(workoutViewModel)
+            }
+            .refreshable {
+                Task {
+                    await viewModel.load()
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
             }
         }
     }
@@ -54,32 +66,11 @@ struct HomeView: View {
     }
 
     private var workoutCard: some View {
-        Group {
-            if let workout = viewModel.workout {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Тренировка сегодня")
-                        .font(.headline)
-                        .foregroundColor(.white)
-
-                    Text(workout.name)
-                        .font(.title3.bold())
-                        .foregroundColor(.white)
-
-                    Text("\(workout.duration) мин • ~\(workout.calories) ккал")
-                        .foregroundColor(.white.opacity(0.7))
-
-                    HStack {
-                        PrimaryButton(title: "Начать") {
-                            path.append("workouts")
-                        }
-                        SecondaryButton(title: "Выбрать другую") {
-                            path.append("workouts")
-                        }
-                    }
-                }
-                .cardStyle()
-            }
-        }
+        WorkoutCardView(
+            workout: workoutViewModel.recommendedWorkout,
+            startAction: workoutViewModel.startWorkout,
+            changeAction: workoutViewModel.changeWorkout
+        )
     }
 
     private var nutritionCard: some View {
