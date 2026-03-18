@@ -100,14 +100,15 @@ func NewApp(configPaths ...string) *App {
 	})
 
 	workoutService := workouts.NewService(&workouts.Config{
-		TransactionManager:      transactionManager,
-		TasksRepository:         tasksRepository,
-		ExerciseRepository:      exercisesRepository,
-		UserInfoRepository:      userInfoRepository,
-		UserParamsRepository:    userParamsRepository,
-		WorkoutsRepository:      workoutsRepository,
-		WorkoutPullUserInterval: cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
-		LimitGenerateWorkouts:   cfg.AppConfig.WorkoutsConfig.LimitGenerateWorkouts,
+		TransactionManager:        transactionManager,
+		TasksRepository:           tasksRepository,
+		ExerciseRepository:        exercisesRepository,
+		UserInfoRepository:        userInfoRepository,
+		UserParamsRepository:      userParamsRepository,
+		WorkoutExerciseRepository: workoutsExerciseRepository,
+		WorkoutsRepository:        workoutsRepository,
+		WorkoutPullUserInterval:   cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
+		LimitGenerateWorkouts:     cfg.AppConfig.WorkoutsConfig.LimitGenerateWorkouts,
 	})
 	workers = append(workers, workoutService)
 

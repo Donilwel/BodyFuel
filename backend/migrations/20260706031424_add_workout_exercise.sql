@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS bodyfuel.workouts_exercise (
                                                           modify_relax_time INT NOT NULL,
                                                           calories INT NOT NULL,
                                                           status bodyfuel.exercise_status NOT NULL DEFAULT 'pending',
+                                                          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
                                                           updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
     );
 

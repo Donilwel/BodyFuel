@@ -15,6 +15,7 @@ type WorkoutsExerciseRow struct {
 	Calories        int                     `db:"calories"`
 	Status          entities.ExerciseStatus `db:"status"`
 	UpdatedAt       time.Time               `db:"updated_at"`
+	CreatedAt       time.Time               `db:"created_at"`
 }
 
 func NewWorkoutsExerciseRow(workoutsExercise *entities.WorkoutsExercise) *WorkoutsExerciseRow {
@@ -26,6 +27,7 @@ func NewWorkoutsExerciseRow(workoutsExercise *entities.WorkoutsExercise) *Workou
 		Calories:        workoutsExercise.Calories(),
 		Status:          workoutsExercise.Status(),
 		UpdatedAt:       workoutsExercise.UpdatedAt(),
+		CreatedAt:       workoutsExercise.CreatedAt(),
 	}
 }
 
@@ -39,6 +41,7 @@ func (w *WorkoutsExerciseRow) ToEntity() *entities.WorkoutsExercise {
 			Calories:        w.Calories,
 			Status:          w.Status,
 			UpdatedAt:       w.UpdatedAt,
+			CreatedAt:       w.CreatedAt,
 		}),
 	)
 }

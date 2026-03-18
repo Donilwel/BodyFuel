@@ -100,6 +100,7 @@ type WorkoutsExerciseInitSpec struct {
 	Calories        int
 	Status          ExerciseStatus
 	OrderIndex      int
+	UpdatedAt       time.Time
 	CreatedAt       time.Time
 }
 

@@ -18,15 +18,16 @@ type UpdateWorkoutRequest struct {
 }
 
 type WorkoutResponse struct {
-	ID            uuid.UUID                 `json:"id"`
-	UserID        uuid.UUID                 `json:"user_id"`
-	Level         entities.WorkoutsLevel    `json:"level"`
-	TotalCalories int                       `json:"total_calories"`
-	Status        entities.WorkoutsStatus   `json:"status"`
-	Duration      int64                     `json:"duration,omitempty"`
-	CreatedAt     time.Time                 `json:"created_at"`
-	UpdatedAt     time.Time                 `json:"updated_at"`
-	Exercises     []WorkoutExerciseResponse `json:"exercises,omitempty"`
+	ID                 uuid.UUID                 `json:"id"`
+	UserID             uuid.UUID                 `json:"user_id"`
+	Level              entities.WorkoutsLevel    `json:"level"`
+	TotalCalories      int                       `json:"total_calories"`
+	PredictionCalories int                       `json:"prediction_calories"`
+	Status             entities.WorkoutsStatus   `json:"status"`
+	Duration           int64                     `json:"duration,omitempty"`
+	CreatedAt          time.Time                 `json:"created_at"`
+	UpdatedAt          time.Time                 `json:"updated_at"`
+	Exercises          []WorkoutExerciseResponse `json:"exercises,omitempty"`
 }
 
 type WorkoutExerciseResponse struct {
@@ -37,11 +38,8 @@ type WorkoutExerciseResponse struct {
 	PlaceExercise    entities.PlaceExercise    `json:"place_exercise"`
 	LevelPreparation entities.LevelPreparation `json:"level_preparation"`
 	LinkGif          string                    `json:"link_gif"`
-	BaseCountReps    int                       `json:"base_count_reps"`
-	BaseRelaxTime    int                       `json:"base_relax_time"`
 	ModifyReps       int                       `json:"modify_reps"`
 	ModifyRelaxTime  int                       `json:"modify_relax_time"`
-	Calories         int                       `json:"calories"`
 	Status           entities.ExerciseStatus   `json:"status"`
 	AvgCaloriesPer   float64                   `json:"avg_calories_per"`
 	Steps            int                       `json:"steps"`

@@ -114,15 +114,16 @@ func (a *API) getUserWorkout(ctx *gin.Context) {
 	}
 
 	response := models.WorkoutResponse{
-		ID:            workout.ID(),
-		UserID:        workout.UserID(),
-		Level:         workout.Level(),
-		TotalCalories: workout.TotalCalories(),
-		Status:        workout.Status(),
-		Duration:      workout.Duration(),
-		CreatedAt:     workout.CreatedAt(),
-		UpdatedAt:     workout.UpdatedAt(),
-		Exercises:     make([]models.WorkoutExerciseResponse, 0, len(workoutExercises)),
+		ID:                 workout.ID(),
+		UserID:             workout.UserID(),
+		Level:              workout.Level(),
+		PredictionCalories: workout.PredictionCalories(),
+		TotalCalories:      workout.TotalCalories(),
+		Status:             workout.Status(),
+		Duration:           workout.Duration(),
+		CreatedAt:          workout.CreatedAt(),
+		UpdatedAt:          workout.UpdatedAt(),
+		Exercises:          make([]models.WorkoutExerciseResponse, 0, len(workoutExercises)),
 	}
 
 	for _, we := range workoutExercises {
@@ -146,11 +147,8 @@ func (a *API) getUserWorkout(ctx *gin.Context) {
 			PlaceExercise:    exercise.PlaceExercise(),
 			LevelPreparation: exercise.LevelPreparation(),
 			LinkGif:          exercise.LinkGif(),
-			BaseCountReps:    exercise.BaseCountReps(),
-			BaseRelaxTime:    exercise.BaseRelaxTime(),
 			ModifyReps:       we.ModifyReps(),
 			ModifyRelaxTime:  we.ModifyRelaxTime(),
-			Calories:         we.Calories(),
 			Status:           we.Status(),
 			AvgCaloriesPer:   exercise.AvgCaloriesPer(),
 			Steps:            exercise.Steps(),
