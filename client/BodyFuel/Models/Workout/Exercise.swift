@@ -15,6 +15,6 @@ enum ExerciseType {
     case cardio
     case upperBody
     case lowerBody
-    case core
+    case fullBody
     case flexibility
 }

@@ -13,14 +13,6 @@ struct TabBarView: View {
                     Text("Главный экран")
                 }
             
-            WorkoutsView()
-                .tag(TabRoute.workouts)
-                .tabItem {
-                    Image(systemName: "dumbbell.fill")
-                        .tint(.white)
-                    Text("Тренировки")
-                }
-            
             FoodView()
                 .tag(TabRoute.food)
                 .tabItem {

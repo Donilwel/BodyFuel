@@ -1,8 +1,11 @@
 import Combine
+import SwiftUI
 import Foundation
 
 final class AppRouter: ObservableObject {
     static let shared = AppRouter()
+    
+    private var workoutViewModel: WorkoutViewModel?
     
     @Published var selectedTab: TabRoute = .home
     @Published var rootRoute: RootRoute = .auth
@@ -10,9 +13,13 @@ final class AppRouter: ObservableObject {
     
     private let sessionManager = UserSessionManager.shared
     
-    init() {
+    private init() {
         updateRoute()
         loadCurrentUser()
+    }
+    
+    func configure(workoutViewModel: WorkoutViewModel) {
+        self.workoutViewModel = workoutViewModel
     }
     
     func updateRoute() {
@@ -35,7 +42,8 @@ final class AppRouter: ObservableObject {
     }
     
     func handleDeepLink(_ url: URL) {
-        guard let deepLink = DeepLink(url: url) else { return }
+        guard let deepLink = DeepLink(url: url),
+              let workoutViewModel else { return }
 
         if sessionManager.currentUserId == nil {
             rootRoute = .auth
@@ -51,7 +59,7 @@ final class AppRouter: ObservableObject {
 
         switch deepLink {
         case .workouts:
-            selectedTab = .workouts
+            workoutViewModel.shouldStartFromDeepLink = true
 
         case .food:
             selectedTab = .food

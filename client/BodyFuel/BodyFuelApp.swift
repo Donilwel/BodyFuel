@@ -7,7 +7,7 @@ struct BodyFuelApp: App {
     
     init() {
         Task {
-            try? await HealthKitService.shared.requestAuthorization()
+            await HealthKitService.shared.requestAuthorization()
         }
     }
     
@@ -19,6 +19,9 @@ struct BodyFuelApp: App {
                 .preferredColorScheme(.light)
                 .onOpenURL { url in
                     router.handleDeepLink(url)
+                }
+                .onAppear {
+                    router.configure(workoutViewModel: workoutViewModel)
                 }
         }
     }

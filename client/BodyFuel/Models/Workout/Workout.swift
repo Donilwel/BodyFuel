@@ -3,6 +3,7 @@ import Foundation
 struct Workout: Identifiable {
     var id: UUID = UUID()
     let title: String
+    let type: ExerciseType
     let duration: Int
     let calories: Int
     let muscles: [String]

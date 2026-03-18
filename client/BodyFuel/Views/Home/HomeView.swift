@@ -47,6 +47,12 @@ struct HomeView: View {
                     WidgetCenter.shared.reloadAllTimelines()
                 }
             }
+            .onChange(of: workoutViewModel.shouldStartFromDeepLink) { newValue in
+                if newValue {
+                    workoutViewModel.shouldStartFromDeepLink = false
+                    workoutViewModel.startWorkout()
+                }
+            }
         }
     }
     

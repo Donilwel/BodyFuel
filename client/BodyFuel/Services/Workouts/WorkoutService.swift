@@ -22,6 +22,7 @@ final class WorkoutService: WorkoutServiceProtocol {
         
         let workout = Workout(
             title: "Кардио + пресс",
+            type: .fullBody,
             duration: 45,
             calories: 320,
             muscles: ["Пресс", "Выносливость"],
@@ -29,7 +30,7 @@ final class WorkoutService: WorkoutServiceProtocol {
             exercises: [
                 Exercise(
                     name: "Скручивания",
-                    type: .core,
+                    type: .upperBody,
                     duration: 12,
                     repCount: 10,
                     setCount: 3,

@@ -1,4 +1,5 @@
 import Foundation
+import HealthKit
 import Combine
 
 @MainActor
@@ -8,6 +9,8 @@ final class WorkoutViewModel: ObservableObject {
         case loaded
         case error(String)
     }
+    
+    @Published var shouldStartFromDeepLink = false
     
     @Published var exerciseStats: [ExerciseStats] = []
     @Published var currentSetRepCount: [String] = []
@@ -35,7 +38,7 @@ final class WorkoutViewModel: ObservableObject {
     
     @Published var totalCaloriesBurned: Double? = nil
     
-    private let healthKitService = HealthKitService.shared
+    private let healthKitService: HealthKitServiceProtocol = HealthKitService.shared
 
     private var exerciseTimerCancellable: AnyCancellable?
     private var workoutTimerCancellable: AnyCancellable?
@@ -133,8 +136,18 @@ final class WorkoutViewModel: ObservableObject {
         
         startWorkoutTimer()
         
+        var activityType: HKWorkoutActivityType = .traditionalStrengthTraining
+        switch workout.type {
+        case .cardio:
+            activityType = .mixedCardio
+        case .flexibility:
+            activityType = .flexibility
+        default:
+            break
+        }
+        
         Task {
-            await healthKitService.startWorkout()
+            await healthKitService.startWorkout(activityType: activityType)
         }
     }
     
@@ -169,6 +182,9 @@ final class WorkoutViewModel: ObservableObject {
         
         if currentExerciseIndex == 0 && currentSet == 1 && (phase == .waitingForStart || phase == .exercise) { // если вообще ничего не начали
             isWorkoutActive = false
+            Task {
+                await healthKitService.discardWorkout()
+            }
             // отправить на сервер статус failed
         } else {
             exerciseStats.append(ExerciseStats(

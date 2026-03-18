@@ -7,6 +7,12 @@ protocol HealthKitServiceProtocol {
     func fetchDateOfBirth() throws -> Date
     func fetchTodayActiveCalories() async throws -> Double
     func fetchTodaySteps() async throws -> Int
+    func startWorkout(activityType: HKWorkoutActivityType) async
+    func startWorkout() async
+    func pauseWorkout()
+    func resumeWorkout()
+    func endWorkout() async -> (calories: Double, workout: HKWorkout?)
+    func discardWorkout() async
 }
 
 enum HealthError: LocalizedError {
@@ -152,7 +158,7 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
 //        }
     }
     
-    func startWorkout(activityType: HKWorkoutActivityType = .traditionalStrengthTraining) async {
+    func startWorkout(activityType: HKWorkoutActivityType) async {
         guard isAuthorized else {
             await requestAuthorization()
             return
@@ -182,6 +188,10 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
         } catch {
             print("[ERROR] [HealthKitService/startWorkout]: Failed to start workout: \(error)")
         }
+    }
+    
+    func startWorkout() async {
+        await startWorkout(activityType: .traditionalStrengthTraining)
     }
     
     func pauseWorkout() {
@@ -216,6 +226,23 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
         } catch {
             print("Failed to end workout: \(error)")
             return (0, nil)
+        }
+    }
+    
+    func discardWorkout() async {
+        guard let session = workoutSession,
+              let builder = workoutBuilder else {
+            return
+        }
+        
+        let endDate = Date()
+        
+        session.end()
+        
+        do {
+            try await builder.endCollection(at: endDate)
+        } catch {
+            print("Failed to discard workout: \(error)")
         }
     }
     
