@@ -19,7 +19,7 @@ func (s *Service) GetWorkout(ctx context.Context, f dto.WorkoutsFilter, withBloc
 }
 
 func (s *Service) ListWorkouts(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) ([]*entities.Workout, error) {
-	workouts, err := s.workoutsRepository.TopListWithLimit(ctx, f, 0, withBlock) // 0 означает без лимита
+	workouts, err := s.workoutsRepository.TopListWithLimit(ctx, f, 0, withBlock)
 	if err != nil {
 		return nil, fmt.Errorf("list workouts: %w", err)
 	}
@@ -107,7 +107,6 @@ func (s *Service) DeleteWorkout(ctx context.Context, f dto.WorkoutsFilter) error
 	})
 }
 
-// WorkoutExerciseService реализует методы для работы с упражнениями тренировки
 func (s *Service) GetWorkoutExercise(ctx context.Context, f dto.WorkoutsExerciseFilter, withBlock bool) (*entities.WorkoutsExercise, error) {
 	workoutExercise, err := s.workoutsExerciseRepository.Get(ctx, f, withBlock)
 	if err != nil {

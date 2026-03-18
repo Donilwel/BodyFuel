@@ -27,6 +27,7 @@ type (
 	}
 
 	WorkoutService interface {
+		GenerateCustomWorkout(ctx context.Context, params *dto.GenerateWorkoutParams) (*entities.Workout, error)
 	}
 
 	CRUDService interface {
@@ -54,6 +55,8 @@ type (
 
 		ListWorkoutsExercise(ctx context.Context, f dto.WorkoutsExerciseFilter) ([]*entities.WorkoutsExercise, error)
 		GetWorkout(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) (*entities.Workout, error)
+		ListWorkouts(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) ([]*entities.Workout, error)
+		DeleteWorkout(ctx context.Context, f dto.WorkoutsFilter) error
 
 		DeleteTask(ctx context.Context, id uuid.UUID) error
 		ListTasks(ctx context.Context, filter dto.TasksFilter) ([]*entities.Task, error)

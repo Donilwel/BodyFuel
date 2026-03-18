@@ -128,11 +128,12 @@ func NewApp(configPaths ...string) *App {
 		router.Group(""),
 		cfg.AppConfig.HTTPServerConfig.ApiHost,
 		v1.NewHandlers(v1.Config{
-			AuthService:   authService,
-			CRUDService:   crudService,
-			AvatarService: avatarService,
-			Validator:     *validator,
-			Log:           logger,
+			AuthService:    authService,
+			CRUDService:    crudService,
+			WorkoutService: workoutService,
+			AvatarService:  avatarService,
+			Validator:      *validator,
+			Log:            logger,
 		}),
 	)
 

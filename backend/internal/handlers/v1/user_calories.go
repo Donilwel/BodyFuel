@@ -3,9 +3,10 @@ package v1
 import (
 	"backend/internal/dto"
 	"backend/internal/handlers/v1/models"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 func (a *API) registerUserCaloriesHandlers(router *gin.RouterGroup) {
@@ -19,7 +20,7 @@ func (a *API) registerUserCaloriesHandlers(router *gin.RouterGroup) {
 // getUserCalories получает текущий вес пользователя
 // @Summary Получение текущего веса пользователя
 // @Description Получает текущий вес пользователя
-// @Tags User Weight
+// @Tags User Calories
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} models.UserWeightResponseModel "Актуальный (последний) вес пользователя"
@@ -121,7 +122,7 @@ func (a *API) getUserCaloriesHistory(ctx *gin.Context) {
 // updateUserCalories обновляет вес пользователя
 // @Summary Обновление веса пользователя (пока нет)
 // @Description Обновляет текущий вес пользователя
-// @Tags User Weight
+// @Tags User Calories
 // @Security BearerAuth
 // @Accept json
 // @Produce json
@@ -135,7 +136,7 @@ func (a *API) updateUserCalories(ctx *gin.Context) {}
 // deleteUserCalories удаляет запись о весе пользователя по айди записи
 // @Summary Удаление записи о весе пользователя
 // @Description Удаляет запись о весе пользователя по ID
-// @Tags User Weight
+// @Tags User Calories
 // @Security BearerAuth
 // @Produce json
 // @Param uuid path string true "ID записи о весе"
@@ -178,7 +179,7 @@ func (a *API) deleteUserCalories(ctx *gin.Context) {
 // createUserCalories создает запись о весе пользователя
 // @Summary Создание записи о весе пользователя
 // @Description Создает новую запись о весе пользователя
-// @Tags User Weight
+// @Tags User Calories
 // @Security BearerAuth
 // @Accept json
 // @Produce json
