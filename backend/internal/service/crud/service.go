@@ -5,6 +5,7 @@ import (
 	"backend/internal/dto"
 	"backend/pkg/logging"
 	"context"
+
 	"github.com/google/uuid"
 )
 
@@ -46,39 +47,69 @@ type (
 		List(ctx context.Context, f dto.ExerciseFilter, withBlock bool) ([]*entities.Exercise, error)
 	}
 
+	WorkoutsRepository interface {
+		Get(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) (*entities.Workout, error)
+		Create(ctx context.Context, workout *entities.Workout) error
+		Update(ctx context.Context, workout *entities.Workout) error
+		Delete(ctx context.Context, f dto.WorkoutsFilter) error
+		TopListWithLimit(ctx context.Context, f dto.WorkoutsFilter, limit int, withBlock bool) ([]*entities.Workout, error)
+	}
+
+	WorkoutsExerciseRepository interface {
+		Get(ctx context.Context, f dto.WorkoutsExerciseFilter, withBlock bool) (*entities.WorkoutsExercise, error)
+		Create(ctx context.Context, workout *entities.WorkoutsExercise) error
+		Update(ctx context.Context, workout *entities.WorkoutsExercise) error
+		Delete(ctx context.Context, f dto.WorkoutsExerciseFilter) error
+		List(ctx context.Context, f dto.WorkoutsExerciseFilter, withBlock bool) ([]*entities.WorkoutsExercise, error)
+	}
+
+	ExerciseRepository interface {
+		Create(ctx context.Context, exercise *entities.Exercise) error
+		Update(ctx context.Context, exercise *entities.Exercise) error
+		Delete(ctx context.Context, f dto.ExerciseFilter) error
+		List(ctx context.Context, f dto.ExerciseFilter, withBlock bool) ([]*entities.Exercise, error)
+		Get(ctx context.Context, f dto.ExerciseFilter, withBlock bool) (*entities.Exercise, error)
+	}
+
 	TransactionManager interface {
 		Do(ctx context.Context, fn func(ctx context.Context) error) (err error)
 	}
 )
 
 type Config struct {
-	TransactionManager   TransactionManager
-	UserInfoRepository   UserInfoRepository
-	UserParamsRepository UserParamsRepository
-	UserWeightRepository UserWeightRepository
-	TasksRepository      TasksRepository
-	ExercisesRepository  ExercisesRepository
-	Log                  logging.Entry
+	TransactionManager         TransactionManager
+	UserInfoRepository         UserInfoRepository
+	UserParamsRepository       UserParamsRepository
+	UserWeightRepository       UserWeightRepository
+	TasksRepository            TasksRepository
+	ExercisesRepository        ExercisesRepository
+	WorkoutsRepository         WorkoutsRepository
+	WorkoutsExerciseRepository WorkoutsExerciseRepository
+	Log                        logging.Entry
 }
 
 type Service struct {
-	transactionManager   TransactionManager
-	userInfoRepository   UserInfoRepository
-	userParamsRepository UserParamsRepository
-	userWeightRepository UserWeightRepository
-	tasksRepository      TasksRepository
-	exercisesRepository  ExercisesRepository
-	log                  logging.Entry
+	transactionManager         TransactionManager
+	userInfoRepository         UserInfoRepository
+	userParamsRepository       UserParamsRepository
+	userWeightRepository       UserWeightRepository
+	tasksRepository            TasksRepository
+	exercisesRepository        ExercisesRepository
+	workoutsRepository         WorkoutsRepository
+	workoutsExerciseRepository WorkoutsExerciseRepository
+	log                        logging.Entry
 }
 
 func NewService(c *Config) *Service {
 	return &Service{
-		transactionManager:   c.TransactionManager,
-		userInfoRepository:   c.UserInfoRepository,
-		userParamsRepository: c.UserParamsRepository,
-		userWeightRepository: c.UserWeightRepository,
-		tasksRepository:      c.TasksRepository,
-		exercisesRepository:  c.ExercisesRepository,
-		log:                  c.Log,
+		transactionManager:         c.TransactionManager,
+		userInfoRepository:         c.UserInfoRepository,
+		userParamsRepository:       c.UserParamsRepository,
+		userWeightRepository:       c.UserWeightRepository,
+		tasksRepository:            c.TasksRepository,
+		exercisesRepository:        c.ExercisesRepository,
+		workoutsRepository:         c.WorkoutsRepository,
+		workoutsExerciseRepository: c.WorkoutsExerciseRepository,
+		log:                        c.Log,
 	}
 }

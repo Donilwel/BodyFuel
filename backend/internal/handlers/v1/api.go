@@ -8,11 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"regexp"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	"net/http"
-	"regexp"
 )
 
 type (
@@ -23,6 +24,9 @@ type (
 
 	UserStatisticsService interface {
 		CreateUserParams(ctx context.Context, up entities.UserParamsInitSpec) error
+	}
+
+	WorkoutService interface {
 	}
 
 	CRUDService interface {
@@ -48,6 +52,9 @@ type (
 		DeleteExercise(ctx context.Context, f dto.ExerciseFilter) error
 		ListExercise(ctx context.Context, userID uuid.UUID, f dto.ExerciseFilter, withBlock bool) ([]*entities.Exercise, error)
 
+		ListWorkoutsExercise(ctx context.Context, f dto.WorkoutsExerciseFilter) ([]*entities.WorkoutsExercise, error)
+		GetWorkout(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) (*entities.Workout, error)
+
 		DeleteTask(ctx context.Context, id uuid.UUID) error
 		ListTasks(ctx context.Context, filter dto.TasksFilter) ([]*entities.Task, error)
 		RestartTask(ctx context.Context, id uuid.UUID) error
@@ -62,6 +69,7 @@ type (
 type Config struct {
 	AuthService           AuthService
 	UserStatisticsService UserStatisticsService
+	WorkoutService        WorkoutService
 	CRUDService           CRUDService
 	AvatarService         AvatarService
 	Validator             validator.Validate
@@ -71,6 +79,7 @@ type Config struct {
 type API struct {
 	authService           AuthService
 	userStatisticsService UserStatisticsService
+	WorkoutService        WorkoutService
 	CRUDService           CRUDService
 	avatarService         AvatarService
 	validator             validator.Validate
@@ -81,6 +90,7 @@ func NewHandlers(c Config) *API {
 	return &API{
 		authService:           c.AuthService,
 		userStatisticsService: c.UserStatisticsService,
+		WorkoutService:        c.WorkoutService,
 		CRUDService:           c.CRUDService,
 		avatarService:         c.AvatarService,
 		validator:             c.Validator,
@@ -183,4 +193,26 @@ func (a *API) handleValidationErrors(c *gin.Context, err error, contextKey strin
 	}
 	a.log.Errorf("crud error: validation error: %s", response)
 	c.AbortWithStatusJSON(http.StatusBadRequest, response)
+}
+
+func (a *API) getUserIDFromContext(ctx *gin.Context) (uuid.UUID, error) {
+	userIDRaw, ok := ctx.Get("user_id")
+	if !ok {
+		a.log.Errorf("missing user_id in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "missing user_id in context",
+		})
+		return uuid.Nil, fmt.Errorf("missing user_id")
+	}
+
+	userID, ok := userIDRaw.(uuid.UUID)
+	if !ok {
+		a.log.Errorf("invalid user_id in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user_id in context",
+		})
+		return uuid.Nil, fmt.Errorf("invalid user_id")
+	}
+
+	return userID, nil
 }

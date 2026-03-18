@@ -3,6 +3,7 @@ package entities
 import (
 	"backend/internal/errors"
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -50,6 +51,10 @@ func (e ExerciseType) ToString() string {
 
 func (p PlaceExercise) ToString() string {
 	return string(p)
+}
+
+func (e ExerciseStatus) ToString() string {
+	return string(e)
 }
 
 func ToLevelPreparation(s string) (LevelPreparation, error) {
@@ -269,13 +274,20 @@ func (e *Exercise) IsStrength() bool {
 		e.typeExercise == FullBody
 }
 
-func (e *Exercise) CalculateCalories(durationMinutes int, repetitions int) float64 {
+func (e *Exercise) CalculateCalories(coef float64) float64 {
+	return e.avgCaloriesPer * float64(e.baseCountReps) * coef
+}
+
+func (e *Exercise) CalculateDuration(coef float64) int {
 	if e.IsCardio() {
-		return e.avgCaloriesPer * float64(durationMinutes)
-	} else if e.IsStrength() {
-		return e.avgCaloriesPer * float64(repetitions)
+		return int(float64(e.baseRelaxTime)*coef) * e.baseCountReps * e.steps
 	}
-	return e.avgCaloriesPer * float64(durationMinutes)
+	timePerRep := e.baseRelaxTime
+	if timePerRep <= 0 {
+		timePerRep = 3
+	}
+
+	return int(float64(timePerRep)*coef) * e.baseCountReps * e.steps
 }
 
 func (e *Exercise) GetRecommendedRestTime() int {

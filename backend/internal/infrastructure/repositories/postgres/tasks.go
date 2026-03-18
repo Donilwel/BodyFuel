@@ -40,6 +40,11 @@ type TasksRepo struct {
 	getter dbClientGetter
 }
 
+func (t TasksRepo) Create(ctx context.Context, task *entities.Task) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (t TasksRepo) List(ctx context.Context, f dto.TasksFilter, withBlock bool) ([]*entities.Task, error) {
 	//TODO implement me
 	panic("implement me")

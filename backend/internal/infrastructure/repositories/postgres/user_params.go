@@ -66,6 +66,30 @@ func (r *UserParamsRepo) Get(ctx context.Context, f dto.UserParamsFilter, withBl
 	return row.ToEntity(), nil
 }
 
+func (r *UserParamsRepo) List(ctx context.Context, f dto.UserParamsFilter, withBlock bool) ([]*entities.UserParams, error) {
+	var rows []*models.UserParamsRow
+
+	selectBuilder := builders.NewUserParamsSelectBuilder()
+	if withBlock {
+		selectBuilder = selectBuilder.WithBlock()
+	}
+
+	query, args, err := selectBuilder.WithFilterSpecification(builders.NewUserParamsFilterSpecification(f)).ToSQL()
+	if err != nil {
+		return nil, fmt.Errorf("build sql: %w", err)
+	}
+
+	if err = r.getter.Get(ctx).SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, fmt.Errorf("select context: %w", err)
+	}
+	result := make([]*entities.UserParams, len(rows))
+	for i := range rows {
+		result[i] = rows[i].ToEntity()
+	}
+
+	return result, nil
+}
+
 func (r *UserParamsRepo) Create(ctx context.Context, userParams *entities.UserParams) error {
 	row := models.NewUserParamsRow(userParams)
 

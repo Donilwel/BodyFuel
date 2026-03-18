@@ -32,7 +32,7 @@ func (a *API) registerCRUDHandlers(router *gin.RouterGroup) {
 	workout.GET("/:uuid", a.getUserWorkout)
 	workout.DELETE("/:uuid", a.deleteUserWorkout)
 	workout.PATCH("/:uuid", a.updateUserWorkout)
-	workout.POST("", a.createUserWorkout)
+	//workout.POST("", a.createUserWorkout)
 	workout.GET("/history", a.getUserWorkouts)
 
 	exercises := workout.Group("/exercises")

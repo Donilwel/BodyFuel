@@ -8,12 +8,11 @@ import (
 	"backend/internal/service/auth"
 	"backend/internal/service/avatar"
 	"backend/internal/service/crud"
+	"backend/internal/service/workouts"
 	"backend/pkg/logging"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"io"
 	"log"
 	"net/http"
@@ -21,6 +20,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type BackgroundWorker interface {
@@ -68,6 +70,8 @@ func NewApp(configPaths ...string) *App {
 	userWeightRepository := postgres.NewUserWeightRepository(db)
 	exercisesRepository := postgres.NewExerciseRepository(db)
 	tasksRepository := postgres.NewTasksRepository(db)
+	workoutsRepository := postgres.NewWorkoutRepository(db)
+	workoutsExerciseRepository := postgres.NewWorkoutsExerciseRepository(db)
 
 	//tasksRepository := postgres.NewTasksRepository(db)
 
@@ -77,13 +81,15 @@ func NewApp(configPaths ...string) *App {
 	})
 
 	crudService := crud.NewService(&crud.Config{
-		TransactionManager:   transactionManager,
-		UserInfoRepository:   userInfoRepository,
-		UserParamsRepository: userParamsRepository,
-		UserWeightRepository: userWeightRepository,
-		TasksRepository:      tasksRepository,
-		ExercisesRepository:  exercisesRepository,
-		Log:                  logger,
+		TransactionManager:         transactionManager,
+		UserInfoRepository:         userInfoRepository,
+		UserParamsRepository:       userParamsRepository,
+		UserWeightRepository:       userWeightRepository,
+		TasksRepository:            tasksRepository,
+		ExercisesRepository:        exercisesRepository,
+		WorkoutsRepository:         workoutsRepository,
+		WorkoutsExerciseRepository: workoutsExerciseRepository,
+		Log:                        logger,
 	})
 
 	avatarService := avatar.NewService(avatar.Config{
@@ -92,6 +98,18 @@ func NewApp(configPaths ...string) *App {
 		PresignTTL: cfg.Minio.PresignTTL,
 		PublicURL:  cfg.Minio.PublicURL,
 	})
+
+	workoutService := workouts.NewService(&workouts.Config{
+		TransactionManager:      transactionManager,
+		TasksRepository:         tasksRepository,
+		ExerciseRepository:      exercisesRepository,
+		UserInfoRepository:      userInfoRepository,
+		UserParamsRepository:    userParamsRepository,
+		WorkoutsRepository:      workoutsRepository,
+		WorkoutPullUserInterval: cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
+		LimitGenerateWorkouts:   cfg.AppConfig.WorkoutsConfig.LimitGenerateWorkouts,
+	})
+	workers = append(workers, workoutService)
 
 	//executorService := executor.NewService(&executor.Config{
 	//	TransactionManager: transactionManager,

@@ -38,11 +38,6 @@ type (
 		Delete(ctx context.Context, ids []uuid.UUID) error
 		Update(ctx context.Context, f *entities.Task) error
 	}
-
-	//GPBanClient interface {
-	//	Ban(ctx context.Context, b *entities.TaskUserAttribute) error
-	//	Unban(ctx context.Context, b *entities.TaskUserAttribute) error
-	//}
 )
 
 type handleTaskFunc func(ctx context.Context, t *entities.Task) error
@@ -50,7 +45,6 @@ type handleTaskFunc func(ctx context.Context, t *entities.Task) error
 type Config struct {
 	TransactionManager TransactionManager
 	//TasksRepository    TasksRepository
-	//GPBanClient        GPBanClient
 
 	QueryDelay time.Duration
 }
@@ -200,6 +194,7 @@ func NewService(cfg *Config) *Service {
 //	return nil
 //}
 //
+//func (s *Service
 //func (s *Service) handleTaskBanUser(ctx context.Context, t *entities.Task) error {
 //	attr := t.Attribute().(*entities.TaskBanUserAttribute)
 //
