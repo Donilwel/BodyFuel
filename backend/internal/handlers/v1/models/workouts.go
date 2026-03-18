@@ -2,15 +2,11 @@ package models
 
 import (
 	"backend/internal/domain/entities"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
-
-type GenerateWorkoutRequest struct {
-	Level    *entities.WorkoutsLevel `json:"level" binding:"required,oneof=beginner intermediate advanced"`
-	Duration *time.Duration          `json:"duration" binding:"omitempty,min=60000000000"` // мин 1 минута
-}
 
 type UpdateWorkoutRequest struct {
 	Status   *entities.WorkoutsStatus `json:"status" binding:"omitempty,oneof=pending in_progress completed cancelled"`
@@ -18,15 +14,16 @@ type UpdateWorkoutRequest struct {
 }
 
 type WorkoutResponse struct {
-	ID            uuid.UUID                 `json:"id"`
-	UserID        uuid.UUID                 `json:"user_id"`
-	Level         entities.WorkoutsLevel    `json:"level"`
-	TotalCalories int                       `json:"total_calories"`
-	Status        entities.WorkoutsStatus   `json:"status"`
-	Duration      int64                     `json:"duration,omitempty"`
-	CreatedAt     time.Time                 `json:"created_at"`
-	UpdatedAt     time.Time                 `json:"updated_at"`
-	Exercises     []WorkoutExerciseResponse `json:"exercises,omitempty"`
+	ID                 uuid.UUID                 `json:"id"`
+	UserID             uuid.UUID                 `json:"user_id"`
+	Level              entities.WorkoutsLevel    `json:"level"`
+	TotalCalories      int                       `json:"total_calories"`
+	PredictionCalories int                       `json:"prediction_calories"`
+	Status             entities.WorkoutsStatus   `json:"status"`
+	Duration           int64                     `json:"duration,omitempty"`
+	CreatedAt          time.Time                 `json:"created_at"`
+	UpdatedAt          time.Time                 `json:"updated_at"`
+	Exercises          []WorkoutExerciseResponse `json:"exercises,omitempty"`
 }
 
 type WorkoutExerciseResponse struct {
@@ -37,11 +34,8 @@ type WorkoutExerciseResponse struct {
 	PlaceExercise    entities.PlaceExercise    `json:"place_exercise"`
 	LevelPreparation entities.LevelPreparation `json:"level_preparation"`
 	LinkGif          string                    `json:"link_gif"`
-	BaseCountReps    int                       `json:"base_count_reps"`
-	BaseRelaxTime    int                       `json:"base_relax_time"`
 	ModifyReps       int                       `json:"modify_reps"`
 	ModifyRelaxTime  int                       `json:"modify_relax_time"`
-	Calories         int                       `json:"calories"`
 	Status           entities.ExerciseStatus   `json:"status"`
 	AvgCaloriesPer   float64                   `json:"avg_calories_per"`
 	Steps            int                       `json:"steps"`
@@ -73,4 +67,52 @@ type WorkoutExercisesResponse struct {
 	Calories        int                     `json:"calories"`
 	Status          entities.ExerciseStatus `json:"status"`
 	UpdatedAt       time.Time               `json:"updated_at"`
+}
+
+type UserWorkoutResponse struct {
+	ID                 uuid.UUID               `json:"id"`
+	UserID             uuid.UUID               `json:"user_id"`
+	Level              entities.WorkoutsLevel  `json:"level"`
+	Status             entities.WorkoutsStatus `json:"status"`
+	Duration           int64                   `json:"duration,omitempty"`
+	PredictionCalories int                     `json:"prediction_calories"`
+	TotalCalories      int                     `json:"total_calories"`
+	CreatedAt          time.Time               `json:"created_at"`
+	UpdatedAt          time.Time               `json:"updated_at"`
+}
+
+func NewUserWorkoutResponse(w *entities.Workout) UserWorkoutResponse {
+	return UserWorkoutResponse{
+		ID:                 w.ID(),
+		UserID:             w.UserID(),
+		Level:              w.Level(),
+		Status:             w.Status(),
+		Duration:           w.Duration(),
+		PredictionCalories: w.PredictionCalories(),
+		TotalCalories:      w.TotalCalories(),
+		CreatedAt:          w.CreatedAt(),
+		UpdatedAt:          w.UpdatedAt(),
+	}
+}
+
+func NewUserWorkoutsResponse(ws []*entities.Workout) []UserWorkoutResponse {
+	var response []UserWorkoutResponse
+	for _, w := range ws {
+		response = append(response, NewUserWorkoutResponse(w))
+	}
+	return response
+}
+
+type GenerateWorkoutRequest struct {
+	PlaceExercise  *entities.PlaceExercise `json:"place_exercise" binding:"omitempty,oneof=home gym street"`
+	TypeExercise   *entities.ExerciseType  `json:"type_exercise" binding:"omitempty,oneof=upper_body lower_body full_body cardio flexibility"`
+	Level          *entities.WorkoutsLevel `json:"level" binding:"omitempty,oneof=workout_light workout_middle workout_hard"`
+	ExercisesCount *int                    `json:"exercises_count" binding:"omitempty,min=4,max=20"`
+}
+
+func (r *GenerateWorkoutRequest) Validate() error {
+	if r.ExercisesCount != nil && (*r.ExercisesCount < 4 || *r.ExercisesCount > 20) {
+		return fmt.Errorf("exercises_count must be between 4 and 20")
+	}
+	return nil
 }

@@ -468,6 +468,247 @@
                 }
             }
         },
+        "/user/calories/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Получает всю историю изменений веса пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Weight"
+                ],
+                "summary": "Получение истории веса пользователя",
+                "responses": {
+                    "200": {
+                        "description": "История веса пользователя",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/models.UserWeightResponseModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/calories/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Получает текущий вес пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Calories"
+                ],
+                "summary": "Получение текущего веса пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Актуальный (последний) вес пользователя",
+                        "schema": {
+                            "$ref": "#/definitions/models.UserWeightResponseModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создает новую запись о весе пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Calories"
+                ],
+                "summary": "Создание записи о весе пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные веса для создания",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UserWeightCreateRequestModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное создание",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет запись о весе пользователя по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Calories"
+                ],
+                "summary": "Удаление записи о весе пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID записи о весе",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное удаление",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет текущий вес пользователя",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Calories"
+                ],
+                "summary": "Обновление веса пользователя (пока нет)",
+                "responses": {
+                    "200": {
+                        "description": "Успешное обновление",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/info": {
             "get": {
                 "security": [
@@ -1043,9 +1284,303 @@
                     }
                 }
             }
+        },
+        "/workouts": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Генерирует тренировку на основе указанных параметров (место, тип, уровень, количество упражнений)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workouts"
+                ],
+                "summary": "Генерация тренировки по параметрам",
+                "parameters": [
+                    {
+                        "description": "Параметры генерации тренировки",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.GenerateWorkoutRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Созданная тренировка",
+                        "schema": {
+                            "$ref": "#/definitions/models.WorkoutResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Получает список всех тренировок пользователя (без детализации упражнений)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workouts"
+                ],
+                "summary": "Получение истории тренировок пользователя",
+                "responses": {
+                    "200": {
+                        "description": "История тренировок пользователя",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/models.UserWorkoutResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workouts/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Получает детальную информацию о тренировке пользователя по ID, включая список упражнений",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workouts"
+                ],
+                "summary": "Получение тренировки пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID тренировки",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Детальная информация о тренировке",
+                        "schema": {
+                            "$ref": "#/definitions/models.WorkoutResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат UUID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Тренировка не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет тренировку пользователя по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workouts"
+                ],
+                "summary": "Удаление тренировки пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID тренировки",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное удаление",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат UUID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Тренировка не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет информацию о тренировке пользователя (например, статус, длительность, калории)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workouts"
+                ],
+                "summary": "Обновление тренировки пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID тренировки",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное обновление",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Тренировка не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "entities.ExerciseStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "in_progress",
+                "completed",
+                "skipped"
+            ],
+            "x-enum-varnames": [
+                "ExerciseStatusPending",
+                "ExerciseStatusInProgress",
+                "ExerciseStatusCompleted",
+                "ExerciseStatusSkipped"
+            ]
+        },
         "entities.ExerciseType": {
             "type": "string",
             "enum": [
@@ -1113,6 +1648,34 @@
                 "LoseWeight",
                 "BuildMuscle",
                 "StayFit"
+            ]
+        },
+        "entities.WorkoutsLevel": {
+            "type": "string",
+            "enum": [
+                "workout_light",
+                "workout_middle",
+                "workout_hard"
+            ],
+            "x-enum-varnames": [
+                "WorkoutLight",
+                "WorkoutMiddle",
+                "WorkoutHard"
+            ]
+        },
+        "entities.WorkoutsStatus": {
+            "type": "string",
+            "enum": [
+                "workout_created",
+                "workout_done",
+                "workout_in_active",
+                "workout_failed"
+            ],
+            "x-enum-varnames": [
+                "WorkoutStatusCreated",
+                "WorkoutStatusDone",
+                "WorkoutStatusInActive",
+                "WorkoutStatusFailed"
             ]
         },
         "models.ErrorResponse": {
@@ -1233,6 +1796,54 @@
                 },
                 "type_exercise": {
                     "$ref": "#/definitions/entities.ExerciseType"
+                }
+            }
+        },
+        "models.GenerateWorkoutRequest": {
+            "type": "object",
+            "properties": {
+                "exercises_count": {
+                    "type": "integer",
+                    "maximum": 20,
+                    "minimum": 4
+                },
+                "level": {
+                    "enum": [
+                        "workout_light",
+                        "workout_middle",
+                        "workout_hard"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entities.WorkoutsLevel"
+                        }
+                    ]
+                },
+                "place_exercise": {
+                    "enum": [
+                        "home",
+                        "gym",
+                        "street"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entities.PlaceExercise"
+                        }
+                    ]
+                },
+                "type_exercise": {
+                    "enum": [
+                        "upper_body",
+                        "lower_body",
+                        "full_body",
+                        "cardio",
+                        "flexibility"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entities.ExerciseType"
+                        }
+                    ]
                 }
             }
         },
@@ -1530,6 +2141,120 @@
                 },
                 "weight": {
                     "type": "number"
+                }
+            }
+        },
+        "models.UserWorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/entities.WorkoutsLevel"
+                },
+                "prediction_calories": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/entities.WorkoutsStatus"
+                },
+                "total_calories": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.WorkoutExerciseResponse": {
+            "type": "object",
+            "properties": {
+                "avg_calories_per": {
+                    "type": "number"
+                },
+                "completed_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "exercise_id": {
+                    "type": "string"
+                },
+                "level_preparation": {
+                    "$ref": "#/definitions/entities.LevelPreparation"
+                },
+                "link_gif": {
+                    "type": "string"
+                },
+                "modify_relax_time": {
+                    "type": "integer"
+                },
+                "modify_reps": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "place_exercise": {
+                    "$ref": "#/definitions/entities.PlaceExercise"
+                },
+                "status": {
+                    "$ref": "#/definitions/entities.ExerciseStatus"
+                },
+                "steps": {
+                    "type": "integer"
+                },
+                "type_exercise": {
+                    "$ref": "#/definitions/entities.ExerciseType"
+                }
+            }
+        },
+        "models.WorkoutResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "exercises": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.WorkoutExerciseResponse"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "level": {
+                    "$ref": "#/definitions/entities.WorkoutsLevel"
+                },
+                "prediction_calories": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/entities.WorkoutsStatus"
+                },
+                "total_calories": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         }

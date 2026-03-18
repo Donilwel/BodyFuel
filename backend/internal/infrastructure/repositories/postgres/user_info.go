@@ -10,6 +10,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -36,6 +38,11 @@ const (
 
 type UserInfoRepo struct {
 	getter dbClientGetter
+}
+
+func (r *UserInfoRepo) GetBatch(ctx context.Context, userIDs []uuid.UUID) ([]*entities.UserInfo, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewUserInfoRepository(db *sqlx.DB) *UserInfoRepo {

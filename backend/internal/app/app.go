@@ -100,14 +100,15 @@ func NewApp(configPaths ...string) *App {
 	})
 
 	workoutService := workouts.NewService(&workouts.Config{
-		TransactionManager:      transactionManager,
-		TasksRepository:         tasksRepository,
-		ExerciseRepository:      exercisesRepository,
-		UserInfoRepository:      userInfoRepository,
-		UserParamsRepository:    userParamsRepository,
-		WorkoutsRepository:      workoutsRepository,
-		WorkoutPullUserInterval: cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
-		LimitGenerateWorkouts:   cfg.AppConfig.WorkoutsConfig.LimitGenerateWorkouts,
+		TransactionManager:        transactionManager,
+		TasksRepository:           tasksRepository,
+		ExerciseRepository:        exercisesRepository,
+		UserInfoRepository:        userInfoRepository,
+		UserParamsRepository:      userParamsRepository,
+		WorkoutExerciseRepository: workoutsExerciseRepository,
+		WorkoutsRepository:        workoutsRepository,
+		WorkoutPullUserInterval:   cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
+		LimitGenerateWorkouts:     cfg.AppConfig.WorkoutsConfig.LimitGenerateWorkouts,
 	})
 	workers = append(workers, workoutService)
 
@@ -127,11 +128,12 @@ func NewApp(configPaths ...string) *App {
 		router.Group(""),
 		cfg.AppConfig.HTTPServerConfig.ApiHost,
 		v1.NewHandlers(v1.Config{
-			AuthService:   authService,
-			CRUDService:   crudService,
-			AvatarService: avatarService,
-			Validator:     *validator,
-			Log:           logger,
+			AuthService:    authService,
+			CRUDService:    crudService,
+			WorkoutService: workoutService,
+			AvatarService:  avatarService,
+			Validator:      *validator,
+			Log:            logger,
 		}),
 	)
 
