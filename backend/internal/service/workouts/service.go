@@ -678,7 +678,7 @@ func (s *Service) saveWorkout(ctx context.Context, userID uuid.UUID, exercises [
 		workout = entities.NewWorkout(entities.WithWorkoutInitSpec(entities.WorkoutInitSpec{
 			ID:                 uuid.New(),
 			UserID:             userID,
-			Level:              entities.WorkoutsLevel(userLevel),
+			Level:              entities.WorkoutMiddle,
 			Status:             entities.WorkoutStatusCreated,
 			PredictionCalories: totalCalories,
 			Duration:           int64(totalDuration),
