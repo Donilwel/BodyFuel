@@ -4,6 +4,7 @@
 -- ==================== УПРАЖНЕНИЯ ДЛЯ НАЧИНАЮЩИХ (beginner) ====================
 
 -- Upper Body для начинающих (home)
+
 INSERT INTO bodyfuel.exercise (id, level_preparation, name, type_exercise, description, base_count_reps, steps, link_gif, place_exercise, avg_calories_per, base_relax_time) VALUES
                                                                                                                                                                                  (gen_random_uuid(), 'beginner', 'Отжимания от стены', 'upper_body', 'Встаньте лицом к стене, руки на ширине плеч. Медленно сгибайте локти, приближаясь к стене', 12, 4, '/exercises/wall-pushup.gif', 'home', 0.56, 30),
                                                                                                                                                                                  (gen_random_uuid(), 'beginner', 'Подъемы рук с бутылками', 'upper_body', 'Возьмите бутылки с водой. Поднимайте руки через стороны вверх', 15, 4, '/exercises/lateral-raise.gif', 'home', 0.31, 30),
