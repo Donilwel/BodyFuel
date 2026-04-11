@@ -79,6 +79,10 @@ type (
 	WorkoutExerciseRepository interface {
 		CreateBulk(ctx context.Context, workoutExercises []entities.WorkoutsExercise) error
 	}
+
+	UserDevicesRepository interface {
+		List(ctx context.Context, f dto.UserDeviceFilter) ([]*entities.UserDevice, error)
+	}
 )
 
 type Config struct {
@@ -90,6 +94,7 @@ type Config struct {
 	WorkoutsRepository        WorkoutsRepository
 	ExerciseRepository        ExerciseRepository
 	WorkoutExerciseRepository WorkoutExerciseRepository
+	UserDevicesRepository     UserDevicesRepository
 
 	WorkoutPullUserInterval  time.Duration
 	MaxRetrySendNotification int
@@ -110,6 +115,7 @@ type Service struct {
 	exerciseRepository        ExerciseRepository
 	workoutExerciseRepository WorkoutExerciseRepository
 	tasksRepository           TasksRepository
+	userDevicesRepository     UserDevicesRepository
 
 	workoutPullUserInterval  time.Duration
 	limitGenerateWorkouts    int
@@ -179,6 +185,7 @@ func NewService(cfg *Config) *Service {
 		userParamsRepository:      cfg.UserParamsRepository,
 		userInfoRepository:        cfg.UserInfoRepository,
 		userWeightRepository:      cfg.UserWeightRepository,
+		userDevicesRepository:     cfg.UserDevicesRepository,
 
 		workoutPullUserInterval:  cfg.WorkoutPullUserInterval,
 		maxRetrySendNotification: cfg.MaxRetrySendNotification,
@@ -905,17 +912,70 @@ func (s *Service) createNotificationTaskAsync(ctx context.Context, workoutID, us
 }
 
 func (s *Service) createNotificationTask(ctx context.Context, workoutID, userID uuid.UUID) error {
-	task := entities.NewTask(entities.WithTaskInitSpec(entities.TaskInitSpec{
-		TypeNm:      entities.TaskTypeSendNotificationPhone,
-		Message:     entities.TaskMessageSendAuthomaticGeneratedWorkout,
-		MaxAttempts: s.maxRetrySendNotification,
-		Attribute: map[string]interface{}{
-			"workout_id": workoutID.String(),
-			"user_id":    userID.String(),
-		},
-	}))
+	msgBody := string(entities.TaskMessageSendAuthomaticGeneratedWorkout)
 
-	return s.tasksRepository.Create(ctx, task)
+	userInfo, err := s.userInfoRepository.Get(ctx, dto.UserInfoFilter{ID: &userID}, false)
+	if err != nil {
+		s.log.Warnf("createNotificationTask: get user info: %v", err)
+	}
+
+	if userInfo != nil && userInfo.Email() != "" {
+		task := entities.NewTask(entities.WithTaskInitSpec(entities.TaskInitSpec{
+			TypeNm:      entities.TaskTypeSendNotificationEmail,
+			Message:     entities.TaskMessageSendAuthomaticGeneratedWorkout,
+			MaxAttempts: s.maxRetrySendNotification,
+			Attribute: entities.TaskAttribute{
+				UserID:  userID,
+				Email:   userInfo.Email(),
+				Subject: "Новая тренировка готова",
+				Body:    msgBody,
+			},
+		}))
+		if err := s.tasksRepository.Create(ctx, task); err != nil {
+			s.log.Errorf("createNotificationTask: create email task: %v", err)
+		}
+	}
+
+	if userInfo != nil && userInfo.Phone() != "" {
+		task := entities.NewTask(entities.WithTaskInitSpec(entities.TaskInitSpec{
+			TypeNm:      entities.TaskTypeSendNotificationPhone,
+			Message:     entities.TaskMessageSendAuthomaticGeneratedWorkout,
+			MaxAttempts: s.maxRetrySendNotification,
+			Attribute: entities.TaskAttribute{
+				UserID: userID,
+				Phone:  userInfo.Phone(),
+				Body:   msgBody,
+			},
+		}))
+		if err := s.tasksRepository.Create(ctx, task); err != nil {
+			s.log.Errorf("createNotificationTask: create sms task: %v", err)
+		}
+	}
+
+	if s.userDevicesRepository != nil {
+		devices, err := s.userDevicesRepository.List(ctx, dto.UserDeviceFilter{UserID: &userID})
+		if err != nil {
+			s.log.Warnf("createNotificationTask: get user devices: %v", err)
+		}
+		for _, device := range devices {
+			task := entities.NewTask(entities.WithTaskInitSpec(entities.TaskInitSpec{
+				TypeNm:      entities.TaskTypeSendPushNotification,
+				Message:     entities.TaskMessageSendAuthomaticGeneratedWorkout,
+				MaxAttempts: s.maxRetrySendNotification,
+				Attribute: entities.TaskAttribute{
+					UserID:      userID,
+					DeviceToken: device.DeviceToken(),
+					Title:       "Новая тренировка готова",
+					Body:        msgBody,
+				},
+			}))
+			if err := s.tasksRepository.Create(ctx, task); err != nil {
+				s.log.Errorf("createNotificationTask: create push task: %v", err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) GenerateCustomWorkout(ctx context.Context, params *dto.GenerateWorkoutParams) (*entities.Workout, error) {

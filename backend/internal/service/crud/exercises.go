@@ -57,12 +57,12 @@ func (s *Service) DeleteExercise(ctx context.Context, f dto.ExerciseFilter) erro
 func (s *Service) ListExercise(ctx context.Context, userID uuid.UUID, f dto.ExerciseFilter, withBlock bool) ([]*entities.Exercise, error) {
 	user, err := s.userParamsRepository.Get(ctx, dto.UserParamsFilter{UserID: &userID}, false)
 	if err != nil {
-		fmt.Errorf("list exercise: get: %w", err)
+		return nil, fmt.Errorf("list exercise: get: %w", err)
 	}
 
 	userLevel, err := user.Lifestyle().ToLevelPreparation()
 	if err != nil {
-		fmt.Errorf("list exercise: to level preparation: %w", err)
+		return nil, fmt.Errorf("list exercise: to level preparation: %w", err)
 	}
 	f.LevelPreparation = &userLevel
 	e, err := s.exercisesRepository.List(ctx, f, withBlock)

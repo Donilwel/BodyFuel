@@ -1,6 +1,248 @@
 -- +goose Up
 -- +goose StatementBegin
 
+-- === 202601013646_init.sql ===
+CREATE SCHEMA IF NOT EXISTS bodyfuel;
+
+CREATE TABLE IF NOT EXISTS bodyfuel.user_info (
+    id UUID PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    name TEXT,
+    surname TEXT,
+    password TEXT NOT NULL,
+    email TEXT UNIQUE,
+    phone TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_info ON bodyfuel.user_info(username);
+
+-- === 202602021232_add_user_params.sql ===
+CREATE SCHEMA IF NOT EXISTS bodyfuel;
+
+DO
+$$
+    BEGIN
+        IF NOT EXISTS (SELECT 1
+                       FROM pg_type
+                       WHERE typname = 'want'
+                         AND typnamespace = 'bodyfuel'::regnamespace) THEN
+            CREATE TYPE bodyfuel.want AS ENUM (
+                'lose_weight',
+                'build_muscle',
+                'stay_fit'
+                );
+        END IF;
+    END
+$$;
+
+DO
+$$
+    BEGIN
+        IF NOT EXISTS (SELECT 1
+                       FROM pg_type
+                       WHERE typname = 'lifestyle'
+                         AND typnamespace = 'bodyfuel'::regnamespace) THEN
+            CREATE TYPE bodyfuel.lifestyle AS ENUM (
+                'not_active',
+                'active',
+                'sportive'
+                );
+        END IF;
+    END
+$$;
+
+-- 3. Создаём таблицу user_params
+CREATE TABLE IF NOT EXISTS bodyfuel.user_params (
+                                                    id UUID PRIMARY KEY,
+                                                    id_user UUID NOT NULL REFERENCES bodyfuel.user_info(id) ON DELETE CASCADE,
+                                                    height INT,
+                                                    photo TEXT,
+                                                    wants bodyfuel.want,
+                                                    lifestyle bodyfuel.lifestyle
+);
+
+-- 4. Создаём индекс, если его нет
+CREATE INDEX IF NOT EXISTS idx_user_info_username ON bodyfuel.user_info(username);
+
+-- === 202603021233_add_user_weight.sql ===
+CREATE TABLE IF NOT EXISTS bodyfuel.user_weight (
+                                                    id UUID PRIMARY KEY,
+                                                    id_user UUID NOT NULL REFERENCES bodyfuel.user_info(id) ON DELETE CASCADE,
+                                                    weight FLOAT,
+                                                    date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_info_username ON bodyfuel.user_info(username);
+
+-- === 202604021333_add_new_fields_user_param.sql ===
+ALTER TABLE bodyfuel.user_params
+    ADD COLUMN IF NOT EXISTS target_workouts_weeks INT,
+    ADD COLUMN IF NOT EXISTS target_calories_daily INT,
+    ADD COLUMN IF NOT EXISTS target_weight FLOAT;
+
+-- === 202605021333_add_exercise.sql ===
+CREATE SCHEMA IF NOT EXISTS bodyfuel;
+
+DO
+$$
+    BEGIN
+        IF NOT EXISTS (SELECT 1
+                       FROM pg_type
+                       WHERE typname = 'level_preparation'
+                         AND typnamespace = 'bodyfuel'::regnamespace) THEN
+            CREATE TYPE bodyfuel.level_preparation AS ENUM (
+                'beginner',
+                'medium',
+                'sportsman'
+                );
+        END IF;
+    END
+$$;
+
+DO
+$$
+    BEGIN
+        IF NOT EXISTS (SELECT 1
+                       FROM pg_type
+                       WHERE typname = 'exercise_type'
+                         AND typnamespace = 'bodyfuel'::regnamespace) THEN
+            CREATE TYPE bodyfuel.exercise_type AS ENUM (
+                'cardio',
+                'upper_body',
+                'lower_body',
+                'full_body',
+                'flexibility'
+                );
+        END IF;
+    END
+$$;
+
+DO
+$$
+    BEGIN
+        IF NOT EXISTS (SELECT 1
+                       FROM pg_type
+                       WHERE typname = 'place_exercise'
+                         AND typnamespace = 'bodyfuel'::regnamespace) THEN
+            CREATE TYPE bodyfuel.place_exercise AS ENUM (
+                'home',
+                'gym',
+                'street'
+                );
+        END IF;
+    END
+$$;
+
+CREATE TABLE IF NOT EXISTS bodyfuel.exercise (
+                                                 id UUID PRIMARY KEY,
+                                                 level_preparation bodyfuel.level_preparation NOT NULL,
+                                                 name VARCHAR(100) NOT NULL,
+                                                 type_exercise bodyfuel.exercise_type NOT NULL,
+                                                 description TEXT,
+                                                 base_count_reps INT NOT NULL,
+                                                 steps INT NOT NULL,
+                                                 link_gif TEXT,
+                                                 place_exercise bodyfuel.place_exercise NOT NULL,
+                                                 avg_calories_per DECIMAL(5,2) NOT NULL,
+                                                 base_relax_time INT NOT NULL
+                                             );
+
+CREATE INDEX IF NOT EXISTS idx_exercise_level ON bodyfuel.exercise(level_preparation);
+CREATE INDEX IF NOT EXISTS idx_exercise_type ON bodyfuel.exercise(type_exercise);
+CREATE INDEX IF NOT EXISTS idx_exercise_place ON bodyfuel.exercise(place_exercise);
+CREATE INDEX IF NOT EXISTS idx_exercise_name ON bodyfuel.exercise(name);
+
+-- === 202606031434_add_workouts.sql ===
+CREATE SCHEMA IF NOT EXISTS bodyfuel;
+
+DO
+$$
+BEGIN
+        IF NOT EXISTS (SELECT 1
+                       FROM pg_type
+                       WHERE typname = 'workouts_level'
+                         AND typnamespace = 'bodyfuel'::regnamespace) THEN
+CREATE TYPE bodyfuel.workouts_level AS ENUM (
+                'workout_light',
+                'workout_middle',
+                'workout_hard'
+                );
+END IF;
+END
+$$;
+
+DO
+$$
+BEGIN
+        IF NOT EXISTS (SELECT 1
+                       FROM pg_type
+                       WHERE typname = 'workouts_status'
+                         AND typnamespace = 'bodyfuel'::regnamespace) THEN
+CREATE TYPE bodyfuel.workouts_status AS ENUM (
+                'workout_created',
+                'workout_done',
+                'workout_in_active',
+                'workout_failed'
+                );
+END IF;
+END
+$$;
+
+CREATE TABLE IF NOT EXISTS bodyfuel.workout (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    level bodyfuel.workouts_level NOT NULL,
+    status bodyfuel.workouts_status NOT NULL,
+    total_calories INT NOT NULL,
+    prediction_calories INT NOT NULL,
+    duration INT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+    );
+
+CREATE INDEX IF NOT EXISTS idx_workout_user_id ON bodyfuel.workout(user_id);
+CREATE INDEX IF NOT EXISTS idx_workout_status ON bodyfuel.workout(status);
+CREATE INDEX IF NOT EXISTS idx_workout_level ON bodyfuel.workout(level);
+CREATE INDEX IF NOT EXISTS idx_workout_created_at ON bodyfuel.workout(created_at);
+CREATE INDEX IF NOT EXISTS idx_workout_user_status ON bodyfuel.workout(user_id, status);
+
+-- === 20260706031424_add_workout_exercise.sql ===
+CREATE SCHEMA IF NOT EXISTS bodyfuel;
+
+-- Создаем enum для статуса выполнения упражнения
+CREATE TYPE bodyfuel.exercise_status AS ENUM ('pending', 'in_progress', 'completed', 'skipped');
+
+-- Создаем таблицу для связи тренировок и упражнений
+CREATE TABLE IF NOT EXISTS bodyfuel.workouts_exercise (
+                                                          workout_id UUID NOT NULL,
+                                                          exercise_id UUID NOT NULL,
+                                                          modify_reps INT NOT NULL,
+                                                          modify_relax_time INT NOT NULL,
+                                                          calories INT NOT NULL,
+                                                          status bodyfuel.exercise_status NOT NULL DEFAULT 'pending',
+                                                          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                                                          updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+-- Создаем индексы для оптимизации запросов
+CREATE INDEX idx_workouts_exercise_workout_id
+    ON bodyfuel.workouts_exercise(workout_id);
+
+CREATE INDEX idx_workouts_exercise_exercise_id
+    ON bodyfuel.workouts_exercise(exercise_id);
+
+CREATE INDEX idx_workouts_exercise_status
+    ON bodyfuel.workouts_exercise(status);
+
+CREATE INDEX idx_workouts_exercise_updated_at
+    ON bodyfuel.workouts_exercise(updated_at);
+
+-- Составной индекс для частых фильтров
+CREATE INDEX idx_workouts_exercise_workout_status
+    ON bodyfuel.workouts_exercise(workout_id, status);
+
+-- === 20260806031424_fill_exercises.sql ===
 -- ==================== УПРАЖНЕНИЯ ДЛЯ НАЧИНАЮЩИХ (beginner) ====================
 
 -- Upper Body для начинающих (home)
@@ -364,9 +606,123 @@ INSERT INTO bodyfuel.exercise (id, level_preparation, name, type_exercise, descr
                                                                                                                                                                                  (gen_random_uuid(), 'sportsman', 'Мостик на улице', 'flexibility', 'Мостик на траве', 8, 4, '/exercises/bridge-outdoor.gif', 'street', 6.0, 45),
                                                                                                                                                                                  (gen_random_uuid(), 'sportsman', 'Комплекс на растяжку', 'flexibility', 'Полный комплекс на улице', 1, 4, '/exercises/outdoor-stretch-complex.gif', 'street', 8.5, 90);
 
+-- === 20260911000001_add_tasks.sql ===
+CREATE TABLE IF NOT EXISTS bodyfuel.tasks (
+    task_id      UUID PRIMARY KEY,
+    task_type_nm TEXT NOT NULL,
+    task_state   TEXT NOT NULL,
+    max_attempts INT  NOT NULL DEFAULT 3,
+    attempts     INT  NOT NULL DEFAULT 0,
+    retry_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    attribute    JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_state_retry ON bodyfuel.tasks (task_state, retry_at);
+
+-- === 20260911000002_add_user_devices.sql ===
+CREATE TABLE IF NOT EXISTS bodyfuel.user_devices (
+    id           UUID PRIMARY KEY,
+    user_id      UUID NOT NULL REFERENCES bodyfuel.user_info(id) ON DELETE CASCADE,
+    device_token TEXT NOT NULL,
+    platform     TEXT NOT NULL DEFAULT 'ios',
+    created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, device_token)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_devices_user_id ON bodyfuel.user_devices (user_id);
+
+-- === user_calories ===
+CREATE TABLE IF NOT EXISTS bodyfuel.user_calories (
+    id          UUID PRIMARY KEY,
+    user_id     UUID NOT NULL REFERENCES bodyfuel.user_info(id) ON DELETE CASCADE,
+    calories    INT  NOT NULL CHECK (calories >= 0),
+    description TEXT NOT NULL DEFAULT '',
+    date        TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_calories_user_id ON bodyfuel.user_calories (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_calories_date    ON bodyfuel.user_calories (date);
+
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+
+-- === user_calories ===
+DROP TABLE IF EXISTS bodyfuel.user_calories;
+
+-- === 20260911000002_add_user_devices.sql ===
+DROP TABLE IF EXISTS bodyfuel.user_devices;
+
+-- === 20260911000001_add_tasks.sql ===
+DROP TABLE IF EXISTS bodyfuel.tasks;
+
+-- === 20260806031424_fill_exercises.sql ===
 TRUNCATE bodyfuel.exercise;
+
+-- === 20260706031424_add_workout_exercise.sql ===
+-- Удаляем индексы
+DROP INDEX IF EXISTS bodyfuel.idx_workouts_exercise_workout_status;
+DROP INDEX IF EXISTS bodyfuel.idx_workouts_exercise_updated_at;
+DROP INDEX IF EXISTS bodyfuel.idx_workouts_exercise_status;
+DROP INDEX IF EXISTS bodyfuel.idx_workouts_exercise_exercise_id;
+DROP INDEX IF EXISTS bodyfuel.idx_workouts_exercise_workout_id;
+
+-- Удаляем таблицу
+DROP TABLE IF EXISTS bodyfuel.workouts_exercise;
+
+-- Удаляем enum
+DROP TYPE IF EXISTS bodyfuel.exercise_status;
+
+-- === 202606031434_add_workouts.sql ===
+DROP INDEX IF EXISTS bodyfuel.idx_workout_user_id;
+DROP INDEX IF EXISTS bodyfuel.idx_workout_status;
+DROP INDEX IF EXISTS bodyfuel.idx_workout_level;
+DROP INDEX IF EXISTS bodyfuel.idx_workout_created_at;
+DROP INDEX IF EXISTS bodyfuel.idx_workout_user_status;
+DROP INDEX IF EXISTS bodyfuel.idx_workout_exercises_gin;
+
+DROP TABLE IF EXISTS bodyfuel.workout;
+
+DROP TYPE IF EXISTS bodyfuel.exercise_status;
+DROP TYPE IF EXISTS bodyfuel.workouts_status;
+DROP TYPE IF EXISTS bodyfuel.workouts_level;
+
+-- === 202605021333_add_exercise.sql ===
+DROP INDEX IF EXISTS bodyfuel.idx_exercise_level;
+DROP INDEX IF EXISTS bodyfuel.idx_exercise_type;
+DROP INDEX IF EXISTS bodyfuel.idx_exercise_place;
+DROP INDEX IF EXISTS bodyfuel.idx_exercise_name;
+
+DROP TABLE IF EXISTS bodyfuel.exercise;
+
+DROP TYPE IF EXISTS bodyfuel.level_preparation;
+DROP TYPE IF EXISTS bodyfuel.exercise_type;
+DROP TYPE IF EXISTS bodyfuel.place_exercise;
+
+-- === 202604021333_add_new_fields_user_param.sql ===
+ALTER TABLE bodyfuel.user_params
+    DROP COLUMN IF EXISTS target_workouts_weeks,
+    DROP COLUMN IF EXISTS target_calories_daily,
+    DROP COLUMN IF EXISTS target_weight;
+
+-- === 202603021233_add_user_weight.sql ===
+DROP TABLE IF EXISTS bodyfuel.user_weight;
+
+-- === 202602021232_add_user_params.sql ===
+DROP TABLE IF EXISTS bodyfuel.user_params;
+
+DROP TYPE IF EXISTS bodyfuel.want;
+DROP TYPE IF EXISTS bodyfuel.lifestyle;
+
+DROP INDEX IF EXISTS bodyfuel.idx_user_info_username;
+
+-- === 202601013646_init.sql ===
+DROP SCHEMA IF EXISTS bodyfuel CASCADE;
+
 -- +goose StatementEnd

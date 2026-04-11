@@ -56,11 +56,22 @@ type (
 		ListWorkoutsExercise(ctx context.Context, f dto.WorkoutsExerciseFilter) ([]*entities.WorkoutsExercise, error)
 		GetWorkout(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) (*entities.Workout, error)
 		ListWorkouts(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) ([]*entities.Workout, error)
+		UpdateWorkoutByFilter(ctx context.Context, f dto.WorkoutsFilter, params entities.WorkoutUpdateParams) error
 		DeleteWorkout(ctx context.Context, f dto.WorkoutsFilter) error
 
 		DeleteTask(ctx context.Context, id uuid.UUID) error
 		ListTasks(ctx context.Context, filter dto.TasksFilter) ([]*entities.Task, error)
 		RestartTask(ctx context.Context, id uuid.UUID) error
+
+		RegisterUserDevice(ctx context.Context, spec entities.UserDeviceInitSpec) error
+		ListUserDevices(ctx context.Context, userID uuid.UUID) ([]*entities.UserDevice, error)
+		DeleteUserDevice(ctx context.Context, id, userID uuid.UUID) error
+
+		CreateUserCalories(ctx context.Context, spec entities.UserCaloriesInitSpec) error
+		GetUserCalories(ctx context.Context, f dto.UserCaloriesFilter) (*entities.UserCalories, error)
+		ListUserCalories(ctx context.Context, f dto.UserCaloriesFilter) ([]*entities.UserCalories, error)
+		UpdateUserCalories(ctx context.Context, f dto.UserCaloriesFilter, params entities.UserCaloriesUpdateParams) error
+		DeleteUserCalories(ctx context.Context, id, userID uuid.UUID) error
 	}
 
 	AvatarService interface {
@@ -112,6 +123,8 @@ func (a *API) RegisterHandlers(r *gin.RouterGroup) {
 	a.registerUserWeightHandlers(protected)
 	a.registerTasksHandlers(protected)
 	a.registerAvatarsHandlers(protected)
+	a.registerUserDevicesHandlers(protected)
+	a.registerUserCaloriesHandlers(protected)
 
 }
 

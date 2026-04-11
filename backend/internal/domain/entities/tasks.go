@@ -29,6 +29,7 @@ const (
 	TaskTypeSendCodeOnPhone       TaskType = "send_code_phone_task"
 	TaskTypeSendNotificationEmail TaskType = "send_notification_email_task"
 	TaskTypeSendNotificationPhone TaskType = "send_notification_phone_task"
+	TaskTypeSendPushNotification  TaskType = "send_push_notification_task"
 )
 
 type TaskMessage string
@@ -253,6 +254,14 @@ func exponentialBackoffWithJitterCalculate(n int) int {
 }
 
 type TaskAttribute struct {
-	UserID uuid.UUID
-	Method string
+	UserID      uuid.UUID `json:"user_id"`
+	Method      string    `json:"method"`
+	Email       string    `json:"email,omitempty"`
+	Phone       string    `json:"phone,omitempty"`
+	Code        string    `json:"code,omitempty"`
+	Subject     string    `json:"subject,omitempty"`
+	Body        string    `json:"body,omitempty"`
+	Message     string    `json:"message,omitempty"`
+	DeviceToken string    `json:"device_token,omitempty"`
+	Title       string    `json:"title,omitempty"`
 }
