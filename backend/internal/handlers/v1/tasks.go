@@ -1,65 +1,108 @@
 package v1
 
 import (
-	"github.com/gin-gonic/gin"
+	"backend/internal/dto"
+	"backend/internal/handlers/v1/models"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func (a *API) registerTasksHandlers(router *gin.RouterGroup) {
 	task := router.Group("/tasks")
+	task.GET("", a.listTasks)
 	task.DELETE("/:uuid", a.deleteTask)
 	task.POST("/:uuid/restart", a.restartTask)
-	task.GET("", a.listTasks)
 }
 
+// listTasks возвращает список задач в очереди
+// @Summary Список задач
+// @Description Возвращает список задач в очереди executor'а
+// @Tags Tasks
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} models.TaskResponse "Список задач"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /tasks [get]
 func (a *API) listTasks(ctx *gin.Context) {
-	//tasks, err := a.crudService.ListTasks(ctx.Request.Context(), dto.TasksFilter{})
-	//if err != nil {
-	//	ctx.Error(err)
-	//	return
-	//}
+	tasks, err := a.CRUDService.ListTasks(ctx, dto.TasksFilter{})
+	if err != nil {
+		a.log.Errorf("list tasks error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to list tasks"})
+		return
+	}
 
-	//ctx.JSON(http.StatusOK, models.NewTasksResponse(tasks))
+	ctx.JSON(http.StatusOK, models.NewTasksResponse(tasks))
 }
 
+// restartTask перезапускает упавшую задачу
+// @Summary Перезапуск задачи
+// @Description Сбрасывает счётчик попыток и переводит задачу обратно в running
+// @Tags Tasks
+// @Security BearerAuth
+// @Produce json
+// @Param uuid path string true "ID задачи"
+// @Success 200 {object} models.SuccessResponse "Задача перезапущена"
+// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /tasks/{uuid}/restart [post]
 func (a *API) restartTask(ctx *gin.Context) {
-	//id := ctx.Param("uuid")
-	//if id == "" {
-	//	ctx.Error(errs.ErrMissingUUIDParam())
-	//	return
-	//}
+	id := ctx.Param("uuid")
+	if id == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "missing task id in path"})
+		return
+	}
 
-	//uuid, err := uuid.Parse(id)
-	//if err != nil {
-	//	ctx.Error(errs.ErrParsingUUID())
-	//	return
-	//}
+	taskID, err := uuid.Parse(id)
+	if err != nil {
+		a.log.Errorf("restart task error: invalid uuid: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid id format", "details": err.Error()})
+		return
+	}
 
-	//if err = a.CRUDService.RestartTask(ctx.Request.Context(), uuid); err != nil {
-	//	ctx.Error(err)
-	//	return
-	//}
+	if err = a.CRUDService.RestartTask(ctx, taskID); err != nil {
+		a.log.Errorf("restart task error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to restart task"})
+		return
+	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Task restarted"})
 }
 
+// deleteTask удаляет задачу из очереди
+// @Summary Удаление задачи
+// @Description Удаляет задачу из очереди executor'а
+// @Tags Tasks
+// @Security BearerAuth
+// @Produce json
+// @Param uuid path string true "ID задачи"
+// @Success 200 {object} models.SuccessResponse "Задача удалена"
+// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /tasks/{uuid} [delete]
 func (a *API) deleteTask(ctx *gin.Context) {
-	//id := ctx.Param("uuid")
-	//if id == "" {
-	//	ctx.Error(errs.ErrMissingUUIDParam())
-	//	return
-	//}
-	//
-	//uuid, err := uuid.Parse(id)
-	//if err != nil {
-	//	ctx.Error(errs.ErrParsingUUID())
-	//	return
-	//}
-	//
-	//if err = a.CRUDService.DeleteTask(ctx.Request.Context(), uuid); err != nil {
-	//	ctx.Error(err)
-	//	return
-	//}
+	id := ctx.Param("uuid")
+	if id == "" {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "missing task id in path"})
+		return
+	}
+
+	taskID, err := uuid.Parse(id)
+	if err != nil {
+		a.log.Errorf("delete task error: invalid uuid: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid id format", "details": err.Error()})
+		return
+	}
+
+	if err = a.CRUDService.DeleteTask(ctx, taskID); err != nil {
+		a.log.Errorf("delete task error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to delete task"})
+		return
+	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
 }

@@ -31,11 +31,34 @@ type WorkoutsConfig struct {
 	LimitGenerateWorkouts   int           `yaml:"limit_generate_workouts,omitempty" env:"LIMIT_GENERATE_WORKS" envDefault:"3"`
 }
 
+type SendGridConfig struct {
+	APIKey    string `yaml:"api_key" env:"SENDGRID_API_KEY"`
+	FromEmail string `yaml:"from_email" env:"SENDGRID_FROM_EMAIL"`
+	FromName  string `yaml:"from_name" env:"SENDGRID_FROM_NAME"`
+}
+
+type TwilioConfig struct {
+	AccountSID string `yaml:"account_sid" env:"TWILIO_ACCOUNT_SID"`
+	AuthToken  string `yaml:"auth_token" env:"TWILIO_AUTH_TOKEN"`
+	FromPhone  string `yaml:"from_phone" env:"TWILIO_FROM_PHONE"`
+}
+
+type APNsConfig struct {
+	KeyPath  string `yaml:"key_path" env:"APNS_KEY_PATH"`
+	KeyID    string `yaml:"key_id" env:"APNS_KEY_ID"`
+	TeamID   string `yaml:"team_id" env:"APNS_TEAM_ID"`
+	BundleID string `yaml:"bundle_id" env:"APNS_BUNDLE_ID"`
+	Sandbox  bool   `yaml:"sandbox" env:"APNS_SANDBOX" envDefault:"true"`
+}
+
 type Config struct {
 	AppConfig AppConfig       `yaml:"app"`
 	Log       logging.Config  `yaml:"sage" env:"SAGE_"`
 	Postgres  postgres.Config `yaml:"postgres" env-prefix:"POSTGRES_"`
 	Minio     minio.Config    `yaml:"minio" env-prefix:"MINIO_"`
+	SendGrid  SendGridConfig  `yaml:"sendgrid" env-prefix:"SENDGRID_"`
+	Twilio    TwilioConfig    `yaml:"twilio" env-prefix:"TWILIO_"`
+	APNs      APNsConfig      `yaml:"apns" env-prefix:"APNS_"`
 }
 
 func ReadConfig(filePaths ...string) (*Config, error) {

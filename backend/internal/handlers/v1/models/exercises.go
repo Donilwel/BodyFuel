@@ -3,6 +3,7 @@ package models
 import (
 	"backend/internal/domain/entities"
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -96,4 +97,37 @@ func NewExerciseResponseList(weights []*entities.Exercise) []ExerciseResponseMod
 		response = append(response, NewExerciseResponse(weight))
 	}
 	return response
+}
+
+type UpdateExerciseRequestModel struct {
+	LevelPreparation *string  `json:"level_preparation" validate:"omitempty,oneof=beginner medium sportsman"`
+	Name             *string  `json:"name" validate:"omitempty,min=1,max=100"`
+	Description      *string  `json:"description" validate:"omitempty,min=1,max=1000"`
+	BaseCountReps    *int     `json:"base_count_reps" validate:"omitempty,min=1,max=1000"`
+	Steps            *int     `json:"steps" validate:"omitempty,min=1,max=100"`
+	LinkGif          *string  `json:"link_gif" validate:"omitempty,url"`
+	AvgCaloriesPer   *float64 `json:"avg_calories_per" validate:"omitempty,min=0,max=1000"`
+	BaseRelaxTime    *int     `json:"base_relax_time" validate:"omitempty,min=0,max=3600"`
+}
+
+func (e *UpdateExerciseRequestModel) ToUpdateParams() (entities.ExerciseUpdateParams, error) {
+	params := entities.ExerciseUpdateParams{
+		Name:          e.Name,
+		Description:   e.Description,
+		BaseCountReps: e.BaseCountReps,
+		Steps:         e.Steps,
+		LinkGif:       e.LinkGif,
+		AvgCaloriesPer: e.AvgCaloriesPer,
+		BaseRelaxTime: e.BaseRelaxTime,
+	}
+
+	if e.LevelPreparation != nil {
+		level, err := entities.ToLevelPreparation(*e.LevelPreparation)
+		if err != nil {
+			return entities.ExerciseUpdateParams{}, fmt.Errorf("invalid field level preparation: %w", err)
+		}
+		params.LevelPreparation = &level
+	}
+
+	return params, nil
 }

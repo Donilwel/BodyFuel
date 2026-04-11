@@ -8,8 +8,12 @@ import (
 	"backend/internal/service/auth"
 	"backend/internal/service/avatar"
 	"backend/internal/service/crud"
+	"backend/internal/service/executor"
 	"backend/internal/service/workouts"
 	"backend/pkg/logging"
+	notifapns "backend/pkg/notifications/apns"
+	notifsg "backend/pkg/notifications/sendgrid"
+	notiftwilio "backend/pkg/notifications/twilio"
 	"context"
 	"errors"
 	"fmt"
@@ -72,8 +76,8 @@ func NewApp(configPaths ...string) *App {
 	tasksRepository := postgres.NewTasksRepository(db)
 	workoutsRepository := postgres.NewWorkoutRepository(db)
 	workoutsExerciseRepository := postgres.NewWorkoutsExerciseRepository(db)
-
-	//tasksRepository := postgres.NewTasksRepository(db)
+	userDevicesRepository := postgres.NewUserDevicesRepository(db)
+	userCaloriesRepository := postgres.NewUserCaloriesRepository(db)
 
 	authService := auth.NewService(&auth.Config{
 		TransactionManager: transactionManager,
@@ -89,6 +93,8 @@ func NewApp(configPaths ...string) *App {
 		ExercisesRepository:        exercisesRepository,
 		WorkoutsRepository:         workoutsRepository,
 		WorkoutsExerciseRepository: workoutsExerciseRepository,
+		UserDevicesRepository:      userDevicesRepository,
+		UserCaloriesRepository:     userCaloriesRepository,
 		Log:                        logger,
 	})
 
@@ -107,17 +113,48 @@ func NewApp(configPaths ...string) *App {
 		UserParamsRepository:      userParamsRepository,
 		WorkoutExerciseRepository: workoutsExerciseRepository,
 		WorkoutsRepository:        workoutsRepository,
+		UserDevicesRepository:     userDevicesRepository,
 		WorkoutPullUserInterval:   cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
 		LimitGenerateWorkouts:     cfg.AppConfig.WorkoutsConfig.LimitGenerateWorkouts,
 	})
 	workers = append(workers, workoutService)
 
-	//executorService := executor.NewService(&executor.Config{
-	//	TransactionManager: transactionManager,
-	//	//TasksRepository:    tasksRepository,
-	//	QueryDelay: cfg.AppConfig.TasksTrackingDuration,
-	//})
-	//workers = append(workers, executorService)
+	emailClient := notifsg.NewClient(notifsg.Config{
+		APIKey:    cfg.SendGrid.APIKey,
+		FromEmail: cfg.SendGrid.FromEmail,
+		FromName:  cfg.SendGrid.FromName,
+	})
+
+	smsClient := notiftwilio.NewClient(notiftwilio.Config{
+		AccountSID: cfg.Twilio.AccountSID,
+		AuthToken:  cfg.Twilio.AuthToken,
+		FromPhone:  cfg.Twilio.FromPhone,
+	})
+
+	var pushClient executor.PushClient
+	if cfg.APNs.KeyPath != "" {
+		apnsClient, err := notifapns.NewClient(notifapns.Config{
+			KeyPath:  cfg.APNs.KeyPath,
+			KeyID:    cfg.APNs.KeyID,
+			TeamID:   cfg.APNs.TeamID,
+			BundleID: cfg.APNs.BundleID,
+			Sandbox:  cfg.APNs.Sandbox,
+		})
+		if err != nil {
+			logger.Fatalf("Failed to init APNs client: %v", err)
+		}
+		pushClient = apnsClient
+	}
+
+	executorService := executor.NewService(&executor.Config{
+		TransactionManager: transactionManager,
+		TasksRepository:    tasksRepository,
+		EmailClient:        emailClient,
+		SMSClient:          smsClient,
+		PushClient:         pushClient,
+		QueryDelay:         cfg.AppConfig.TasksTrackingDuration,
+	})
+	workers = append(workers, executorService)
 
 	validator := validator.New()
 

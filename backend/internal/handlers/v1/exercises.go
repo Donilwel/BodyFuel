@@ -3,9 +3,10 @@ package v1
 import (
 	"backend/internal/dto"
 	"backend/internal/handlers/v1/models"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 func (a *API) registerExerciseHandlers(router *gin.RouterGroup) {
@@ -31,43 +32,43 @@ func (a *API) registerExerciseHandlers(router *gin.RouterGroup) {
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /exercises/{uuid} [get]
 func (a *API) getExercise(ctx *gin.Context) {
-	//userIDRaw, ok := ctx.Get("user_id")
-	//if !ok {
-	//	a.log.Errorf("user weight error: get user weight: missing user_id in context")
-	//	ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-	//		"error": "missing user_id in context",
-	//	})
-	//	return
-	//}
-	//
-	//userIDStr, ok := userIDRaw.(string)
-	//if !ok {
-	//	a.log.Errorf("user weight error: get user weight: invalid user_id type in context")
-	//	ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-	//		"error": "invalid user_id type in context",
-	//	})
-	//	return
-	//}
-	//
-	//userID, err := uuid.Parse(userIDStr)
-	//if err != nil {
-	//	a.log.Errorf("user weight error: get user weight: invalid user_id format: %s", err.Error())
-	//	ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-	//		"error":   "invalid user_id format",
-	//		"details": err.Error(),
-	//	})
-	//	return
-	//}
-	//
-	//uw, err := a.CRUDService.GetExercise(ctx, dto.ExerciseFilter{ID: id}, false)
-	//if err != nil {
-	//	a.log.Errorf("user weight error: internal error: %s", err.Error())
-	//	ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
-	//	return
-	//}
-	//
-	//a.log.Infof("user weight: get user weight: success")
-	//ctx.JSON(http.StatusOK, models.NewUserWeightResponse(uw))
+	userIDRaw, ok := ctx.Get("user_id")
+	if !ok {
+		a.log.Errorf("exercise error: get exercise: missing user_id in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "missing user_id in context",
+		})
+		return
+	}
+
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		a.log.Errorf("exercise error: get user exercise: invalid user_id type in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "invalid user_id type in context",
+		})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		a.log.Errorf("exercise error: get user exercise: invalid user_id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid user_id format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	ue, err := a.CRUDService.GetExercise(ctx, dto.ExerciseFilter{ID: &userID}, false)
+	if err != nil {
+		a.log.Errorf("user exercise error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
+		return
+	}
+
+	a.log.Infof("user exercise: get user exercise: success")
+	ctx.JSON(http.StatusOK, models.NewExerciseResponse(ue))
 }
 
 // getExercises получает список упражнений
@@ -132,7 +133,7 @@ func (a *API) getExercises(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param uuid path string true "ID упражнения"
-// @Param request body  models.ExerciseResponseModel true "Данные для обновления упражнения"
+// @Param request body  models.ExerciseRequestModel true "Данные для обновления упражнения"
 // @Success 200 {object} models.SuccessResponse "Упражнение успешно обновлено"
 // @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
@@ -140,7 +141,62 @@ func (a *API) getExercises(ctx *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /exercises/{uuid} [patch]
 func (a *API) updateExercise(ctx *gin.Context) {
+	id := ctx.Param("uuid")
+	if id == "" {
+		a.log.Errorf("exercise error: update exercise: missing exercise id in path")
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "missing exercise id in path",
+		})
+		return
+	}
 
+	exerciseID, err := uuid.Parse(id)
+	if err != nil {
+		a.log.Errorf("exercise error: update exercise: invalid exercise id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid id format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	var m models.UpdateExerciseRequestModel
+	if err := ctx.ShouldBindJSON(&m); err != nil {
+		a.log.Errorf("exercise error: update exercise: invalid request body: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid request body",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	if err := a.validator.Struct(m); err != nil {
+		a.handleValidationErrors(ctx, err, "update exercise")
+		return
+	}
+
+	updateParams, err := m.ToUpdateParams()
+	if err != nil {
+		a.log.Errorf("exercise error: update exercise: invalid data: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid exercise data",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	err = a.CRUDService.UpdateExercise(ctx, dto.ExerciseFilter{ID: &exerciseID}, updateParams)
+	if err != nil {
+		a.log.Errorf("exercise error: update exercise: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to update exercise",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	a.log.Infof("exercise: update exercise %s: success", exerciseID)
+	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully updated"})
 }
 
 // deleteExercise удаляет упражнение

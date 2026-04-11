@@ -130,7 +130,6 @@ func TestService_CreateInfoUser(t *testing.T) {
 			err := s.CreateInfoUser(ctx, tt.info)
 
 			if tt.wantErr != nil {
-				// assert.ErrorIs теперь корректно отрабатывает
 				assert.ErrorIs(t, err, tt.wantErr)
 			} else {
 				assert.NoError(t, err)

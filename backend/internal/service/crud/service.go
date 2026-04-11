@@ -39,6 +39,20 @@ type (
 		Delete(ctx context.Context, ids []uuid.UUID) error
 	}
 
+	UserDevicesRepository interface {
+		Upsert(ctx context.Context, device *entities.UserDevice) error
+		List(ctx context.Context, f dto.UserDeviceFilter) ([]*entities.UserDevice, error)
+		Delete(ctx context.Context, id, userID uuid.UUID) error
+	}
+
+	UserCaloriesRepository interface {
+		Create(ctx context.Context, uc *entities.UserCalories) error
+		Get(ctx context.Context, f dto.UserCaloriesFilter) (*entities.UserCalories, error)
+		List(ctx context.Context, f dto.UserCaloriesFilter) ([]*entities.UserCalories, error)
+		Update(ctx context.Context, uc *entities.UserCalories) error
+		Delete(ctx context.Context, f dto.UserCaloriesFilter) error
+	}
+
 	ExercisesRepository interface {
 		Get(ctx context.Context, f dto.ExerciseFilter, withBlock bool) (*entities.Exercise, error)
 		Create(ctx context.Context, exercise *entities.Exercise) error
@@ -85,6 +99,8 @@ type Config struct {
 	ExercisesRepository        ExercisesRepository
 	WorkoutsRepository         WorkoutsRepository
 	WorkoutsExerciseRepository WorkoutsExerciseRepository
+	UserDevicesRepository      UserDevicesRepository
+	UserCaloriesRepository     UserCaloriesRepository
 	Log                        logging.Entry
 }
 
@@ -97,6 +113,8 @@ type Service struct {
 	exercisesRepository        ExercisesRepository
 	workoutsRepository         WorkoutsRepository
 	workoutsExerciseRepository WorkoutsExerciseRepository
+	userDevicesRepository      UserDevicesRepository
+	userCaloriesRepository     UserCaloriesRepository
 	log                        logging.Entry
 }
 
@@ -110,6 +128,8 @@ func NewService(c *Config) *Service {
 		exercisesRepository:        c.ExercisesRepository,
 		workoutsRepository:         c.WorkoutsRepository,
 		workoutsExerciseRepository: c.WorkoutsExerciseRepository,
+		userDevicesRepository:      c.UserDevicesRepository,
+		userCaloriesRepository:     c.UserCaloriesRepository,
 		log:                        c.Log,
 	}
 }

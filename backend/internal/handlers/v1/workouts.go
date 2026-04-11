@@ -244,7 +244,64 @@ func (a *API) getUserWorkouts(ctx *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /workouts/{uuid} [patch]
 func (a *API) updateUserWorkout(ctx *gin.Context) {
+	userIDRaw, ok := ctx.Get("user_id")
+	if !ok {
+		a.log.Errorf("update workout error: missing user_id in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing user_id in context"})
+		return
+	}
 
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		a.log.Errorf("update workout error: invalid user_id type in context")
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user_id type in context"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		a.log.Errorf("update workout error: invalid user_id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid user_id format", "details": err.Error()})
+		return
+	}
+
+	workoutID, err := uuid.Parse(ctx.Param("uuid"))
+	if err != nil {
+		a.log.Errorf("update workout error: invalid workout UUID: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid workout UUID"})
+		return
+	}
+
+	var req models.UpdateWorkoutRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		a.log.Errorf("update workout error: invalid request body: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
+		return
+	}
+
+	now := time.Now()
+	params := entities.WorkoutUpdateParams{
+		Status:    req.Status,
+		UpdatedAt: &now,
+	}
+	if req.Duration != nil {
+		d := req.Duration.Nanoseconds()
+		params.Duration = &d
+	}
+
+	f := dto.WorkoutsFilter{
+		ID:     &workoutID,
+		UserID: &userID,
+	}
+
+	if err := a.CRUDService.UpdateWorkoutByFilter(ctx, f, params); err != nil {
+		a.log.Errorf("update workout error: internal error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to update workout", "details": err.Error()})
+		return
+	}
+
+	a.log.Infof("update workout %s: success", workoutID)
+	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully updated"})
 }
 
 // deleteUserWorkout удаляет тренировку пользователя
