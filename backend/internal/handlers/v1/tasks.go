@@ -12,8 +12,38 @@ import (
 func (a *API) registerTasksHandlers(router *gin.RouterGroup) {
 	task := router.Group("/tasks")
 	task.GET("", a.listTasks)
+	task.GET("/:uuid", a.getTask)
 	task.DELETE("/:uuid", a.deleteTask)
 	task.POST("/:uuid/restart", a.restartTask)
+}
+
+// getTask возвращает задачу по ID
+// @Summary Получение задачи по ID
+// @Description Возвращает одну задачу по её UUID
+// @Tags Tasks
+// @Security BearerAuth
+// @Produce json
+// @Param uuid path string true "ID задачи"
+// @Success 200 {object} models.TaskResponse "Задача"
+// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
+// @Failure 404 {object} models.ErrorResponse "Задача не найдена"
+// @Router /tasks/{uuid} [get]
+func (a *API) getTask(ctx *gin.Context) {
+	taskID, err := uuid.Parse(ctx.Param("uuid"))
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
+		return
+	}
+
+	task, err := a.CRUDService.GetTask(ctx, taskID)
+	if err != nil {
+		a.log.Errorf("get task error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "task not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewTaskResponse(task))
 }
 
 // listTasks возвращает список задач в очереди

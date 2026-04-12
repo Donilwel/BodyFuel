@@ -1,3 +1,4 @@
+basePath: /api/v1
 definitions:
   entities.ExerciseStatus:
     enum:
@@ -87,6 +88,80 @@ definitions:
     - WorkoutStatusDone
     - WorkoutStatusInActive
     - WorkoutStatusFailed
+  models.AddWorkoutExerciseRequest:
+    properties:
+      exercise_id:
+        type: string
+      modify_relax_time:
+        maximum: 3600
+        minimum: 0
+        type: integer
+      modify_reps:
+        maximum: 1000
+        minimum: 1
+        type: integer
+    required:
+    - exercise_id
+    type: object
+  models.AnalyzePhotoRequest:
+    properties:
+      image_url:
+        type: string
+    required:
+    - image_url
+    type: object
+  models.CreateFoodEntryRequest:
+    properties:
+      calories:
+        maximum: 10000
+        minimum: 0
+        type: integer
+      carbs:
+        maximum: 500
+        minimum: 0
+        type: number
+      date:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      fat:
+        maximum: 500
+        minimum: 0
+        type: number
+      meal_type:
+        enum:
+        - breakfast
+        - lunch
+        - dinner
+        - snack
+        type: string
+      photo_url:
+        type: string
+      protein:
+        maximum: 500
+        minimum: 0
+        type: number
+    required:
+    - calories
+    - description
+    - meal_type
+    type: object
+  models.CreateUserCaloriesRequest:
+    properties:
+      calories:
+        maximum: 10000
+        minimum: 0
+        type: integer
+      date:
+        type: string
+      description:
+        maxLength: 255
+        type: string
+    required:
+    - calories
+    - date
+    type: object
   models.ErrorResponse:
     properties:
       '{route} error':
@@ -176,6 +251,29 @@ definitions:
       type_exercise:
         $ref: '#/definitions/entities.ExerciseType'
     type: object
+  models.FoodEntryResponse:
+    properties:
+      calories:
+        type: integer
+      carbs:
+        type: number
+      created_at:
+        type: string
+      date:
+        type: string
+      description:
+        type: string
+      fat:
+        type: number
+      id:
+        type: string
+      meal_type:
+        type: string
+      photo_url:
+        type: string
+      protein:
+        type: number
+    type: object
   models.GenerateWorkoutRequest:
     properties:
       exercises_count:
@@ -206,11 +304,6 @@ definitions:
         - cardio
         - flexibility
     type: object
-  models.JWTModel:
-    properties:
-      jwt:
-        type: string
-    type: object
   models.LoginRequestModel:
     properties:
       password:
@@ -220,6 +313,59 @@ definitions:
     required:
     - password
     - username
+    type: object
+  models.NutritionAnalysisResponse:
+    properties:
+      calories:
+        type: integer
+      carbs:
+        type: number
+      description:
+        type: string
+      fat:
+        type: number
+      protein:
+        type: number
+    type: object
+  models.NutritionDiaryResponse:
+    properties:
+      date:
+        type: string
+      entries:
+        items:
+          $ref: '#/definitions/models.FoodEntryResponse'
+        type: array
+      total_calories:
+        type: integer
+      total_carbs:
+        type: number
+      total_fat:
+        type: number
+      total_protein:
+        type: number
+    type: object
+  models.NutritionReportResponse:
+    properties:
+      avg_calories_per_day:
+        type: number
+      days:
+        type: integer
+      entries:
+        items:
+          $ref: '#/definitions/models.FoodEntryResponse'
+        type: array
+      from:
+        type: string
+      to:
+        type: string
+      total_calories:
+        type: integer
+      total_carbs:
+        type: number
+      total_fat:
+        type: number
+      total_protein:
+        type: number
     type: object
   models.PresignAvatarRequest:
     properties:
@@ -236,6 +382,48 @@ definitions:
         type: string
       upload_url:
         type: string
+    type: object
+  models.RecommendationResponse:
+    properties:
+      description:
+        type: string
+      generated_at:
+        type: string
+      id:
+        type: string
+      is_read:
+        type: boolean
+      priority:
+        type: integer
+      type:
+        type: string
+    type: object
+  models.RecoverPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  models.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  models.RegisterDeviceRequest:
+    properties:
+      device_token:
+        type: string
+      platform:
+        enum:
+        - ios
+        - android
+        type: string
+    required:
+    - device_token
+    - platform
     type: object
   models.RegisterRequestModel:
     properties:
@@ -266,10 +454,155 @@ definitions:
     - surname
     - username
     type: object
+  models.ResetPasswordRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      new_password:
+        minLength: 6
+        type: string
+    required:
+    - code
+    - email
+    - new_password
+    type: object
+  models.SendVerificationCodeRequest:
+    properties:
+      code_type:
+        enum:
+        - email
+        - phone
+        type: string
+    required:
+    - code_type
+    type: object
   models.SuccessResponse:
     properties:
       message:
         example: Successfully {action}
+        type: string
+    type: object
+  models.TaskResponse:
+    properties:
+      attempts:
+        type: integer
+      attribute: {}
+      created_at:
+        type: string
+      max_attempts:
+        type: integer
+      retry_at:
+        type: string
+      state:
+        type: string
+      type_nm:
+        type: string
+      updated_at:
+        type: string
+      uuid:
+        type: string
+    type: object
+  models.TokenPairModel:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  models.UpdateFoodEntryRequest:
+    properties:
+      calories:
+        maximum: 10000
+        minimum: 0
+        type: integer
+      carbs:
+        maximum: 500
+        minimum: 0
+        type: number
+      date:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      fat:
+        maximum: 500
+        minimum: 0
+        type: number
+      meal_type:
+        enum:
+        - breakfast
+        - lunch
+        - dinner
+        - snack
+        type: string
+      photo_url:
+        type: string
+      protein:
+        maximum: 500
+        minimum: 0
+        type: number
+    type: object
+  models.UpdateUserCaloriesRequest:
+    properties:
+      calories:
+        maximum: 10000
+        minimum: 0
+        type: integer
+      date:
+        type: string
+      description:
+        maxLength: 255
+        type: string
+    type: object
+  models.UpdateWorkoutExerciseRequest:
+    properties:
+      calories:
+        minimum: 0
+        type: integer
+      modify_relax_time:
+        maximum: 3600
+        minimum: 0
+        type: integer
+      modify_reps:
+        maximum: 1000
+        minimum: 1
+        type: integer
+      status:
+        enum:
+        - pending
+        - in_progress
+        - completed
+        - skipped
+        type: string
+    type: object
+  models.UserCaloriesResponse:
+    properties:
+      calories:
+        type: integer
+      created_at:
+        type: string
+      date:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.UserDeviceResponse:
+    properties:
+      created_at:
+        type: string
+      device_token:
+        type: string
+      id:
+        type: string
+      platform:
         type: string
     type: object
   models.UserInfoResponseModel:
@@ -438,6 +771,40 @@ definitions:
       user_id:
         type: string
     type: object
+  models.VerifyCodeRequest:
+    properties:
+      code:
+        type: string
+      code_type:
+        enum:
+        - email
+        - phone
+        type: string
+    required:
+    - code
+    - code_type
+    type: object
+  models.WorkoutExerciseFullResponse:
+    properties:
+      calories:
+        type: integer
+      created_at:
+        type: string
+      exercise_id:
+        type: string
+      modify_relax_time:
+        type: integer
+      modify_reps:
+        type: integer
+      order_index:
+        type: integer
+      status:
+        $ref: '#/definitions/entities.ExerciseStatus'
+      updated_at:
+        type: string
+      workout_id:
+        type: string
+    type: object
   models.WorkoutExerciseResponse:
     properties:
       avg_calories_per:
@@ -492,14 +859,22 @@ definitions:
       user_id:
         type: string
     type: object
+host: localhost:8080
 info:
-  contact: {}
+  contact:
+    name: Danila Maslov
+  description: REST API для фитнес-приложения BodyFuel. Предоставляет управление пользователями,
+    тренировками, питанием и персонализированными рекомендациями.
+  license:
+    name: MIT
+  title: BodyFuel API
+  version: "1.0"
 paths:
   /auth/login:
     post:
       consumes:
       - application/json
-      description: Вход пользователя в систему и получение JWT токена
+      description: Вход пользователя в систему и получение пары токенов
       parameters:
       - description: Данные для входа
         in: body
@@ -513,7 +888,7 @@ paths:
         "200":
           description: Успешная аутентификация
           schema:
-            $ref: '#/definitions/models.JWTModel'
+            $ref: '#/definitions/models.TokenPairModel'
         "400":
           description: Ошибка валидации
           schema:
@@ -527,6 +902,61 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       summary: Аутентификация пользователя
+      tags:
+      - Auth
+  /auth/recover:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RecoverPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Отправка кода восстановления пароля
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Получение новой пары access+refresh токенов
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Новая пара токенов
+          schema:
+            $ref: '#/definitions/models.TokenPairModel'
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Недействительный токен
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Обновление токенов
       tags:
       - Auth
   /auth/register:
@@ -561,6 +991,125 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       summary: Регистрация нового пользователя
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для сброса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Сброс пароля
+      tags:
+      - Auth
+  /auth/send-verification:
+    post:
+      consumes:
+      - application/json
+      description: Отправка 6-значного кода на email или phone
+      parameters:
+      - description: Тип кода
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SendVerificationCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Отправка кода подтверждения
+      tags:
+      - Auth
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Код подтверждения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VerifyCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Подтверждение email
+      tags:
+      - Auth
+  /auth/verify-phone:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Код подтверждения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VerifyCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Подтверждение телефона
       tags:
       - Auth
   /avatars:
@@ -765,7 +1314,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.ExerciseResponseModel'
+          $ref: '#/definitions/models.ExerciseRequestModel'
       produces:
       - application/json
       responses:
@@ -794,11 +1343,296 @@ paths:
       summary: Обновление упражнения
       tags:
       - Exercises
-  /user/calories/{uuid}:
-    delete:
-      description: Удаляет запись о весе пользователя по ID
+  /nutrition/analyze:
+    post:
+      consumes:
+      - application/json
+      description: Отправляет URL изображения еды в OpenAI Vision и возвращает питательную
+        ценность
       parameters:
-      - description: ID записи о весе
+      - description: URL изображения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.AnalyzePhotoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Результат анализа
+          schema:
+            $ref: '#/definitions/models.NutritionAnalysisResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Анализ фото еды
+      tags:
+      - Nutrition
+  /nutrition/diary:
+    get:
+      parameters:
+      - description: Дата (YYYY-MM-DD), по умолчанию сегодня
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NutritionDiaryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Дневник питания за день
+      tags:
+      - Nutrition
+  /nutrition/entries:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные о еде
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateFoodEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.FoodEntryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создание записи о еде
+      tags:
+      - Nutrition
+  /nutrition/entries/{uuid}:
+    delete:
+      parameters:
+      - description: ID записи
+        in: path
+        name: uuid
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление записи о еде
+      tags:
+      - Nutrition
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID записи
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Поля для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateFoodEntryRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление записи о еде
+      tags:
+      - Nutrition
+  /nutrition/report:
+    get:
+      parameters:
+      - description: Начало периода (YYYY-MM-DD)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: Конец периода (YYYY-MM-DD)
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NutritionReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Отчёт по питанию за период
+      tags:
+      - Nutrition
+  /recommendations:
+    get:
+      parameters:
+      - description: Страница (по умолчанию 1)
+        in: query
+        name: page
+        type: integer
+      - description: Элементов на странице (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RecommendationResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Список рекомендаций
+      tags:
+      - Recommendations
+  /recommendations/{uuid}/read:
+    patch:
+      parameters:
+      - description: ID рекомендации
+        in: path
+        name: uuid
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Отметить рекомендацию прочитанной
+      tags:
+      - Recommendations
+  /recommendations/refresh:
+    post:
+      description: Генерирует персонализированные рекомендации через GPT, заменяя
+        старые
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RecommendationResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление рекомендаций
+      tags:
+      - Recommendations
+  /tasks:
+    get:
+      description: Возвращает список задач в очереди executor'а
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список задач
+          schema:
+            items:
+              $ref: '#/definitions/models.TaskResponse'
+            type: array
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Список задач
+      tags:
+      - Tasks
+  /tasks/{uuid}:
+    delete:
+      description: Удаляет задачу из очереди executor'а
+      parameters:
+      - description: ID задачи
         in: path
         name: uuid
         required: true
@@ -807,9 +1641,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: Успешное удаление
+          description: Задача удалена
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Неверный формат ID
           schema:
@@ -824,18 +1658,57 @@ paths:
             $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Удаление записи о весе пользователя
+      summary: Удаление задачи
       tags:
-      - User Calories
+      - Tasks
     get:
-      description: Получает текущий вес пользователя
+      description: Возвращает одну задачу по её UUID
+      parameters:
+      - description: ID задачи
+        in: path
+        name: uuid
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Актуальный (последний) вес пользователя
+          description: Задача
           schema:
-            $ref: '#/definitions/models.UserWeightResponseModel'
+            $ref: '#/definitions/models.TaskResponse'
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Задача не найдена
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение задачи по ID
+      tags:
+      - Tasks
+  /tasks/{uuid}/restart:
+    post:
+      description: Сбрасывает счётчик попыток и переводит задачу обратно в running
+      parameters:
+      - description: ID задачи
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Задача перезапущена
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Неверный формат ID
           schema:
@@ -850,57 +1723,103 @@ paths:
             $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Получение текущего веса пользователя
+      summary: Перезапуск задачи
+      tags:
+      - Tasks
+  /user/calories:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новую запись о потреблённых или затраченных калориях
+      parameters:
+      - description: Данные о калориях
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserCaloriesRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Запись создана
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создание записи о калориях
+      tags:
+      - User Calories
+  /user/calories/{uuid}:
+    delete:
+      description: Удаляет запись о калориях по ID
+      parameters:
+      - description: ID записи
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Запись удалена
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление записи о калориях
       tags:
       - User Calories
     patch:
       consumes:
       - application/json
-      description: Обновляет текущий вес пользователя
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Успешное обновление
-          schema:
-            type: string
-        "400":
-          description: Ошибка валидации или неверный формат ID
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Отсутствует авторизация
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "500":
-          description: Внутренняя ошибка сервера
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Обновление веса пользователя (пока нет)
-      tags:
-      - User Calories
-    post:
-      consumes:
-      - application/json
-      description: Создает новую запись о весе пользователя
+      description: Обновляет существующую запись о калориях по ID
       parameters:
-      - description: Данные веса для создания
+      - description: ID записи
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Поля для обновления
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.UserWeightCreateRequestModel'
+          $ref: '#/definitions/models.UpdateUserCaloriesRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: Успешное создание
+        "204":
+          description: Запись обновлена
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
-          description: Ошибка валидации или неверный формат ID
+          description: Ошибка валидации
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "401":
@@ -913,25 +1832,90 @@ paths:
             $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Создание записи о весе пользователя
+      summary: Обновление записи о калориях
       tags:
       - User Calories
   /user/calories/history:
     get:
-      description: Получает всю историю изменений веса пользователя
+      description: Возвращает список записей о потреблённых/затраченных калориях за
+        период
+      parameters:
+      - description: Начало периода (ISO 8601)
+        in: query
+        name: start_date
+        type: string
+      - description: Конец периода (ISO 8601)
+        in: query
+        name: end_date
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: История веса пользователя
+          description: История калорий
           schema:
             items:
-              items:
-                $ref: '#/definitions/models.UserWeightResponseModel'
-              type: array
+              $ref: '#/definitions/models.UserCaloriesResponse'
             type: array
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: История записей о калориях
+      tags:
+      - User Calories
+  /user/devices:
+    get:
+      description: Возвращает все зарегистрированные устройства для push-уведомлений
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список устройств
+          schema:
+            items:
+              $ref: '#/definitions/models.UserDeviceResponse'
+            type: array
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Список устройств пользователя
+      tags:
+      - Devices
+    post:
+      consumes:
+      - application/json
+      description: Регистрирует или обновляет device token устройства для получения
+        APNs push-уведомлений
+      parameters:
+      - description: Device token и платформа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterDeviceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Зарегистрированное устройство
+          schema:
+            $ref: '#/definitions/models.UserDeviceResponse'
         "400":
-          description: Неверный формат ID
+          description: Ошибка валидации
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "401":
@@ -944,9 +1928,42 @@ paths:
             $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Получение истории веса пользователя
+      summary: Регистрация device token
       tags:
-      - User Weight
+      - Devices
+  /user/devices/{uuid}:
+    delete:
+      description: Удаляет зарегистрированный device token по ID
+      parameters:
+      - description: ID устройства
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешно удалено
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Неверный формат UUID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Отсутствует авторизация
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление device token
+      tags:
+      - Devices
   /user/info:
     delete:
       description: Удаляет основную информацию о пользователе
@@ -1465,6 +2482,138 @@ paths:
       summary: Обновление тренировки пользователя
       tags:
       - Workouts
+  /workouts/{workoutId}/exercises:
+    get:
+      description: Возвращает все упражнения конкретной тренировки
+      parameters:
+      - description: ID тренировки
+        in: path
+        name: workoutId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.WorkoutExerciseFullResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Список упражнений тренировки
+      tags:
+      - Workout Exercises
+    post:
+      consumes:
+      - application/json
+      description: Добавляет упражнение в существующую тренировку
+      parameters:
+      - description: ID тренировки
+        in: path
+        name: workoutId
+        required: true
+        type: string
+      - description: Данные упражнения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddWorkoutExerciseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.WorkoutExerciseFullResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Добавление упражнения в тренировку
+      tags:
+      - Workout Exercises
+  /workouts/exercises/{uuid}:
+    delete:
+      description: Удаляет упражнение из тренировки по его ID
+      parameters:
+      - description: ID упражнения в тренировке
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление упражнения из тренировки
+      tags:
+      - Workout Exercises
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет статус, повторения или калории упражнения в тренировке
+      parameters:
+      - description: ID упражнения в тренировке (exercise_id)
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateWorkoutExerciseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление упражнения в тренировке
+      tags:
+      - Workout Exercises
   /workouts/history:
     get:
       description: Получает список всех тренировок пользователя (без детализации упражнений)
@@ -1496,15 +2645,42 @@ paths:
       summary: Получение истории тренировок пользователя
       tags:
       - Workouts
+schemes:
+- http
+- https
 securityDefinitions:
   BearerAuth:
-    description: Type "Bearer" followed by a space and JWT token.
+    description: Введите "Bearer <access_token>". Токен выдаётся при входе (POST /auth/login)
+      или обновлении (POST /auth/refresh).
     in: header
     name: Authorization
     type: apiKey
 swagger: "2.0"
 tags:
-- name: Auth
-- name: User Weight
-- name: User Params
-- name: User Info
+- description: Регистрация, вход, refresh-токены, верификация email/телефона, восстановление
+    пароля
+  name: Auth
+- description: Основная информация о пользователе (имя, email, телефон)
+  name: User Info
+- description: Физические параметры пользователя (рост, вес, цель)
+  name: User Params
+- description: История записей веса пользователя
+  name: User Weight
+- description: Ручной трекинг калорий вне дневника питания
+  name: User Calories
+- description: Справочник упражнений
+  name: Exercises
+- description: 'Тренировки: генерация, история, управление'
+  name: Workouts
+- description: Управление упражнениями внутри конкретной тренировки
+  name: Workout Exercises
+- description: 'Дневник питания: анализ фото через AI, записи о еде, отчёты'
+  name: Nutrition
+- description: Персонализированные рекомендации, сгенерированные GPT на основе профиля
+  name: Recommendations
+- description: Регистрация device-токенов для APNs push-уведомлений
+  name: Devices
+- description: Загрузка аватаров через presigned URL (MinIO/S3)
+  name: Photo
+- description: Очередь фоновых задач executor'а (email, SMS, push)
+  name: Tasks

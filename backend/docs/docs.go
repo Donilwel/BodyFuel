@@ -9,7 +9,12 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "Danila Maslov"
+        },
+        "license": {
+            "name": "MIT"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -17,7 +22,7 @@ const docTemplate = `{
     "paths": {
         "/auth/login": {
             "post": {
-                "description": "Вход пользователя в систему и получение JWT токена",
+                "description": "Вход пользователя в систему и получение пары токенов",
                 "consumes": [
                     "application/json"
                 ],
@@ -43,7 +48,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешная аутентификация",
                         "schema": {
-                            "$ref": "#/definitions/models.JWTModel"
+                            "$ref": "#/definitions/models.TokenPairModel"
                         }
                     },
                     "400": {
@@ -60,6 +65,91 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/recover": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Отправка кода восстановления пароля",
+                "parameters": [
+                    {
+                        "description": "Email",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RecoverPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Получение новой пары access+refresh токенов",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Обновление токенов",
+                "parameters": [
+                    {
+                        "description": "Refresh token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Новая пара токенов",
+                        "schema": {
+                            "$ref": "#/definitions/models.TokenPairModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Недействительный токен",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -112,6 +202,196 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Сброс пароля",
+                "parameters": [
+                    {
+                        "description": "Данные для сброса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/send-verification": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Отправка 6-значного кода на email или phone",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Отправка кода подтверждения",
+                "parameters": [
+                    {
+                        "description": "Тип кода",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.SendVerificationCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-email": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Подтверждение email",
+                "parameters": [
+                    {
+                        "description": "Код подтверждения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.VerifyCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-phone": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Подтверждение телефона",
+                "parameters": [
+                    {
+                        "description": "Код подтверждения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.VerifyCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -441,7 +721,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ExerciseResponseModel"
+                            "$ref": "#/definitions/models.ExerciseRequestModel"
                         }
                     }
                 ],
@@ -479,32 +759,539 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/calories/history": {
+        "/nutrition/analyze": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Отправляет URL изображения еды в OpenAI Vision и возвращает питательную ценность",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nutrition"
+                ],
+                "summary": "Анализ фото еды",
+                "parameters": [
+                    {
+                        "description": "URL изображения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AnalyzePhotoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Результат анализа",
+                        "schema": {
+                            "$ref": "#/definitions/models.NutritionAnalysisResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nutrition/diary": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Получает всю историю изменений веса пользователя",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "User Weight"
+                    "Nutrition"
                 ],
-                "summary": "Получение истории веса пользователя",
+                "summary": "Дневник питания за день",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Дата (YYYY-MM-DD), по умолчанию сегодня",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "История веса пользователя",
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.NutritionDiaryResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nutrition/entries": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nutrition"
+                ],
+                "summary": "Создание записи о еде",
+                "parameters": [
+                    {
+                        "description": "Данные о еде",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateFoodEntryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.FoodEntryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nutrition/entries/{uuid}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Nutrition"
+                ],
+                "summary": "Удаление записи о еде",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID записи",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nutrition"
+                ],
+                "summary": "Обновление записи о еде",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID записи",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Поля для обновления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateFoodEntryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nutrition/report": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nutrition"
+                ],
+                "summary": "Отчёт по питанию за период",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Начало периода (YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Конец периода (YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.NutritionReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/recommendations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Список рекомендаций",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Страница (по умолчанию 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Элементов на странице (по умолчанию 10)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/models.UserWeightResponseModel"
-                                }
+                                "$ref": "#/definitions/models.RecommendationResponse"
                             }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/recommendations/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Генерирует персонализированные рекомендации через GPT, заменяя старые",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Обновление рекомендаций",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RecommendationResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/recommendations/{uuid}/read": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Recommendations"
+                ],
+                "summary": "Отметить рекомендацию прочитанной",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID рекомендации",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список задач в очереди executor'а",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Список задач",
+                "responses": {
+                    "200": {
+                        "description": "Список задач",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.TaskResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает одну задачу по её UUID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Получение задачи по ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID задачи",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Задача",
+                        "schema": {
+                            "$ref": "#/definitions/models.TaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Задача не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет задачу из очереди executor'а",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tasks"
+                ],
+                "summary": "Удаление задачи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID задачи",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Задача удалена",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -528,26 +1315,35 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/calories/{uuid}": {
-            "get": {
+        "/tasks/{uuid}/restart": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Получает текущий вес пользователя",
+                "description": "Сбрасывает счётчик попыток и переводит задачу обратно в running",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "User Calories"
+                    "Tasks"
                 ],
-                "summary": "Получение текущего веса пользователя",
+                "summary": "Перезапуск задачи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID задачи",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Актуальный (последний) вес пользователя",
+                        "description": "Задача перезапущена",
                         "schema": {
-                            "$ref": "#/definitions/models.UserWeightResponseModel"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -569,14 +1365,16 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/user/calories": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Создает новую запись о весе пользователя",
+                "description": "Создаёт новую запись о потреблённых или затраченных калориях",
                 "consumes": [
                     "application/json"
                 ],
@@ -586,27 +1384,27 @@ const docTemplate = `{
                 "tags": [
                     "User Calories"
                 ],
-                "summary": "Создание записи о весе пользователя",
+                "summary": "Создание записи о калориях",
                 "parameters": [
                     {
-                        "description": "Данные веса для создания",
+                        "description": "Данные о калориях",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.UserWeightCreateRequestModel"
+                            "$ref": "#/definitions/models.CreateUserCaloriesRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Успешное создание",
+                    "201": {
+                        "description": "Запись создана",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Ошибка валидации или неверный формат ID",
+                        "description": "Ошибка валидации",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -624,35 +1422,91 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "delete": {
+            }
+        },
+        "/user/calories/history": {
+            "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Удаляет запись о весе пользователя по ID",
+                "description": "Возвращает список записей о потреблённых/затраченных калориях за период",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User Calories"
                 ],
-                "summary": "Удаление записи о весе пользователя",
+                "summary": "История записей о калориях",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID записи о весе",
+                        "description": "Начало периода (ISO 8601)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Конец периода (ISO 8601)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "История калорий",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.UserCaloriesResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/calories/{uuid}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет запись о калориях по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User Calories"
+                ],
+                "summary": "Удаление записи о калориях",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID записи",
                         "name": "uuid",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Успешное удаление",
+                    "204": {
+                        "description": "Запись удалена",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -681,7 +1535,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Обновляет текущий вес пользователя",
+                "description": "Обновляет существующую запись о калориях по ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -691,16 +1545,181 @@ const docTemplate = `{
                 "tags": [
                     "User Calories"
                 ],
-                "summary": "Обновление веса пользователя (пока нет)",
-                "responses": {
-                    "200": {
-                        "description": "Успешное обновление",
+                "summary": "Обновление записи о калориях",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID записи",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Поля для обновления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.UpdateUserCaloriesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Запись обновлена",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Ошибка валидации или неверный формат ID",
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/devices": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает все зарегистрированные устройства для push-уведомлений",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Список устройств пользователя",
+                "responses": {
+                    "200": {
+                        "description": "Список устройств",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.UserDeviceResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Регистрирует или обновляет device token устройства для получения APNs push-уведомлений",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Регистрация device token",
+                "parameters": [
+                    {
+                        "description": "Device token и платформа",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RegisterDeviceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Зарегистрированное устройство",
+                        "schema": {
+                            "$ref": "#/definitions/models.UserDeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Отсутствует авторизация",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/devices/{uuid}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет зарегистрированный device token по ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Devices"
+                ],
+                "summary": "Удаление device token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID устройства",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешно удалено",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат UUID",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -1353,6 +2372,108 @@ const docTemplate = `{
                 }
             }
         },
+        "/workouts/exercises/{uuid}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Удаляет упражнение из тренировки по его ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workout Exercises"
+                ],
+                "summary": "Удаление упражнения из тренировки",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID упражнения в тренировке",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет статус, повторения или калории упражнения в тренировке",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workout Exercises"
+                ],
+                "summary": "Обновление упражнения в тренировке",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID упражнения в тренировке (exercise_id)",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateWorkoutExerciseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/workouts/history": {
             "get": {
                 "security": [
@@ -1574,6 +2695,111 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/workouts/{workoutId}/exercises": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает все упражнения конкретной тренировки",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workout Exercises"
+                ],
+                "summary": "Список упражнений тренировки",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID тренировки",
+                        "name": "workoutId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.WorkoutExerciseFullResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Добавляет упражнение в существующую тренировку",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workout Exercises"
+                ],
+                "summary": "Добавление упражнения в тренировку",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID тренировки",
+                        "name": "workoutId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные упражнения",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AddWorkoutExerciseRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.WorkoutExerciseFullResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1688,6 +2914,108 @@ const docTemplate = `{
                 "WorkoutStatusInActive",
                 "WorkoutStatusFailed"
             ]
+        },
+        "models.AddWorkoutExerciseRequest": {
+            "type": "object",
+            "required": [
+                "exercise_id"
+            ],
+            "properties": {
+                "exercise_id": {
+                    "type": "string"
+                },
+                "modify_relax_time": {
+                    "type": "integer",
+                    "maximum": 3600,
+                    "minimum": 0
+                },
+                "modify_reps": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 1
+                }
+            }
+        },
+        "models.AnalyzePhotoRequest": {
+            "type": "object",
+            "required": [
+                "image_url"
+            ],
+            "properties": {
+                "image_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateFoodEntryRequest": {
+            "type": "object",
+            "required": [
+                "calories",
+                "description",
+                "meal_type"
+            ],
+            "properties": {
+                "calories": {
+                    "type": "integer",
+                    "maximum": 10000,
+                    "minimum": 0
+                },
+                "carbs": {
+                    "type": "number",
+                    "maximum": 500,
+                    "minimum": 0
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "fat": {
+                    "type": "number",
+                    "maximum": 500,
+                    "minimum": 0
+                },
+                "meal_type": {
+                    "type": "string",
+                    "enum": [
+                        "breakfast",
+                        "lunch",
+                        "dinner",
+                        "snack"
+                    ]
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "protein": {
+                    "type": "number",
+                    "maximum": 500,
+                    "minimum": 0
+                }
+            }
+        },
+        "models.CreateUserCaloriesRequest": {
+            "type": "object",
+            "required": [
+                "calories",
+                "date"
+            ],
+            "properties": {
+                "calories": {
+                    "type": "integer",
+                    "maximum": 10000,
+                    "minimum": 0
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 255
+                }
+            }
         },
         "models.ErrorResponse": {
             "type": "object",
@@ -1810,6 +3138,41 @@ const docTemplate = `{
                 }
             }
         },
+        "models.FoodEntryResponse": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer"
+                },
+                "carbs": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "fat": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "meal_type": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "protein": {
+                    "type": "number"
+                }
+            }
+        },
         "models.GenerateWorkoutRequest": {
             "type": "object",
             "properties": {
@@ -1858,14 +3221,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.JWTModel": {
-            "type": "object",
-            "properties": {
-                "jwt": {
-                    "type": "string"
-                }
-            }
-        },
         "models.LoginRequestModel": {
             "type": "object",
             "required": [
@@ -1878,6 +3233,87 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "models.NutritionAnalysisResponse": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer"
+                },
+                "carbs": {
+                    "type": "number"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "fat": {
+                    "type": "number"
+                },
+                "protein": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.NutritionDiaryResponse": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.FoodEntryResponse"
+                    }
+                },
+                "total_calories": {
+                    "type": "integer"
+                },
+                "total_carbs": {
+                    "type": "number"
+                },
+                "total_fat": {
+                    "type": "number"
+                },
+                "total_protein": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.NutritionReportResponse": {
+            "type": "object",
+            "properties": {
+                "avg_calories_per_day": {
+                    "type": "number"
+                },
+                "days": {
+                    "type": "integer"
+                },
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.FoodEntryResponse"
+                    }
+                },
+                "from": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                },
+                "total_calories": {
+                    "type": "integer"
+                },
+                "total_carbs": {
+                    "type": "number"
+                },
+                "total_fat": {
+                    "type": "number"
+                },
+                "total_protein": {
+                    "type": "number"
                 }
             }
         },
@@ -1903,6 +3339,70 @@ const docTemplate = `{
                 },
                 "upload_url": {
                     "type": "string"
+                }
+            }
+        },
+        "models.RecommendationResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_read": {
+                    "type": "boolean"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RecoverPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RefreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RegisterDeviceRequest": {
+            "type": "object",
+            "required": [
+                "device_token",
+                "platform"
+            ],
+            "properties": {
+                "device_token": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string",
+                    "enum": [
+                        "ios",
+                        "android"
+                    ]
                 }
             }
         },
@@ -1944,12 +3444,220 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "email",
+                "new_password"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
+        "models.SendVerificationCodeRequest": {
+            "type": "object",
+            "required": [
+                "code_type"
+            ],
+            "properties": {
+                "code_type": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "phone"
+                    ]
+                }
+            }
+        },
         "models.SuccessResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string",
                     "example": "Successfully {action}"
+                }
+            }
+        },
+        "models.TaskResponse": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "attribute": {},
+                "created_at": {
+                    "type": "string"
+                },
+                "max_attempts": {
+                    "type": "integer"
+                },
+                "retry_at": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "type_nm": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TokenPairModel": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UpdateFoodEntryRequest": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer",
+                    "maximum": 10000,
+                    "minimum": 0
+                },
+                "carbs": {
+                    "type": "number",
+                    "maximum": 500,
+                    "minimum": 0
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "fat": {
+                    "type": "number",
+                    "maximum": 500,
+                    "minimum": 0
+                },
+                "meal_type": {
+                    "type": "string",
+                    "enum": [
+                        "breakfast",
+                        "lunch",
+                        "dinner",
+                        "snack"
+                    ]
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "protein": {
+                    "type": "number",
+                    "maximum": 500,
+                    "minimum": 0
+                }
+            }
+        },
+        "models.UpdateUserCaloriesRequest": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer",
+                    "maximum": 10000,
+                    "minimum": 0
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 255
+                }
+            }
+        },
+        "models.UpdateWorkoutExerciseRequest": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "modify_relax_time": {
+                    "type": "integer",
+                    "maximum": 3600,
+                    "minimum": 0
+                },
+                "modify_reps": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 1
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "in_progress",
+                        "completed",
+                        "skipped"
+                    ]
+                }
+            }
+        },
+        "models.UserCaloriesResponse": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UserDeviceResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "device_token": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
                 }
             }
         },
@@ -2187,6 +3895,57 @@ const docTemplate = `{
                 }
             }
         },
+        "models.VerifyCodeRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "code_type"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "code_type": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "phone"
+                    ]
+                }
+            }
+        },
+        "models.WorkoutExerciseFullResponse": {
+            "type": "object",
+            "properties": {
+                "calories": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "exercise_id": {
+                    "type": "string"
+                },
+                "modify_relax_time": {
+                    "type": "integer"
+                },
+                "modify_reps": {
+                    "type": "integer"
+                },
+                "order_index": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/entities.ExerciseStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "workout_id": {
+                    "type": "string"
+                }
+            }
+        },
         "models.WorkoutExerciseResponse": {
             "type": "object",
             "properties": {
@@ -2272,7 +4031,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "description": "Введите \"Bearer \u003caccess_token\u003e\". Токен выдаётся при входе (POST /auth/login) или обновлении (POST /auth/refresh).",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -2280,30 +4039,72 @@ const docTemplate = `{
     },
     "tags": [
         {
+            "description": "Регистрация, вход, refresh-токены, верификация email/телефона, восстановление пароля",
             "name": "Auth"
         },
         {
-            "name": "User Weight"
+            "description": "Основная информация о пользователе (имя, email, телефон)",
+            "name": "User Info"
         },
         {
+            "description": "Физические параметры пользователя (рост, вес, цель)",
             "name": "User Params"
         },
         {
-            "name": "User Info"
+            "description": "История записей веса пользователя",
+            "name": "User Weight"
+        },
+        {
+            "description": "Ручной трекинг калорий вне дневника питания",
+            "name": "User Calories"
+        },
+        {
+            "description": "Справочник упражнений",
+            "name": "Exercises"
+        },
+        {
+            "description": "Тренировки: генерация, история, управление",
+            "name": "Workouts"
+        },
+        {
+            "description": "Управление упражнениями внутри конкретной тренировки",
+            "name": "Workout Exercises"
+        },
+        {
+            "description": "Дневник питания: анализ фото через AI, записи о еде, отчёты",
+            "name": "Nutrition"
+        },
+        {
+            "description": "Персонализированные рекомендации, сгенерированные GPT на основе профиля",
+            "name": "Recommendations"
+        },
+        {
+            "description": "Регистрация device-токенов для APNs push-уведомлений",
+            "name": "Devices"
+        },
+        {
+            "description": "Загрузка аватаров через presigned URL (MinIO/S3)",
+            "name": "Photo"
+        },
+        {
+            "description": "Очередь фоновых задач executor'а (email, SMS, push)",
+            "name": "Tasks"
         }
     ]
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
-	Host:             "",
-	BasePath:         "",
-	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Version:          "1.0",
+	Host:             "localhost:8080",
+	BasePath:         "/api/v1",
+	Schemes:          []string{"http", "https"},
+	Title:            "BodyFuel API",
+	Description:      "REST API для фитнес-приложения BodyFuel. Предоставляет управление пользователями, тренировками, питанием и персонализированными рекомендациями.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

@@ -8,6 +8,14 @@ import (
 	"github.com/google/uuid"
 )
 
+func (s *Service) GetTask(ctx context.Context, id uuid.UUID) (*entities.Task, error) {
+	t, err := s.tasksRepository.Get(ctx, dto.TasksFilter{IDs: []uuid.UUID{id}}, false)
+	if err != nil {
+		return nil, fmt.Errorf("get task: %w", err)
+	}
+	return t, nil
+}
+
 func (s *Service) ListTasks(ctx context.Context, filter dto.TasksFilter) ([]*entities.Task, error) {
 	ts, err := s.tasksRepository.List(ctx, filter, false)
 	if err != nil {

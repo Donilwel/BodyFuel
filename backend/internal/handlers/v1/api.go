@@ -3,13 +3,17 @@ package v1
 import (
 	"backend/internal/domain/entities"
 	"backend/internal/dto"
+	"backend/internal/service/auth"
+	"backend/internal/service/nutricion"
 	"backend/pkg/JWT"
+	"backend/pkg/ai"
 	"backend/pkg/logging"
 	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -19,7 +23,12 @@ import (
 type (
 	AuthService interface {
 		Register(ctx context.Context, ua entities.UserInfoInitSpec) error
-		Login(ctx context.Context, ui entities.UserAuthInitSpec) (string, error)
+		Login(ctx context.Context, ui entities.UserAuthInitSpec) (auth.TokenPair, error)
+		Refresh(ctx context.Context, rawToken string) (auth.TokenPair, error)
+		SendVerificationCode(ctx context.Context, userID uuid.UUID, codeType entities.VerificationCodeType) error
+		VerifyCode(ctx context.Context, userID uuid.UUID, code string, codeType entities.VerificationCodeType) error
+		SendRecoveryCode(ctx context.Context, email string) error
+		ResetPassword(ctx context.Context, email, code, newPassword string) error
 	}
 
 	UserStatisticsService interface {
@@ -53,12 +62,17 @@ type (
 		DeleteExercise(ctx context.Context, f dto.ExerciseFilter) error
 		ListExercise(ctx context.Context, userID uuid.UUID, f dto.ExerciseFilter, withBlock bool) ([]*entities.Exercise, error)
 
+		GetWorkoutExercise(ctx context.Context, f dto.WorkoutsExerciseFilter, withBlock bool) (*entities.WorkoutsExercise, error)
 		ListWorkoutsExercise(ctx context.Context, f dto.WorkoutsExerciseFilter) ([]*entities.WorkoutsExercise, error)
+		CreateWorkoutExercise(ctx context.Context, workoutExercise *entities.WorkoutsExercise) error
+		UpdateWorkoutExerciseByFilter(ctx context.Context, f dto.WorkoutsExerciseFilter, params entities.WorkoutsExerciseUpdateParams) error
+		DeleteWorkoutExercise(ctx context.Context, f dto.WorkoutsExerciseFilter) error
 		GetWorkout(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) (*entities.Workout, error)
 		ListWorkouts(ctx context.Context, f dto.WorkoutsFilter, withBlock bool) ([]*entities.Workout, error)
 		UpdateWorkoutByFilter(ctx context.Context, f dto.WorkoutsFilter, params entities.WorkoutUpdateParams) error
 		DeleteWorkout(ctx context.Context, f dto.WorkoutsFilter) error
 
+		GetTask(ctx context.Context, id uuid.UUID) (*entities.Task, error)
 		DeleteTask(ctx context.Context, id uuid.UUID) error
 		ListTasks(ctx context.Context, filter dto.TasksFilter) ([]*entities.Task, error)
 		RestartTask(ctx context.Context, id uuid.UUID) error
@@ -78,6 +92,22 @@ type (
 		PresignPutAvatar(ctx context.Context, userID string, contentType string) (uploadURL string, objectKey string, err error)
 		PublicAvatarURL(objectKey string) string
 	}
+
+	NutritionService interface {
+		AnalyzePhoto(ctx context.Context, imageURL string) (*ai.NutritionAnalysis, error)
+		CreateFoodEntry(ctx context.Context, spec entities.UserFoodInitSpec) error
+		GetFoodEntry(ctx context.Context, id, userID uuid.UUID) (*entities.UserFood, error)
+		UpdateFoodEntry(ctx context.Context, id, userID uuid.UUID, params entities.UserFoodUpdateParams) error
+		DeleteFoodEntry(ctx context.Context, id, userID uuid.UUID) error
+		GetDiary(ctx context.Context, userID uuid.UUID, date time.Time) (*nutricion.NutritionDiary, error)
+		GetReport(ctx context.Context, userID uuid.UUID, from, to time.Time) (*nutricion.NutritionReport, error)
+	}
+
+	RecommendationService interface {
+		List(ctx context.Context, userID uuid.UUID, page, limit int) ([]*entities.UserRecommendation, error)
+		Refresh(ctx context.Context, userID uuid.UUID) ([]*entities.UserRecommendation, error)
+		MarkRead(ctx context.Context, id, userID uuid.UUID) error
+	}
 )
 
 type Config struct {
@@ -86,6 +116,8 @@ type Config struct {
 	WorkoutService        WorkoutService
 	CRUDService           CRUDService
 	AvatarService         AvatarService
+	NutritionService      NutritionService
+	RecommendationService RecommendationService
 	Validator             validator.Validate
 	Log                   logging.Entry
 }
@@ -96,6 +128,8 @@ type API struct {
 	WorkoutService        WorkoutService
 	CRUDService           CRUDService
 	avatarService         AvatarService
+	nutritionService      NutritionService
+	recommendationService RecommendationService
 	validator             validator.Validate
 	log                   logging.Entry
 }
@@ -107,6 +141,8 @@ func NewHandlers(c Config) *API {
 		WorkoutService:        c.WorkoutService,
 		CRUDService:           c.CRUDService,
 		avatarService:         c.AvatarService,
+		nutritionService:      c.NutritionService,
+		recommendationService: c.RecommendationService,
 		validator:             c.Validator,
 		log:                   c.Log,
 	}
@@ -125,7 +161,8 @@ func (a *API) RegisterHandlers(r *gin.RouterGroup) {
 	a.registerAvatarsHandlers(protected)
 	a.registerUserDevicesHandlers(protected)
 	a.registerUserCaloriesHandlers(protected)
-
+	a.registerNutritionHandlers(protected)
+	a.registerRecommendationsHandlers(protected)
 }
 
 func (a *API) checkPhone(ctx *gin.Context, phone string) error {

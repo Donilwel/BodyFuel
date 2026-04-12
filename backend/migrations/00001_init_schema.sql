@@ -648,10 +648,77 @@ CREATE TABLE IF NOT EXISTS bodyfuel.user_calories (
 CREATE INDEX IF NOT EXISTS idx_user_calories_user_id ON bodyfuel.user_calories (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_calories_date    ON bodyfuel.user_calories (date);
 
+-- === user_refresh_tokens ===
+CREATE TABLE IF NOT EXISTS bodyfuel.user_refresh_tokens (
+    id         UUID PRIMARY KEY,
+    user_id    UUID        NOT NULL REFERENCES bodyfuel.user_info(id) ON DELETE CASCADE,
+    token_hash TEXT        NOT NULL UNIQUE,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_refresh_tokens_user_id    ON bodyfuel.user_refresh_tokens (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_refresh_tokens_token_hash ON bodyfuel.user_refresh_tokens (token_hash);
+
+-- === user_verification_codes ===
+CREATE TABLE IF NOT EXISTS bodyfuel.user_verification_codes (
+    id         UUID PRIMARY KEY,
+    user_id    UUID        NOT NULL REFERENCES bodyfuel.user_info(id) ON DELETE CASCADE,
+    code_hash  TEXT        NOT NULL,
+    code_type  TEXT        NOT NULL CHECK (code_type IN ('email', 'phone', 'recover')),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used_at    TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_verification_codes_user_id ON bodyfuel.user_verification_codes (user_id);
+
+-- === user_food ===
+CREATE TABLE IF NOT EXISTS bodyfuel.user_food (
+    id          UUID PRIMARY KEY,
+    user_id     UUID        NOT NULL REFERENCES bodyfuel.user_info(id) ON DELETE CASCADE,
+    description TEXT        NOT NULL,
+    calories    INTEGER     NOT NULL DEFAULT 0,
+    protein     NUMERIC(6,2) NOT NULL DEFAULT 0,
+    carbs       NUMERIC(6,2) NOT NULL DEFAULT 0,
+    fat         NUMERIC(6,2) NOT NULL DEFAULT 0,
+    meal_type   TEXT        NOT NULL CHECK (meal_type IN ('breakfast','lunch','dinner','snack')),
+    photo_url   TEXT        NOT NULL DEFAULT '',
+    date        DATE        NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_food_user_id ON bodyfuel.user_food (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_food_date    ON bodyfuel.user_food (date);
+
+-- === user_recommendation ===
+CREATE TABLE IF NOT EXISTS bodyfuel.user_recommendation (
+    id           UUID PRIMARY KEY,
+    user_id      UUID        NOT NULL REFERENCES bodyfuel.user_info(id) ON DELETE CASCADE,
+    type         TEXT        NOT NULL CHECK (type IN ('workout','nutrition','rest','general')),
+    description  TEXT        NOT NULL,
+    priority     SMALLINT    NOT NULL DEFAULT 2,
+    is_read      BOOLEAN     NOT NULL DEFAULT FALSE,
+    generated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_recommendation_user_id ON bodyfuel.user_recommendation (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_recommendation_is_read ON bodyfuel.user_recommendation (user_id, is_read);
+
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
+
+-- === user_recommendation and user_food ===
+DROP TABLE IF EXISTS bodyfuel.user_recommendation;
+DROP TABLE IF EXISTS bodyfuel.user_food;
+
+-- === user_verification_codes and user_refresh_tokens ===
+DROP TABLE IF EXISTS bodyfuel.user_verification_codes;
+DROP TABLE IF EXISTS bodyfuel.user_refresh_tokens;
 
 -- === user_calories ===
 DROP TABLE IF EXISTS bodyfuel.user_calories;

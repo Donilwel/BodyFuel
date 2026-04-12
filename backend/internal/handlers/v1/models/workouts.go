@@ -103,6 +103,53 @@ func NewUserWorkoutsResponse(ws []*entities.Workout) []UserWorkoutResponse {
 	return response
 }
 
+type AddWorkoutExerciseRequest struct {
+	ExerciseID      uuid.UUID `json:"exercise_id" validate:"required"`
+	ModifyReps      int       `json:"modify_reps" validate:"omitempty,min=1,max=1000"`
+	ModifyRelaxTime int       `json:"modify_relax_time" validate:"omitempty,min=0,max=3600"`
+}
+
+type UpdateWorkoutExerciseRequest struct {
+	Status          *string `json:"status" validate:"omitempty,oneof=pending in_progress completed skipped"`
+	ModifyReps      *int    `json:"modify_reps" validate:"omitempty,min=1,max=1000"`
+	ModifyRelaxTime *int    `json:"modify_relax_time" validate:"omitempty,min=0,max=3600"`
+	Calories        *int    `json:"calories" validate:"omitempty,min=0"`
+}
+
+type WorkoutExerciseFullResponse struct {
+	ExerciseID      uuid.UUID               `json:"exercise_id"`
+	WorkoutID       uuid.UUID               `json:"workout_id"`
+	ModifyReps      int                     `json:"modify_reps"`
+	ModifyRelaxTime int                     `json:"modify_relax_time"`
+	Calories        int                     `json:"calories"`
+	Status          entities.ExerciseStatus `json:"status"`
+	OrderIndex      int                     `json:"order_index"`
+	CreatedAt       time.Time               `json:"created_at"`
+	UpdatedAt       time.Time               `json:"updated_at"`
+}
+
+func NewWorkoutExerciseFullResponse(we *entities.WorkoutsExercise) WorkoutExerciseFullResponse {
+	return WorkoutExerciseFullResponse{
+		ExerciseID:      we.ExerciseID(),
+		WorkoutID:       we.WorkoutID(),
+		ModifyReps:      we.ModifyReps(),
+		ModifyRelaxTime: we.ModifyRelaxTime(),
+		Calories:        we.Calories(),
+		Status:          we.Status(),
+		OrderIndex:      we.OrderIndex(),
+		CreatedAt:       we.CreatedAt(),
+		UpdatedAt:       we.UpdatedAt(),
+	}
+}
+
+func NewWorkoutExercisesFullResponse(list []*entities.WorkoutsExercise) []WorkoutExerciseFullResponse {
+	resp := make([]WorkoutExerciseFullResponse, len(list))
+	for i, we := range list {
+		resp[i] = NewWorkoutExerciseFullResponse(we)
+	}
+	return resp
+}
+
 type GenerateWorkoutRequest struct {
 	PlaceExercise  *entities.PlaceExercise `json:"place_exercise" binding:"omitempty,oneof=home gym street"`
 	TypeExercise   *entities.ExerciseType  `json:"type_exercise" binding:"omitempty,oneof=upper_body lower_body full_body cardio flexibility"`
