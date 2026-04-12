@@ -16,3 +16,10 @@ type WorkoutsExerciseFilter struct {
 	Status          *entities.ExerciseStatus
 	UpdateAt        *time.Time
 }
+
+// SkippedExerciseInfo aggregates skip history for one exercise across all workouts of a user.
+type SkippedExerciseInfo struct {
+	ExerciseID    uuid.UUID
+	SkipCount     int
+	LastSkippedAt time.Time
+}

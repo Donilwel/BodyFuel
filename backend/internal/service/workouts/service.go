@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"runtime/debug"
+	"sort"
 	"sync"
 	"time"
 
@@ -78,10 +79,15 @@ type (
 
 	WorkoutExerciseRepository interface {
 		CreateBulk(ctx context.Context, workoutExercises []entities.WorkoutsExercise) error
+		ListSkippedExercises(ctx context.Context, userID uuid.UUID, since time.Time) ([]dto.SkippedExerciseInfo, error)
 	}
 
 	UserDevicesRepository interface {
 		List(ctx context.Context, f dto.UserDeviceFilter) ([]*entities.UserDevice, error)
+	}
+
+	UserFoodRepository interface {
+		List(ctx context.Context, f dto.UserFoodFilter) ([]*entities.UserFood, error)
 	}
 )
 
@@ -95,6 +101,7 @@ type Config struct {
 	ExerciseRepository        ExerciseRepository
 	WorkoutExerciseRepository WorkoutExerciseRepository
 	UserDevicesRepository     UserDevicesRepository
+	UserFoodRepository        UserFoodRepository
 
 	WorkoutPullUserInterval  time.Duration
 	MaxRetrySendNotification int
@@ -116,6 +123,7 @@ type Service struct {
 	workoutExerciseRepository WorkoutExerciseRepository
 	tasksRepository           TasksRepository
 	userDevicesRepository     UserDevicesRepository
+	userFoodRepository        UserFoodRepository
 
 	workoutPullUserInterval  time.Duration
 	limitGenerateWorkouts    int
@@ -186,6 +194,7 @@ func NewService(cfg *Config) *Service {
 		userInfoRepository:        cfg.UserInfoRepository,
 		userWeightRepository:      cfg.UserWeightRepository,
 		userDevicesRepository:     cfg.UserDevicesRepository,
+		userFoodRepository:        cfg.UserFoodRepository,
 
 		workoutPullUserInterval:  cfg.WorkoutPullUserInterval,
 		maxRetrySendNotification: cfg.MaxRetrySendNotification,
@@ -514,6 +523,25 @@ func (s *Service) analyzeWorkoutStats(ctx context.Context, userInfo *entities.Us
 
 	preferredLevel := s.determinePreferredLevel(userInfo, userParams, workouts)
 
+	// Nutrition context: today's consumed calories vs target.
+	todayCalories := s.getTodayCalories(ctx, userID, now)
+	targetCalories := 0
+	if userParams != nil {
+		targetCalories = userParams.TargetCaloriesDaily()
+	}
+
+	// Weight progress.
+	currentWeight := 0.0
+	targetWeight := 0.0
+	if userParams != nil {
+		currentWeight = userParams.CurrentWeight()
+		targetWeight = userParams.TargetWeight()
+	}
+	// Try to get the most recent logged weight.
+	if recentWeight := s.getLatestWeight(ctx, userID); recentWeight > 0 {
+		currentWeight = recentWeight
+	}
+
 	stats := &dto.AnalyzeWorkoutStats{
 		IDUser:                userID,
 		PopularExerciseType:   popularExerciseType,
@@ -521,6 +549,12 @@ func (s *Service) analyzeWorkoutStats(ctx context.Context, userInfo *entities.Us
 		AWGLevel:              preferredLevel,
 		TargetWorkoutsPerWeek: targetWorkoutsPerWeek,
 		TotalWorkouts:         len(workouts),
+		TodayCalories:         todayCalories,
+		TargetCalories:        targetCalories,
+		CalorieBalance:        todayCalories - targetCalories,
+		CurrentWeight:         currentWeight,
+		TargetWeight:          targetWeight,
+		WeightDelta:           currentWeight - targetWeight,
 	}
 
 	if len(workouts) == 0 {
@@ -544,6 +578,43 @@ func (s *Service) analyzeWorkoutStats(ctx context.Context, userInfo *entities.Us
 	stats.SkipGeneration = false
 
 	return stats, nil
+}
+
+// getTodayCalories sums calories from all food entries for the user today.
+func (s *Service) getTodayCalories(ctx context.Context, userID uuid.UUID, now time.Time) int {
+	if s.userFoodRepository == nil {
+		return 0
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	foods, err := s.userFoodRepository.List(ctx, dto.UserFoodFilter{UserID: &userID, Date: &today})
+	if err != nil {
+		s.log.Warnf("getTodayCalories: %v", err)
+		return 0
+	}
+	total := 0
+	for _, f := range foods {
+		total += f.Calories()
+	}
+	return total
+}
+
+// getLatestWeight returns the most recent logged weight for the user, or 0 if unavailable.
+func (s *Service) getLatestWeight(ctx context.Context, userID uuid.UUID) float64 {
+	if s.userWeightRepository == nil {
+		return 0
+	}
+	weights, err := s.userWeightRepository.List(ctx, dto.UserWeightFilter{UserID: &userID}, false)
+	if err != nil || len(weights) == 0 {
+		return 0
+	}
+	// Find the most recent entry.
+	latest := weights[0]
+	for _, w := range weights[1:] {
+		if w.Date().After(latest.Date()) {
+			latest = w
+		}
+	}
+	return latest.Weight()
 }
 
 func (s *Service) shouldSkipGeneration(workouts []*entities.Workout, lastWorkout *entities.Workout, targetPerWeek int, now time.Time) string {
@@ -626,9 +697,18 @@ func (s *Service) generateWorkout(ctx context.Context, userParams *entities.User
 		return nil, fmt.Errorf("failed to generate coef: %w", err)
 	}
 
+	// Adjust intensity based on today's nutrition balance.
+	coef *= s.nutritionCoefAdjustment(stats.TodayCalories, stats.TargetCalories, userParams.Want())
+
 	userLevel, err := userParams.Lifestyle().ToLevelPreparation()
 	if err != nil {
 		return nil, fmt.Errorf("parsing lifestyle to levelpreparation: %w", err)
+	}
+
+	// Weight-progress-based exercise type preference overrides the historical average.
+	preferredType := s.weightProgressTypePreference(stats.WeightDelta, userParams.Want())
+	if preferredType != "" {
+		stats.PopularExerciseType = preferredType
 	}
 
 	exercises, err := s.getExercisesForWorkout(ctx, userLevel.String(), stats.PopularPlaceExercise)
@@ -640,7 +720,21 @@ func (s *Service) generateWorkout(ctx context.Context, userParams *entities.User
 		return nil, fmt.Errorf("no exercises found")
 	}
 
+	// Filter out exercises blocked by skip history.
+	skipMap, err := s.buildSkipMap(ctx, stats.IDUser)
+	if err != nil {
+		s.log.Warnf("buildSkipMap: %v (continuing without skip filter)", err)
+	}
+	exercises = s.filterSkippedExercises(exercises, skipMap)
+
+	if len(exercises) == 0 {
+		return nil, fmt.Errorf("no exercises available after skip filtering")
+	}
+
 	selectedExercises := s.selectExercisesForWorkout(exercises, stats)
+
+	// Sort by exercise phase: Flexibility → Strength → Cardio.
+	selectedExercises = sortExercisesByPhase(selectedExercises)
 
 	totalCalories, totalDuration := s.calculateWorkoutParams(selectedExercises, coef)
 
@@ -982,6 +1076,13 @@ func (s *Service) GenerateCustomWorkout(ctx context.Context, params *dto.Generat
 
 	finalCoef := s.applyLevelMultiplier(params.Level)
 
+	// Adjust intensity based on today's nutrition if user params available.
+	if params.UserParams != nil {
+		todayCalories := s.getTodayCalories(ctx, params.UserID, time.Now().In(s.location))
+		targetCalories := params.UserParams.TargetCaloriesDaily()
+		finalCoef *= s.nutritionCoefAdjustment(todayCalories, targetCalories, params.UserParams.Want())
+	}
+
 	levelPreparation := s.determineExerciseLevel(params)
 
 	exercises, err := s.getExercisesByParams(ctx, levelPreparation, params)
@@ -993,7 +1094,21 @@ func (s *Service) GenerateCustomWorkout(ctx context.Context, params *dto.Generat
 		return nil, fmt.Errorf("no exercises found for given parameters")
 	}
 
+	// Apply skip filtering.
+	skipMap, err := s.buildSkipMap(ctx, params.UserID)
+	if err != nil {
+		s.log.Warnf("GenerateCustomWorkout buildSkipMap: %v (continuing without skip filter)", err)
+	}
+	exercises = s.filterSkippedExercises(exercises, skipMap)
+
+	if len(exercises) == 0 {
+		return nil, fmt.Errorf("no exercises available after skip filtering")
+	}
+
 	selectedExercises := s.selectCustomExercises(exercises, params)
+
+	// Sort exercises by phase: Flexibility → Strength → Cardio.
+	selectedExercises = sortExercisesByPhase(selectedExercises)
 
 	totalCalories, totalDuration := s.calculateWorkoutParamsWithCoef(selectedExercises, finalCoef)
 
@@ -1123,6 +1238,125 @@ func (s *Service) selectCustomExercises(exercises []*entities.Exercise, params *
 
 	// Иначе пытаемся сбалансировать по типам
 	return s.selectBalancedExercisesByType(exercises, exerciseCount)
+}
+
+// ── Skip-tracking helpers ──────────────────────────────────────────────────
+
+// buildSkipMap fetches skip data for the past 7 days and builds a lookup map keyed by exercise ID.
+func (s *Service) buildSkipMap(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]dto.SkippedExerciseInfo, error) {
+	since := time.Now().Add(-7 * 24 * time.Hour)
+	skipped, err := s.workoutExerciseRepository.ListSkippedExercises(ctx, userID, since)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[uuid.UUID]dto.SkippedExerciseInfo, len(skipped))
+	for _, info := range skipped {
+		m[info.ExerciseID] = info
+	}
+	return m, nil
+}
+
+// filterSkippedExercises removes exercises that have been skipped twice within the last 7 days.
+// Exercises skipped only once remain available (they get one more chance).
+func (s *Service) filterSkippedExercises(exercises []*entities.Exercise, skipMap map[uuid.UUID]dto.SkippedExerciseInfo) []*entities.Exercise {
+	if len(skipMap) == 0 {
+		return exercises
+	}
+	weekAgo := time.Now().Add(-7 * 24 * time.Hour)
+	result := make([]*entities.Exercise, 0, len(exercises))
+	for _, ex := range exercises {
+		info, found := skipMap[ex.ID()]
+		if !found {
+			result = append(result, ex)
+			continue
+		}
+		// Blocked: skipped ≥2 times and last skip is within the past week.
+		if info.SkipCount >= 2 && info.LastSkippedAt.After(weekAgo) {
+			continue
+		}
+		result = append(result, ex)
+	}
+	return result
+}
+
+// ── Phase-ordering helpers ─────────────────────────────────────────────────
+
+// exercisePhase assigns an ordering phase to an exercise type:
+//
+//	0 = Flexibility (warm-up / cooldown – goes first)
+//	1 = Strength (upper/lower/full body)
+//	2 = Cardio (goes last)
+func exercisePhase(t entities.ExerciseType) int {
+	switch t {
+	case entities.Flexibility:
+		return 0
+	case entities.UpperBody, entities.LowerBody, entities.FullBody:
+		return 1
+	case entities.Cardio:
+		return 2
+	default:
+		return 1
+	}
+}
+
+// sortExercisesByPhase returns a copy of exercises sorted by phase, preserving relative order
+// within each phase (stable sort).
+func sortExercisesByPhase(exercises []*entities.Exercise) []*entities.Exercise {
+	sorted := make([]*entities.Exercise, len(exercises))
+	copy(sorted, exercises)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return exercisePhase(sorted[i].TypeExercise()) < exercisePhase(sorted[j].TypeExercise())
+	})
+	return sorted
+}
+
+// ── Nutrition-aware intensity helpers ─────────────────────────────────────
+
+// nutritionCoefAdjustment returns a multiplier (0.8–1.2) based on today's calorie balance.
+//
+//   - Surplus > 300 kcal  → push harder (+20 %)
+//   - Deficit > 300 kcal  → ease off (−20 %) – protect muscle when under-fuelled
+//   - Otherwise           → no adjustment
+func (s *Service) nutritionCoefAdjustment(consumed, target int, goal entities.Want) float64 {
+	if target <= 0 {
+		return 1.0
+	}
+	balance := consumed - target
+	switch {
+	case balance > 300:
+		return 1.2
+	case balance < -300:
+		// For muscle-building goals, don't reduce – keep stimulation even in deficit.
+		if goal == entities.BuildMuscle {
+			return 1.0
+		}
+		return 0.8
+	default:
+		return 1.0
+	}
+}
+
+// weightProgressTypePreference returns the exercise type that should be emphasised given the
+// user's weight delta (current − target) and their stated goal.
+//
+//   - Need to lose weight (delta > 1 kg) → prefer Cardio or FullBody
+//   - Need to gain / build muscle (delta < -1 kg) → prefer strength (UpperBody)
+//   - On-target → no preference (empty string)
+func (s *Service) weightProgressTypePreference(weightDelta float64, goal entities.Want) entities.ExerciseType {
+	const threshold = 1.0
+	switch {
+	case weightDelta > threshold:
+		// More than 1 kg above target: favour cardio/full-body to burn calories.
+		if goal == entities.BuildMuscle {
+			return entities.FullBody
+		}
+		return entities.Cardio
+	case weightDelta < -threshold:
+		// More than 1 kg below target: favour strength exercises.
+		return entities.UpperBody
+	default:
+		return ""
+	}
 }
 
 func (s *Service) selectBalancedExercisesByType(exercises []*entities.Exercise, targetCount int) []*entities.Exercise {

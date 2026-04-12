@@ -253,6 +253,25 @@ func (u *Service) VerifyCode(ctx context.Context, userID uuid.UUID, code string,
 		return fmt.Errorf("verify code: mark used: %w", err)
 	}
 
+	user, err := u.userInfoRepo.Get(ctx, dto.UserInfoFilter{ID: &userID}, false)
+	if err != nil {
+		return fmt.Errorf("verify code: get user: %w", err)
+	}
+
+	now := time.Now()
+	params := entities.UserInfoUpdateParams{}
+	switch codeType {
+	case entities.VerificationCodeEmail:
+		params.EmailVerifiedAt = &now
+	case entities.VerificationCodePhone:
+		params.PhoneVerifiedAt = &now
+	}
+	user.Update(params)
+
+	if err := u.userInfoRepo.Update(ctx, user); err != nil {
+		return fmt.Errorf("verify code: update user: %w", err)
+	}
+
 	return nil
 }
 

@@ -995,6 +995,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/nutrition/recipes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "На основе уже съеденного за день ИИ предлагает 3-5 рецептов для следующего приёма пищи",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nutrition"
+                ],
+                "summary": "Рекомендации рецептов",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Дата (YYYY-MM-DD), по умолчанию сегодня",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список рекомендованных рецептов",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RecipeResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nutrition/report": {
             "get": {
                 "security": [
@@ -3236,6 +3290,20 @@ const docTemplate = `{
                 }
             }
         },
+        "models.MacroNutrientsResponse": {
+            "type": "object",
+            "properties": {
+                "carbs": {
+                    "type": "number"
+                },
+                "fat": {
+                    "type": "number"
+                },
+                "protein": {
+                    "type": "number"
+                }
+            }
+        },
         "models.NutritionAnalysisResponse": {
             "type": "object",
             "properties": {
@@ -3339,6 +3407,26 @@ const docTemplate = `{
                 },
                 "upload_url": {
                     "type": "string"
+                }
+            }
+        },
+        "models.RecipeResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "macros": {
+                    "$ref": "#/definitions/models.MacroNutrientsResponse"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "preparation_time": {
+                    "type": "integer"
                 }
             }
         },

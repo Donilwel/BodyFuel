@@ -121,9 +121,11 @@ func NewApp(configPaths ...string) *App {
 		ExerciseRepository:        exercisesRepository,
 		UserInfoRepository:        userInfoRepository,
 		UserParamsRepository:      userParamsRepository,
+		UserWeightRepository:      userWeightRepository,
 		WorkoutExerciseRepository: workoutsExerciseRepository,
 		WorkoutsRepository:        workoutsRepository,
 		UserDevicesRepository:     userDevicesRepository,
+		UserFoodRepository:        userFoodRepository,
 		WorkoutPullUserInterval:   cfg.AppConfig.WorkoutsConfig.WorkoutPullUserInterval,
 		LimitGenerateWorkouts:     cfg.AppConfig.WorkoutsConfig.LimitGenerateWorkouts,
 	})
@@ -159,6 +161,7 @@ func NewApp(configPaths ...string) *App {
 	executorService := executor.NewService(&executor.Config{
 		TransactionManager: transactionManager,
 		TasksRepository:    tasksRepository,
+		UserInfoRepository: userInfoRepository,
 		EmailClient:        emailClient,
 		SMSClient:          smsClient,
 		PushClient:         pushClient,
@@ -171,11 +174,13 @@ func NewApp(configPaths ...string) *App {
 	nutritionService := nutricion.NewService(&nutricion.Config{
 		UserFoodRepository: userFoodRepository,
 		AIClient:           aiClient,
+		StorageService:     avatarService,
 	})
 
 	recommendationService := recomendation.NewService(&recomendation.Config{
 		RecommendationRepository: userRecommendationsRepository,
 		UserParamsRepository:     userParamsRepository,
+		UserWeightRepository:     userWeightRepository,
 		AIClient:                 aiClient,
 	})
 

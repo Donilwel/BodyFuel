@@ -11,7 +11,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -310,6 +312,40 @@ func (r *WorkoutsExerciseRepo) Update(ctx context.Context, workoutsExercise *ent
 	}
 
 	return nil
+}
+
+// ListSkippedExercises returns skip aggregates (per exercise_id) for a given user since the provided time.
+// Useful for skip-tracking logic in workout generation.
+func (r *WorkoutsExerciseRepo) ListSkippedExercises(ctx context.Context, userID uuid.UUID, since time.Time) ([]dto.SkippedExerciseInfo, error) {
+	const query = `
+		SELECT we.exercise_id, COUNT(*) AS skip_count, MAX(we.updated_at) AS last_skipped_at
+		FROM bodyfuel.workouts_exercise we
+		JOIN bodyfuel.workouts w ON w.id = we.workout_id
+		WHERE w.user_id = $1
+		  AND we.status = 'skipped'
+		  AND we.updated_at > $2
+		GROUP BY we.exercise_id`
+
+	type row struct {
+		ExerciseID    uuid.UUID `db:"exercise_id"`
+		SkipCount     int       `db:"skip_count"`
+		LastSkippedAt time.Time `db:"last_skipped_at"`
+	}
+
+	var rows []row
+	if err := r.getter.Get(ctx).SelectContext(ctx, &rows, query, userID, since); err != nil {
+		return nil, fmt.Errorf("list skipped exercises: %w", err)
+	}
+
+	result := make([]dto.SkippedExerciseInfo, len(rows))
+	for i, row := range rows {
+		result[i] = dto.SkippedExerciseInfo{
+			ExerciseID:    row.ExerciseID,
+			SkipCount:     row.SkipCount,
+			LastSkippedAt: row.LastSkippedAt,
+		}
+	}
+	return result, nil
 }
 
 func (r *WorkoutsExerciseRepo) Delete(ctx context.Context, f dto.WorkoutsExerciseFilter) error {

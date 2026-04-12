@@ -24,6 +24,10 @@ type (
 		Get(ctx context.Context, f dto.UserParamsFilter, withBlock bool) (*entities.UserParams, error)
 	}
 
+	UserWeightRepository interface {
+		List(ctx context.Context, f dto.UserWeightFilter, withBlock bool) ([]*entities.UserWeight, error)
+	}
+
 	AIClient interface {
 		GenerateRecommendations(ctx context.Context, profile ai.UserProfile) ([]ai.RecommendationItem, error)
 	}
@@ -32,12 +36,14 @@ type (
 type Service struct {
 	recRepo        UserRecommendationRepository
 	userParamsRepo UserParamsRepository
+	userWeightRepo UserWeightRepository
 	ai             AIClient
 }
 
 type Config struct {
 	RecommendationRepository UserRecommendationRepository
 	UserParamsRepository     UserParamsRepository
+	UserWeightRepository     UserWeightRepository
 	AIClient                 AIClient
 }
 
@@ -45,6 +51,7 @@ func NewService(c *Config) *Service {
 	return &Service{
 		recRepo:        c.RecommendationRepository,
 		userParamsRepo: c.UserParamsRepository,
+		userWeightRepo: c.UserWeightRepository,
 		ai:             c.AIClient,
 	}
 }
@@ -82,11 +89,26 @@ func (s *Service) Refresh(ctx context.Context, userID uuid.UUID) ([]*entities.Us
 	if err == nil && params != nil {
 		profile.Weight = params.CurrentWeight()
 		profile.Height = float64(params.Height())
+		profile.TargetWeight = params.TargetWeight()
 		if params.Want() != "" {
 			profile.Goal = string(params.Want())
 		}
 		if params.Lifestyle() != "" {
 			profile.ActivityLevel = string(params.Lifestyle())
+		}
+	}
+
+	// Enrich with most recent logged weight for accurate progress tracking.
+	if s.userWeightRepo != nil {
+		weights, werr := s.userWeightRepo.List(ctx, dto.UserWeightFilter{UserID: &userID}, false)
+		if werr == nil && len(weights) > 0 {
+			latest := weights[0]
+			for _, w := range weights[1:] {
+				if w.Date().After(latest.Date()) {
+					latest = w
+				}
+			}
+			profile.Weight = latest.Weight()
 		}
 	}
 

@@ -2,8 +2,8 @@ package models
 
 import (
 	"backend/internal/domain/entities"
-	"backend/pkg/ai"
 	"backend/internal/service/nutricion"
+	"backend/pkg/ai"
 	"time"
 
 	"github.com/google/uuid"
@@ -55,6 +55,16 @@ func NewNutritionAnalysisResponse(a *ai.NutritionAnalysis) NutritionAnalysisResp
 		Carbs:       a.Carbs,
 		Fat:         a.Fat,
 	}
+}
+
+// UploadPhotoAnalysisResponse is returned by POST /nutrition/analyze/upload.
+type UploadPhotoAnalysisResponse struct {
+	PhotoURL    string  `json:"photo_url"`
+	Description string  `json:"description"`
+	Calories    int     `json:"calories"`
+	Protein     float64 `json:"protein"`
+	Carbs       float64 `json:"carbs"`
+	Fat         float64 `json:"fat"`
 }
 
 type FoodEntryResponse struct {
@@ -123,6 +133,38 @@ type NutritionReportResponse struct {
 	TotalCarbs    float64             `json:"total_carbs"`
 	TotalFat      float64             `json:"total_fat"`
 	AvgCalories   float64             `json:"avg_calories_per_day"`
+}
+
+type MacroNutrientsResponse struct {
+	Protein float64 `json:"protein"`
+	Fat     float64 `json:"fat"`
+	Carbs   float64 `json:"carbs"`
+}
+
+type RecipeResponse struct {
+	ID              uuid.UUID             `json:"id"`
+	Name            string                `json:"name"`
+	Description     string                `json:"description"`
+	Macros          MacroNutrientsResponse `json:"macros"`
+	PreparationTime int                   `json:"preparation_time"`
+}
+
+func NewRecipeResponseList(items []ai.RecipeItem) []RecipeResponse {
+	result := make([]RecipeResponse, len(items))
+	for i, item := range items {
+		result[i] = RecipeResponse{
+			ID:   uuid.New(),
+			Name: item.Name,
+			Description: item.Description,
+			Macros: MacroNutrientsResponse{
+				Protein: item.Macros.Protein,
+				Fat:     item.Macros.Fat,
+				Carbs:   item.Macros.Carbs,
+			},
+			PreparationTime: item.PreparationTime,
+		}
+	}
+	return result
 }
 
 func NewNutritionReportResponse(r *nutricion.NutritionReport) NutritionReportResponse {
