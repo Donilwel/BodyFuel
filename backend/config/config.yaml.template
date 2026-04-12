@@ -5,8 +5,9 @@ app:
     api_host: "localhost:8080"
     metric_port: 8081
   graceful_timeout: "5s"
+  tasks_tracking_duration: "13s"
   workouts_config:
-    workout_pull_user_interval: "5s"
+    workout_pull_user_interval: "30s"
     limit_generate_workouts: 3
 
 sage:
@@ -32,3 +33,20 @@ minio:
   region: "us-east-1"
   public_url: "http://localhost:9000/avatars"
   presign_ttl: "5m"
+
+sendgrid:
+  api_key: ""
+  from_email: "noreply@bodyfuel.app"
+  from_name: "BodyFuel"
+
+twilio:
+  account_sid: ""
+  auth_token: ""
+  from_phone: ""
+
+apns:
+  key_path: ""
+  key_id: ""
+  team_id: ""
+  bundle_id: ""
+  sandbox: true

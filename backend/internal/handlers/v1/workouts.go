@@ -17,11 +17,15 @@ type ()
 
 func (a *API) registerWorkoutsHandlers(router *gin.RouterGroup) {
 	workout := router.Group("/workouts")
+	workout.GET("/history", a.getUserWorkouts)
+	workout.POST("", a.generateWorkout)
 	workout.GET("/:uuid", a.getUserWorkout)
 	workout.DELETE("/:uuid", a.deleteUserWorkout)
 	workout.PATCH("/:uuid", a.updateUserWorkout)
-	workout.POST("", a.generateWorkout)
-	workout.GET("/history", a.getUserWorkouts)
+	workout.GET("/:uuid/exercises", a.listWorkoutExercises)
+	workout.POST("/:uuid/exercises", a.addWorkoutExercise)
+	workout.PATCH("/exercises/:exerciseId", a.updateWorkoutExercise)
+	workout.DELETE("/exercises/:exerciseId", a.deleteWorkoutExercise)
 }
 
 // getUserWorkout получает тренировку пользователя по ID
@@ -557,4 +561,165 @@ func (a *API) generateWorkout(ctx *gin.Context) {
 
 	a.log.Infof("Successfully generated custom workout %s for user %s", workout.ID(), userID)
 	ctx.JSON(http.StatusCreated, response)
+}
+
+// listWorkoutExercises возвращает список упражнений тренировки
+// @Summary Список упражнений тренировки
+// @Description Возвращает все упражнения конкретной тренировки
+// @Tags Workout Exercises
+// @Security BearerAuth
+// @Produce json
+// @Param workoutId path string true "ID тренировки"
+// @Success 200 {array} models.WorkoutExerciseFullResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Router /workouts/{workoutId}/exercises [get]
+func (a *API) listWorkoutExercises(ctx *gin.Context) {
+	workoutID, err := uuid.Parse(ctx.Param("workoutId"))
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid workout id"})
+		return
+	}
+
+	list, err := a.CRUDService.ListWorkoutsExercise(ctx, dto.WorkoutsExerciseFilter{WorkoutID: &workoutID})
+	if err != nil {
+		a.log.Errorf("list workout exercises error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to list exercises"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewWorkoutExercisesFullResponse(list))
+}
+
+// addWorkoutExercise добавляет упражнение в тренировку
+// @Summary Добавление упражнения в тренировку
+// @Description Добавляет упражнение в существующую тренировку
+// @Tags Workout Exercises
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param workoutId path string true "ID тренировки"
+// @Param request body models.AddWorkoutExerciseRequest true "Данные упражнения"
+// @Success 201 {object} models.WorkoutExerciseFullResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Router /workouts/{workoutId}/exercises [post]
+func (a *API) addWorkoutExercise(ctx *gin.Context) {
+	workoutID, err := uuid.Parse(ctx.Param("workoutId"))
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid workout id"})
+		return
+	}
+
+	var req models.AddWorkoutExerciseRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
+		return
+	}
+	if err := a.validator.Struct(req); err != nil {
+		a.handleValidationErrors(ctx, err, "add workout exercise")
+		return
+	}
+
+	now := time.Now()
+	we := entities.NewWorkoutsExercise(entities.WithWorkoutsExerciseInitSpec(entities.WorkoutsExerciseInitSpec{
+		WorkoutID:       workoutID,
+		ExerciseID:      req.ExerciseID,
+		ModifyReps:      req.ModifyReps,
+		ModifyRelaxTime: req.ModifyRelaxTime,
+		Status:          entities.ExerciseStatusPending,
+		CreatedAt:       now,
+	}))
+
+	if err := a.CRUDService.CreateWorkoutExercise(ctx, we); err != nil {
+		a.log.Errorf("add workout exercise error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to add exercise"})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, models.NewWorkoutExerciseFullResponse(we))
+}
+
+// updateWorkoutExercise обновляет упражнение в тренировке
+// @Summary Обновление упражнения в тренировке
+// @Description Обновляет статус, повторения или калории упражнения в тренировке
+// @Tags Workout Exercises
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param uuid path string true "ID упражнения в тренировке (exercise_id)"
+// @Param request body models.UpdateWorkoutExerciseRequest true "Данные для обновления"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Router /workouts/exercises/{uuid} [patch]
+func (a *API) updateWorkoutExercise(ctx *gin.Context) {
+	exerciseID, err := uuid.Parse(ctx.Param("uuid"))
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid exercise id"})
+		return
+	}
+
+	var req models.UpdateWorkoutExerciseRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
+		return
+	}
+	if err := a.validator.Struct(req); err != nil {
+		a.handleValidationErrors(ctx, err, "update workout exercise")
+		return
+	}
+
+	now := time.Now()
+	params := entities.WorkoutsExerciseUpdateParams{
+		ModifyReps:      req.ModifyReps,
+		ModifyRelaxTime: req.ModifyRelaxTime,
+		Calories:        req.Calories,
+		UpdatedAt:       &now,
+	}
+	if req.Status != nil {
+		s, err := entities.ToExerciseStatus(*req.Status)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid status value"})
+			return
+		}
+		params.Status = &s
+	}
+
+	f := dto.WorkoutsExerciseFilter{ExerciseID: &exerciseID}
+	if err := a.CRUDService.UpdateWorkoutExerciseByFilter(ctx, f, params); err != nil {
+		a.log.Errorf("update workout exercise error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to update exercise"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully updated"})
+}
+
+// deleteWorkoutExercise удаляет упражнение из тренировки
+// @Summary Удаление упражнения из тренировки
+// @Description Удаляет упражнение из тренировки по его ID
+// @Tags Workout Exercises
+// @Security BearerAuth
+// @Produce json
+// @Param uuid path string true "ID упражнения в тренировке"
+// @Success 204 {object} models.SuccessResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Router /workouts/exercises/{uuid} [delete]
+func (a *API) deleteWorkoutExercise(ctx *gin.Context) {
+	exerciseID, err := uuid.Parse(ctx.Param("uuid"))
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid exercise id"})
+		return
+	}
+
+	f := dto.WorkoutsExerciseFilter{ExerciseID: &exerciseID}
+	if err := a.CRUDService.DeleteWorkoutExercise(ctx, f); err != nil {
+		a.log.Errorf("delete workout exercise error: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to delete exercise"})
+		return
+	}
+
+	ctx.JSON(http.StatusNoContent, gin.H{"message": "Successfully deleted"})
 }

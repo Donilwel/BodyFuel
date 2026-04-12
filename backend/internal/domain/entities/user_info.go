@@ -117,6 +117,7 @@ type UserInfoUpdateParams struct {
 	Surname  *string
 	Email    *string
 	Phone    *string
+	Password *string
 }
 
 func (ui *UserInfo) Update(p UserInfoUpdateParams) {
@@ -134,5 +135,8 @@ func (ui *UserInfo) Update(p UserInfoUpdateParams) {
 	}
 	if p.Phone != nil {
 		ui.phone = *p.Phone
+	}
+	if p.Password != nil {
+		ui.password = *p.Password
 	}
 }

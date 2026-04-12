@@ -459,9 +459,7 @@ func (s *Service) processGenerateWorkout(ctx context.Context, up *entities.UserP
 	s.metrics.GeneratedWorkouts++
 	s.metrics.mu.Unlock()
 
-	if s.enableNotifications {
-		go s.createNotificationTaskAsync(s.ctx, workout.ID(), userID)
-	}
+	go s.createNotificationTaskAsync(s.ctx, workout.ID(), userID)
 
 	return nil
 }

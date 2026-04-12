@@ -9,7 +9,10 @@ import (
 	"backend/internal/service/avatar"
 	"backend/internal/service/crud"
 	"backend/internal/service/executor"
+	"backend/internal/service/nutricion"
+	"backend/internal/service/recomendation"
 	"backend/internal/service/workouts"
+	"backend/pkg/ai"
 	"backend/pkg/logging"
 	notifapns "backend/pkg/notifications/apns"
 	notifsg "backend/pkg/notifications/sendgrid"
@@ -78,10 +81,17 @@ func NewApp(configPaths ...string) *App {
 	workoutsExerciseRepository := postgres.NewWorkoutsExerciseRepository(db)
 	userDevicesRepository := postgres.NewUserDevicesRepository(db)
 	userCaloriesRepository := postgres.NewUserCaloriesRepository(db)
+	userRefreshTokensRepository := postgres.NewUserRefreshTokensRepository(db)
+	userVerificationCodesRepository := postgres.NewUserVerificationCodesRepository(db)
+	userFoodRepository := postgres.NewUserFoodRepository(db)
+	userRecommendationsRepository := postgres.NewUserRecommendationsRepository(db)
 
 	authService := auth.NewService(&auth.Config{
-		TransactionManager: transactionManager,
-		UserInfoRepository: userInfoRepository,
+		TransactionManager:          transactionManager,
+		UserInfoRepository:          userInfoRepository,
+		UserRefreshTokensRepository: userRefreshTokensRepository,
+		VerificationCodesRepository: userVerificationCodesRepository,
+		TasksRepository:             tasksRepository,
 	})
 
 	crudService := crud.NewService(&crud.Config{
@@ -156,6 +166,19 @@ func NewApp(configPaths ...string) *App {
 	})
 	workers = append(workers, executorService)
 
+	aiClient := ai.NewClient(cfg.OpenAI.APIKey)
+
+	nutritionService := nutricion.NewService(&nutricion.Config{
+		UserFoodRepository: userFoodRepository,
+		AIClient:           aiClient,
+	})
+
+	recommendationService := recomendation.NewService(&recomendation.Config{
+		RecommendationRepository: userRecommendationsRepository,
+		UserParamsRepository:     userParamsRepository,
+		AIClient:                 aiClient,
+	})
+
 	validator := validator.New()
 
 	gin.SetMode(gin.ReleaseMode)
@@ -165,12 +188,14 @@ func NewApp(configPaths ...string) *App {
 		router.Group(""),
 		cfg.AppConfig.HTTPServerConfig.ApiHost,
 		v1.NewHandlers(v1.Config{
-			AuthService:    authService,
-			CRUDService:    crudService,
-			WorkoutService: workoutService,
-			AvatarService:  avatarService,
-			Validator:      *validator,
-			Log:            logger,
+			AuthService:           authService,
+			CRUDService:           crudService,
+			WorkoutService:        workoutService,
+			AvatarService:         avatarService,
+			NutritionService:      nutritionService,
+			RecommendationService: recommendationService,
+			Validator:             *validator,
+			Log:                   logger,
 		}),
 	)
 

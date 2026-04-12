@@ -39,3 +39,26 @@ func (r *RegisterRequestModel) ToSpec() entities.UserInfoInitSpec {
 		CreatedAt: time.Now(),
 	}
 }
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
+type SendVerificationCodeRequest struct {
+	CodeType string `json:"code_type" validate:"required,oneof=email phone"`
+}
+
+type VerifyCodeRequest struct {
+	Code     string `json:"code" validate:"required,len=6"`
+	CodeType string `json:"code_type" validate:"required,oneof=email phone"`
+}
+
+type RecoverPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPasswordRequest struct {
+	Email       string `json:"email" validate:"required,email"`
+	Code        string `json:"code" validate:"required,len=6"`
+	NewPassword string `json:"new_password" validate:"required,min=6"`
+}

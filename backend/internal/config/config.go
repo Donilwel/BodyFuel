@@ -51,6 +51,10 @@ type APNsConfig struct {
 	Sandbox  bool   `yaml:"sandbox" env:"APNS_SANDBOX" envDefault:"true"`
 }
 
+type OpenAIConfig struct {
+	APIKey string `yaml:"api_key" env:"OPENAI_API_KEY"`
+}
+
 type Config struct {
 	AppConfig AppConfig       `yaml:"app"`
 	Log       logging.Config  `yaml:"sage" env:"SAGE_"`
@@ -59,6 +63,7 @@ type Config struct {
 	SendGrid  SendGridConfig  `yaml:"sendgrid" env-prefix:"SENDGRID_"`
 	Twilio    TwilioConfig    `yaml:"twilio" env-prefix:"TWILIO_"`
 	APNs      APNsConfig      `yaml:"apns" env-prefix:"APNS_"`
+	OpenAI    OpenAIConfig    `yaml:"openai" env-prefix:"OPENAI_"`
 }
 
 func ReadConfig(filePaths ...string) (*Config, error) {
