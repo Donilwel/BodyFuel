@@ -1,7 +1,7 @@
 # Stage 1: Build
 FROM golang:1.24-alpine AS builder
 
-RUN apk add --no-cache git ca-certificates
+RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /app
 
@@ -10,22 +10,25 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main ./cmd/main.go
 
 # Stage 2: Run
-FROM alpine:latest
+FROM alpine:3.19
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates tzdata curl
 
-WORKDIR /root/
+WORKDIR /app
 
-# Копируем бинарник
+# Binary
 COPY --from=builder /app/main .
 
-# Создаем папку config и копируем туда config.yaml
+# Config
 RUN mkdir -p config
 COPY --from=builder /app/config/config.yaml ./config/
 
+# Migrations (goose reads ./migrations at runtime)
+COPY --from=builder /app/migrations ./migrations/
+
 EXPOSE 8080 8081
 
-CMD ["./main"]
+CMD ["./main", "-config", "./config/config.yaml"]

@@ -57,14 +57,11 @@ func NewNutritionAnalysisResponse(a *ai.NutritionAnalysis) NutritionAnalysisResp
 	}
 }
 
-// UploadPhotoAnalysisResponse is returned by POST /nutrition/analyze/upload.
-type UploadPhotoAnalysisResponse struct {
-	PhotoURL    string  `json:"photo_url"`
-	Description string  `json:"description"`
-	Calories    int     `json:"calories"`
-	Protein     float64 `json:"protein"`
-	Carbs       float64 `json:"carbs"`
-	Fat         float64 `json:"fat"`
+// UploadPhotoResponse is returned by POST /nutrition/analyze/upload.
+// It contains only the public URL of the uploaded photo.
+// Pass this URL to POST /nutrition/analyze to get the nutritional analysis.
+type UploadPhotoResponse struct {
+	PhotoURL string `json:"photo_url"`
 }
 
 type FoodEntryResponse struct {
@@ -141,21 +138,32 @@ type MacroNutrientsResponse struct {
 	Carbs   float64 `json:"carbs"`
 }
 
+type IngredientResponse struct {
+	Name  string  `json:"name"`
+	Grams float64 `json:"grams"`
+}
+
 type RecipeResponse struct {
-	ID              uuid.UUID             `json:"id"`
-	Name            string                `json:"name"`
-	Description     string                `json:"description"`
+	ID              uuid.UUID              `json:"id"`
+	Name            string                 `json:"name"`
+	Description     string                 `json:"description"`
+	Ingredients     []IngredientResponse   `json:"ingredients"`
 	Macros          MacroNutrientsResponse `json:"macros"`
-	PreparationTime int                   `json:"preparation_time"`
+	PreparationTime int                    `json:"preparation_time"`
 }
 
 func NewRecipeResponseList(items []ai.RecipeItem) []RecipeResponse {
 	result := make([]RecipeResponse, len(items))
 	for i, item := range items {
+		ingredients := make([]IngredientResponse, len(item.Ingredients))
+		for j, ing := range item.Ingredients {
+			ingredients[j] = IngredientResponse{Name: ing.Name, Grams: ing.Grams}
+		}
 		result[i] = RecipeResponse{
-			ID:   uuid.New(),
-			Name: item.Name,
+			ID:          uuid.New(),
+			Name:        item.Name,
 			Description: item.Description,
+			Ingredients: ingredients,
 			Macros: MacroNutrientsResponse{
 				Protein: item.Macros.Protein,
 				Fat:     item.Macros.Fat,

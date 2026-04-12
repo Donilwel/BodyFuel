@@ -348,6 +348,77 @@ func (r *WorkoutsExerciseRepo) ListSkippedExercises(ctx context.Context, userID 
 	return result, nil
 }
 
+// ListExerciseProgress returns completion/skip aggregates per exercise for the given user
+// within the lookback window [since, now]. Uses DISTINCT ON to pick the most-recent
+// completed reps/relax_time for each exercise.
+func (r *WorkoutsExerciseRepo) ListExerciseProgress(ctx context.Context, userID uuid.UUID, since time.Time) ([]dto.ExerciseProgressInfo, error) {
+	const query = `
+		WITH all_history AS (
+			SELECT
+				we.exercise_id,
+				we.modify_reps,
+				we.modify_relax_time,
+				we.status,
+				we.updated_at,
+				e.type_exercise,
+				e.place_exercise
+			FROM bodyfuel.workouts_exercise we
+			JOIN bodyfuel.workouts w  ON w.id  = we.workout_id
+			JOIN bodyfuel.exercises e ON e.id  = we.exercise_id
+			WHERE w.user_id    = $1
+			  AND w.created_at > $2
+		),
+		last_completed AS (
+			SELECT DISTINCT ON (exercise_id)
+				exercise_id,
+				modify_reps       AS last_reps,
+				modify_relax_time AS last_relax_time
+			FROM all_history
+			WHERE status = 'completed'
+			ORDER BY exercise_id, updated_at DESC
+		)
+		SELECT
+			h.exercise_id,
+			MAX(h.type_exercise)                                   AS type_exercise,
+			MAX(h.place_exercise)                                  AS place_exercise,
+			COALESCE(lc.last_reps,       0)                        AS last_reps,
+			COALESCE(lc.last_relax_time, 0)                        AS last_relax_time,
+			COUNT(*) FILTER (WHERE h.status = 'completed')         AS completed_count,
+			COUNT(*) FILTER (WHERE h.status = 'skipped')           AS skipped_count
+		FROM all_history h
+		LEFT JOIN last_completed lc ON lc.exercise_id = h.exercise_id
+		GROUP BY h.exercise_id, lc.last_reps, lc.last_relax_time`
+
+	type row struct {
+		ExerciseID     uuid.UUID `db:"exercise_id"`
+		TypeExercise   string    `db:"type_exercise"`
+		PlaceExercise  string    `db:"place_exercise"`
+		LastReps       int       `db:"last_reps"`
+		LastRelaxTime  int       `db:"last_relax_time"`
+		CompletedCount int       `db:"completed_count"`
+		SkippedCount   int       `db:"skipped_count"`
+	}
+
+	var rows []row
+	if err := r.getter.Get(ctx).SelectContext(ctx, &rows, query, userID, since); err != nil {
+		return nil, fmt.Errorf("list exercise progress: %w", err)
+	}
+
+	result := make([]dto.ExerciseProgressInfo, len(rows))
+	for i, r := range rows {
+		result[i] = dto.ExerciseProgressInfo{
+			ExerciseID:     r.ExerciseID,
+			TypeExercise:   entities.ExerciseType(r.TypeExercise),
+			PlaceExercise:  entities.PlaceExercise(r.PlaceExercise),
+			LastReps:       r.LastReps,
+			LastRelaxTime:  r.LastRelaxTime,
+			CompletedCount: r.CompletedCount,
+			SkippedCount:   r.SkippedCount,
+		}
+	}
+	return result, nil
+}
+
 func (r *WorkoutsExerciseRepo) Delete(ctx context.Context, f dto.WorkoutsExerciseFilter) error {
 	deleteBuilder := builders.NewWorkoutsExerciseDeleteBuilder().
 		WithFilterSpecification(builders.NewWorkoutsExerciseFilterSpecification(&f))

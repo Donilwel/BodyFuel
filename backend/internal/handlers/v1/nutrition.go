@@ -58,15 +58,15 @@ func (a *API) analyzeNutritionPhoto(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models.NewNutritionAnalysisResponse(result))
 }
 
-// uploadAndAnalyzeNutritionPhoto загружает фото еды в S3 и анализирует через OpenAI Vision
-// @Summary Загрузка фото еды и анализ питательной ценности
-// @Description Принимает файл изображения (multipart/form-data), сохраняет в S3 и возвращает результат анализа питательной ценности вместе с публичным URL фото
+// uploadAndAnalyzeNutritionPhoto загружает фото еды в S3 и возвращает публичный URL
+// @Summary Загрузка фото еды
+// @Description Принимает файл изображения (multipart/form-data), сохраняет в S3 и возвращает публичный URL. Для анализа питательной ценност�� передайте полученный URL в POST /nutrition/analyze.
 // @Tags Nutrition
 // @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
 // @Param photo formData file true "Файл изображения еды"
-// @Success 200 {object} models.UploadPhotoAnalysisResponse "Результат анализа и URL фото"
+// @Success 200 {object} models.UploadPhotoResponse "URL загруженного фото"
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
@@ -92,21 +92,14 @@ func (a *API) uploadAndAnalyzeNutritionPhoto(ctx *gin.Context) {
 	// Use a unique filename to avoid collisions: <uuid>_<original>.
 	objectName := fmt.Sprintf("%s_%s", uuid.New().String(), header.Filename)
 
-	result, err := a.nutritionService.UploadAndAnalyzePhoto(ctx, userID.String(), objectName, contentType, file)
+	photoURL, err := a.avatarService.UploadFoodPhoto(ctx, userID.String(), objectName, contentType, file)
 	if err != nil {
-		a.log.Errorf("nutrition: upload and analyze photo: %v", err)
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to upload and analyze photo"})
+		a.log.Errorf("nutrition: upload photo: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to upload photo"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.UploadPhotoAnalysisResponse{
-		PhotoURL:    result.PhotoURL,
-		Description: result.Analysis.Description,
-		Calories:    result.Analysis.Calories,
-		Protein:     result.Analysis.Protein,
-		Carbs:       result.Analysis.Carbs,
-		Fat:         result.Analysis.Fat,
-	})
+	ctx.JSON(http.StatusOK, models.UploadPhotoResponse{PhotoURL: photoURL})
 }
 
 // createFoodEntry создаёт запись в дневнике питания

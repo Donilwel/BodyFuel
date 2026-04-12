@@ -32,27 +32,27 @@ type WorkoutsConfig struct {
 }
 
 type SendGridConfig struct {
-	APIKey    string `yaml:"api_key" env:"SENDGRID_API_KEY"`
-	FromEmail string `yaml:"from_email" env:"SENDGRID_FROM_EMAIL"`
-	FromName  string `yaml:"from_name" env:"SENDGRID_FROM_NAME"`
+	APIKey    string `yaml:"api_key" env:"API_KEY"`
+	FromEmail string `yaml:"from_email" env:"FROM_EMAIL"`
+	FromName  string `yaml:"from_name" env:"FROM_NAME"`
 }
 
 type TwilioConfig struct {
-	AccountSID string `yaml:"account_sid" env:"TWILIO_ACCOUNT_SID"`
-	AuthToken  string `yaml:"auth_token" env:"TWILIO_AUTH_TOKEN"`
-	FromPhone  string `yaml:"from_phone" env:"TWILIO_FROM_PHONE"`
+	AccountSID string `yaml:"account_sid" env:"ACCOUNT_SID"`
+	AuthToken  string `yaml:"auth_token" env:"AUTH_TOKEN"`
+	FromPhone  string `yaml:"from_phone" env:"FROM_PHONE"`
 }
 
 type APNsConfig struct {
-	KeyPath  string `yaml:"key_path" env:"APNS_KEY_PATH"`
-	KeyID    string `yaml:"key_id" env:"APNS_KEY_ID"`
-	TeamID   string `yaml:"team_id" env:"APNS_TEAM_ID"`
-	BundleID string `yaml:"bundle_id" env:"APNS_BUNDLE_ID"`
-	Sandbox  bool   `yaml:"sandbox" env:"APNS_SANDBOX" envDefault:"true"`
+	KeyPath  string `yaml:"key_path" env:"KEY_PATH"`
+	KeyID    string `yaml:"key_id" env:"KEY_ID"`
+	TeamID   string `yaml:"team_id" env:"TEAM_ID"`
+	BundleID string `yaml:"bundle_id" env:"BUNDLE_ID"`
+	Sandbox  bool   `yaml:"sandbox" env:"SANDBOX" envDefault:"true"`
 }
 
 type OpenAIConfig struct {
-	APIKey string `yaml:"api_key" env:"OPENAI_API_KEY"`
+	APIKey string `yaml:"api_key" env:"API_KEY"`
 }
 
 type Config struct {
