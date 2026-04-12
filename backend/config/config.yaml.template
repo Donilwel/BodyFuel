@@ -49,4 +49,4 @@ apns:
   key_id: ""
   team_id: ""
   bundle_id: ""
-  sandbox: true
+  sandbox: trueпр

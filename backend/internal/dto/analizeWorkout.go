@@ -21,6 +21,16 @@ type AnalyzeWorkoutStats struct {
 	LastTimeGenerateWorkout      time.Time
 	SkipGeneration               bool
 	SkipReason                   string
+
+	// Nutrition context for today
+	TodayCalories  int
+	TargetCalories int
+	CalorieBalance int // consumed - target (positive = surplus, negative = deficit)
+
+	// Weight progress toward goal
+	CurrentWeight float64
+	TargetWeight  float64
+	WeightDelta   float64 // current - target (positive = need to lose, negative = need to gain)
 }
 
 //	uuid_user

@@ -6,6 +6,7 @@ import (
 	"backend/pkg/ai"
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,6 +23,12 @@ type (
 
 	AIClient interface {
 		AnalyzeNutritionPhoto(ctx context.Context, imageURL string) (*ai.NutritionAnalysis, error)
+		GenerateRecipes(ctx context.Context, intake ai.DailyIntake) ([]ai.RecipeItem, error)
+	}
+
+	// StorageService handles uploading food photos to object storage.
+	StorageService interface {
+		UploadFoodPhoto(ctx context.Context, userID, objectName, contentType string, data io.Reader) (string, error)
 	}
 )
 
@@ -49,17 +56,20 @@ type NutritionReport struct {
 type Service struct {
 	foodRepo UserFoodRepository
 	ai       AIClient
+	storage  StorageService
 }
 
 type Config struct {
 	UserFoodRepository UserFoodRepository
 	AIClient           AIClient
+	StorageService     StorageService
 }
 
 func NewService(c *Config) *Service {
 	return &Service{
 		foodRepo: c.UserFoodRepository,
 		ai:       c.AIClient,
+		storage:  c.StorageService,
 	}
 }
 
@@ -70,6 +80,35 @@ func (s *Service) AnalyzePhoto(ctx context.Context, imageURL string) (*ai.Nutrit
 		return nil, fmt.Errorf("analyze photo: %w", err)
 	}
 	return result, nil
+}
+
+// UploadPhotoResult is returned by UploadAndAnalyzePhoto.
+type UploadPhotoResult struct {
+	Analysis *ai.NutritionAnalysis
+	PhotoURL string
+}
+
+// UploadAndAnalyzePhoto uploads the food photo to S3, then analyzes it with OpenAI Vision.
+// Returns the nutrition analysis together with the stored public URL.
+func (s *Service) UploadAndAnalyzePhoto(ctx context.Context, userID, filename, contentType string, data io.Reader) (*UploadPhotoResult, error) {
+	if s.storage == nil {
+		return nil, fmt.Errorf("storage service not configured")
+	}
+
+	photoURL, err := s.storage.UploadFoodPhoto(ctx, userID, filename, contentType, data)
+	if err != nil {
+		return nil, fmt.Errorf("upload food photo: %w", err)
+	}
+
+	analysis, err := s.ai.AnalyzeNutritionPhoto(ctx, photoURL)
+	if err != nil {
+		return nil, fmt.Errorf("analyze uploaded photo: %w", err)
+	}
+
+	return &UploadPhotoResult{
+		Analysis: analysis,
+		PhotoURL: photoURL,
+	}, nil
 }
 
 // CreateFoodEntry creates a new food diary entry.
@@ -129,6 +168,28 @@ func (s *Service) GetDiary(ctx context.Context, userID uuid.UUID, date time.Time
 		diary.TotalFat += e.Fat()
 	}
 	return diary, nil
+}
+
+// RecommendRecipes returns AI-generated recipe suggestions based on what the user has eaten on a given date.
+func (s *Service) RecommendRecipes(ctx context.Context, userID uuid.UUID, date time.Time) ([]ai.RecipeItem, error) {
+	diary, err := s.GetDiary(ctx, userID, date)
+	if err != nil {
+		return nil, fmt.Errorf("recommend recipes: %w", err)
+	}
+
+	intake := ai.DailyIntake{
+		ConsumedCalories: diary.TotalCalories,
+		ConsumedProtein:  diary.TotalProtein,
+		ConsumedCarbs:    diary.TotalCarbs,
+		ConsumedFat:      diary.TotalFat,
+	}
+
+	recipes, err := s.ai.GenerateRecipes(ctx, intake)
+	if err != nil {
+		return nil, fmt.Errorf("recommend recipes: %w", err)
+	}
+
+	return recipes, nil
 }
 
 // GetReport returns all food entries for a date range with aggregated totals and daily averages.

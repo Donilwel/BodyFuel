@@ -32,7 +32,9 @@ const (
 									password=:password,
 									email=:email,
 									phone=:phone,
-									created_at=:created_at
+									created_at=:created_at,
+									email_verified_at=:email_verified_at,
+									phone_verified_at=:phone_verified_at
 									WHERE id=:id`
 )
 

@@ -6,14 +6,16 @@ import (
 )
 
 type UserInfo struct {
-	id        uuid.UUID
-	username  string
-	name      string
-	surname   string
-	password  string
-	email     string
-	phone     string
-	createdAt time.Time
+	id              uuid.UUID
+	username        string
+	name            string
+	surname         string
+	password        string
+	email           string
+	phone           string
+	createdAt       time.Time
+	emailVerifiedAt *time.Time
+	phoneVerifiedAt *time.Time
 }
 
 func (u *UserInfo) ID() uuid.UUID {
@@ -48,6 +50,22 @@ func (u *UserInfo) CreatedAt() time.Time {
 	return u.createdAt
 }
 
+func (u *UserInfo) EmailVerifiedAt() *time.Time {
+	return u.emailVerifiedAt
+}
+
+func (u *UserInfo) PhoneVerifiedAt() *time.Time {
+	return u.phoneVerifiedAt
+}
+
+func (u *UserInfo) IsEmailVerified() bool {
+	return u.emailVerifiedAt != nil
+}
+
+func (u *UserInfo) IsPhoneVerified() bool {
+	return u.phoneVerifiedAt != nil
+}
+
 type UserInfoOption func(u *UserInfo)
 
 func NewUserInfo(opt UserInfoOption) *UserInfo {
@@ -59,14 +77,16 @@ func NewUserInfo(opt UserInfoOption) *UserInfo {
 }
 
 type UserInfoRestoreSpec struct {
-	ID        uuid.UUID
-	Username  string
-	Name      string
-	Surname   string
-	Password  string
-	Email     string
-	Phone     string
-	CreatedAt time.Time
+	ID              uuid.UUID
+	Username        string
+	Name            string
+	Surname         string
+	Password        string
+	Email           string
+	Phone           string
+	CreatedAt       time.Time
+	EmailVerifiedAt *time.Time
+	PhoneVerifiedAt *time.Time
 }
 
 type UserInfoInitSpec struct {
@@ -95,6 +115,8 @@ func WithUserInfoRestoreSpec(spec UserInfoRestoreSpec) UserInfoOption {
 		u.email = spec.Email
 		u.phone = spec.Phone
 		u.createdAt = spec.CreatedAt
+		u.emailVerifiedAt = spec.EmailVerifiedAt
+		u.phoneVerifiedAt = spec.PhoneVerifiedAt
 	}
 }
 
@@ -112,12 +134,14 @@ func WithUserInfoInitSpec(s UserInfoInitSpec) UserInfoOption {
 }
 
 type UserInfoUpdateParams struct {
-	Username *string
-	Name     *string
-	Surname  *string
-	Email    *string
-	Phone    *string
-	Password *string
+	Username        *string
+	Name            *string
+	Surname         *string
+	Email           *string
+	Phone           *string
+	Password        *string
+	EmailVerifiedAt *time.Time
+	PhoneVerifiedAt *time.Time
 }
 
 func (ui *UserInfo) Update(p UserInfoUpdateParams) {
@@ -138,5 +162,11 @@ func (ui *UserInfo) Update(p UserInfoUpdateParams) {
 	}
 	if p.Password != nil {
 		ui.password = *p.Password
+	}
+	if p.EmailVerifiedAt != nil {
+		ui.emailVerifiedAt = p.EmailVerifiedAt
+	}
+	if p.PhoneVerifiedAt != nil {
+		ui.phoneVerifiedAt = p.PhoneVerifiedAt
 	}
 }

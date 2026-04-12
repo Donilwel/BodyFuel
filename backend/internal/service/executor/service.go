@@ -34,6 +34,10 @@ type (
 		Update(ctx context.Context, t *entities.Task) error
 	}
 
+	UserInfoRepository interface {
+		Get(ctx context.Context, f dto.UserInfoFilter, withBlock bool) (*entities.UserInfo, error)
+	}
+
 	EmailClient interface {
 		SendEmail(to, subject, body string) error
 	}
@@ -52,6 +56,7 @@ type handleTaskFunc func(ctx context.Context, t *entities.Task) error
 type Config struct {
 	TransactionManager TransactionManager
 	TasksRepository    TasksRepository
+	UserInfoRepository UserInfoRepository
 	EmailClient        EmailClient
 	SMSClient          SMSClient
 	PushClient         PushClient
@@ -61,6 +66,7 @@ type Config struct {
 type Service struct {
 	txm             TransactionManager
 	tasksRepository TasksRepository
+	userInfoRepo    UserInfoRepository
 	emailClient     EmailClient
 	smsClient       SMSClient
 	pushClient      PushClient
@@ -76,6 +82,7 @@ func NewService(cfg *Config) *Service {
 	return &Service{
 		txm:             cfg.TransactionManager,
 		tasksRepository: cfg.TasksRepository,
+		userInfoRepo:    cfg.UserInfoRepository,
 		emailClient:     cfg.EmailClient,
 		smsClient:       cfg.SMSClient,
 		pushClient:      cfg.PushClient,
@@ -188,6 +195,15 @@ func (s *Service) handleEmailTask(ctx context.Context, t *entities.Task) error {
 		return fmt.Errorf("email is empty")
 	}
 
+	// Notification tasks require verified email; verification code tasks always go through.
+	if t.TypeNm() == entities.TaskTypeSendNotificationEmail && s.userInfoRepo != nil {
+		user, err := s.userInfoRepo.Get(ctx, dto.UserInfoFilter{ID: &attr.UserID}, false)
+		if err == nil && !user.IsEmailVerified() {
+			s.log.Warnf("Skipping email notification for user %s: email not verified", attr.UserID)
+			return nil // delete the task, no retry needed
+		}
+	}
+
 	subject := attr.Subject
 	if subject == "" {
 		subject = "BodyFuel"
@@ -212,6 +228,15 @@ func (s *Service) handleSMSTask(ctx context.Context, t *entities.Task) error {
 
 	if attr.Phone == "" {
 		return fmt.Errorf("phone is empty")
+	}
+
+	// Notification tasks require verified phone; verification code tasks always go through.
+	if t.TypeNm() == entities.TaskTypeSendNotificationPhone && s.userInfoRepo != nil {
+		user, err := s.userInfoRepo.Get(ctx, dto.UserInfoFilter{ID: &attr.UserID}, false)
+		if err == nil && !user.IsPhoneVerified() {
+			s.log.Warnf("Skipping SMS notification for user %s: phone not verified", attr.UserID)
+			return nil // delete the task, no retry needed
+		}
 	}
 
 	body := attr.Body

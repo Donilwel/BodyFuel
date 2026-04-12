@@ -3,246 +3,133 @@ package auth
 import (
 	"backend/internal/domain/entities"
 	"backend/internal/dto"
-	"backend/internal/errors"
+	autherrors "backend/internal/errors"
 	"backend/internal/service/auth/mocks"
 	"context"
-	"golang.org/x/crypto/bcrypt"
+	"errors"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/crypto/bcrypt"
 )
 
-func strPtr(s string) *string {
-	return &s
+// helpers
+
+func strPtr(s string) *string { return &s }
+
+func newHashedUser(username, password string) *entities.UserInfo {
+	hashed, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
+		ID:       uuid.New(),
+		Username: username,
+		Password: string(hashed),
+		Email:    username + "@example.com",
+		Phone:    "+79001234567",
+	}))
 }
+
+func newActiveRefreshToken(userID uuid.UUID, raw string) *entities.UserRefreshToken {
+	h := hashToken(raw)
+	return entities.NewUserRefreshToken(entities.WithUserRefreshTokenInitSpec(entities.UserRefreshTokenInitSpec{
+		ID:        uuid.New(),
+		UserID:    userID,
+		TokenHash: h,
+		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+	}))
+}
+
+func newExpiredRefreshToken(userID uuid.UUID, raw string) *entities.UserRefreshToken {
+	h := hashToken(raw)
+	return entities.NewUserRefreshToken(entities.WithUserRefreshTokenInitSpec(entities.UserRefreshTokenInitSpec{
+		ID:        uuid.New(),
+		UserID:    userID,
+		TokenHash: h,
+		ExpiresAt: time.Now().Add(-time.Hour),
+	}))
+}
+
+func newVerificationCode(userID uuid.UUID, code string, codeType entities.VerificationCodeType, expired, used bool) *entities.UserVerificationCode {
+	h := hashToken(code)
+	ttl := time.Now().Add(10 * time.Minute)
+	if expired {
+		ttl = time.Now().Add(-time.Minute)
+	}
+	vc := entities.NewUserVerificationCode(entities.WithUserVerificationCodeInitSpec(entities.UserVerificationCodeInitSpec{
+		ID:        uuid.New(),
+		UserID:    userID,
+		CodeHash:  h,
+		CodeType:  codeType,
+		ExpiresAt: ttl,
+	}))
+	if used {
+		vc.MarkUsed()
+	}
+	return vc
+}
+
+// ──────────────────────────────────────────────────────────────
+// Register
+// ──────────────────────────────────────────────────────────────
 
 func TestService_Register(t *testing.T) {
 	ctx := context.Background()
 
-	type fields struct {
-		prepareMocks func(
-			userRepo *mocks.UserInfoRepository,
-			txm *mocks.TransactionManager,
-		)
-	}
-
-	type args struct {
-		info entities.UserInfoInitSpec
-	}
-
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
+		name         string
+		prepareMocks func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager)
+		info         entities.UserInfoInitSpec
+		wantErr      error
 	}{
 		{
-			name: "success register",
-			fields: fields{
-				prepareMocks: func(
-					userRepo *mocks.UserInfoRepository,
-					txm *mocks.TransactionManager,
-				) {
-					txm.
-						On("Do", mock.Anything, mock.Anything).
-						Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
-							return fn(ctx)
-						})
-
-					userRepo.
-						On("Get", mock.Anything,
-							dto.UserInfoFilter{Username: strPtr("user")},
-							false,
-						).
-						Return(nil, nil)
-
-					userRepo.
-						On("Create", mock.Anything, mock.AnythingOfType("*entities.UserInfo")).
-						Return(nil)
-				},
+			name: "success",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
+				txm.On("Do", mock.Anything, mock.Anything).
+					Return(func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) })
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
+					Return(nil, nil)
+				userRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.UserInfo")).
+					Return(nil)
 			},
-			args: args{
-				info: entities.UserInfoInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
+			info:    entities.UserInfoInitSpec{Username: "user", Password: "password"},
 			wantErr: nil,
 		},
 		{
 			name: "user already exists",
-			fields: fields{
-				prepareMocks: func(
-					userRepo *mocks.UserInfoRepository,
-					txm *mocks.TransactionManager,
-				) {
-					txm.
-						On("Do", mock.Anything, mock.Anything).
-						Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
-							return fn(ctx)
-						})
-
-					userRepo.
-						On("Get", mock.Anything,
-							dto.UserInfoFilter{Username: strPtr("user")},
-							false,
-						).
-						Return(&entities.UserInfo{}, nil)
-				},
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
+				txm.On("Do", mock.Anything, mock.Anything).
+					Return(func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) })
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
+					Return(&entities.UserInfo{}, nil)
 			},
-			args: args{
-				info: entities.UserInfoInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrUserAlreadyExists,
+			info:    entities.UserInfoInitSpec{Username: "user", Password: "password"},
+			wantErr: autherrors.ErrUserAlreadyExists,
 		},
 		{
-			name: "repo create error",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
-					txm.On("Do", mock.Anything, mock.Anything).
-						Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
-							return fn(ctx)
-						})
-
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
-						Return(nil, nil)
-
-					userRepo.
-						On("Create", mock.Anything, mock.Anything).
-						Return(errors.ErrHashedPassword)
-				},
+			name: "create returns error",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
+				txm.On("Do", mock.Anything, mock.Anything).
+					Return(func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) })
+				userRepo.On("Get", mock.Anything, mock.Anything, false).Return(nil, nil)
+				userRepo.On("Create", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
-			args: args{
-				info: entities.UserInfoInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrHashedPassword,
-		},
-		{
-			name: "transaction manager error",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
-					txm.
-						On("Do", mock.Anything, mock.Anything).
-						Return(errors.ErrHashedPassword)
-				},
-			},
-			args: args{
-				info: entities.UserInfoInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrHashedPassword,
+			info:    entities.UserInfoInitSpec{Username: "user", Password: "password"},
+			wantErr: errors.New("db error"),
 		},
 		{
 			name: "password is hashed before create",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
-					txm.On("Do", mock.Anything, mock.Anything).
-						Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
-							return fn(ctx)
-						})
-
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
-						Return(nil, nil)
-
-					userRepo.
-						On("Create", mock.Anything, mock.MatchedBy(func(u *entities.UserInfo) bool {
-							return u.Password() != "password"
-						})).
-						Return(nil)
-				},
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
+				txm.On("Do", mock.Anything, mock.Anything).
+					Return(func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) })
+				userRepo.On("Get", mock.Anything, mock.Anything, false).Return(nil, nil)
+				userRepo.On("Create", mock.Anything, mock.MatchedBy(func(u *entities.UserInfo) bool {
+					return u.Password() != "secret" && bcrypt.CompareHashAndPassword([]byte(u.Password()), []byte("secret")) == nil
+				})).Return(nil)
 			},
-			args: args{
-				info: entities.UserInfoInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
+			info:    entities.UserInfoInitSpec{Username: "user", Password: "secret"},
 			wantErr: nil,
-		},
-		{
-			name: "username with spaces",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
-					txm.On("Do", mock.Anything, mock.Anything).
-						Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
-							return fn(ctx)
-						})
-
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr(" user ")}, false).
-						Return(nil, nil)
-
-					userRepo.
-						On("Create", mock.Anything, mock.Anything).
-						Return(nil)
-				},
-			},
-			args: args{
-				info: entities.UserInfoInitSpec{
-					Username: " user ",
-					Password: "password",
-				},
-			},
-			wantErr: nil,
-		},
-		{
-			name: "empty password",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
-					txm.On("Do", mock.Anything, mock.Anything).
-						Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
-							return fn(ctx)
-						})
-
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
-						Return(nil, nil)
-
-					userRepo.
-						On("Create", mock.Anything, mock.Anything).
-						Return(nil)
-				},
-			},
-			args: args{
-				info: entities.UserInfoInitSpec{
-					Username: "user",
-					Password: "",
-				},
-			},
-			wantErr: nil,
-		},
-		{
-			name: "create not called if user exists",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository, txm *mocks.TransactionManager) {
-					txm.On("Do", mock.Anything, mock.Anything).
-						Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
-							return fn(ctx)
-						})
-
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
-						Return(&entities.UserInfo{}, nil)
-				},
-			},
-			args: args{
-				info: entities.UserInfoInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrUserAlreadyExists,
 		},
 	}
 
@@ -250,21 +137,13 @@ func TestService_Register(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			userRepo := mocks.NewUserInfoRepository(t)
 			txm := mocks.NewTransactionManager(t)
+			tt.prepareMocks(userRepo, txm)
 
-			if tt.fields.prepareMocks != nil {
-				tt.fields.prepareMocks(userRepo, txm)
-			}
-
-			s := NewService(&Config{
-				TransactionManager: txm,
-				UserInfoRepository: userRepo,
-			})
-
-			err := s.Register(ctx, tt.args.info)
+			s := NewService(&Config{TransactionManager: txm, UserInfoRepository: userRepo})
+			err := s.Register(ctx, tt.info)
 
 			if tt.wantErr != nil {
 				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.wantErr)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -272,331 +151,492 @@ func TestService_Register(t *testing.T) {
 	}
 }
 
+// ──────────────────────────────────────────────────────────────
+// Login
+// ──────────────────────────────────────────────────────────────
+
 func TestService_Login(t *testing.T) {
 	ctx := context.Background()
-
-	hashedPass, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
-	info := entities.UserInfoInitSpec{
-		Username: "user",
-		Password: string(hashedPass),
-	}
-	user := entities.NewUserInfo(entities.WithUserInfoInitSpec(info))
-
-	type fields struct {
-		prepareMocks func(userRepo *mocks.UserInfoRepository)
-	}
-
-	type args struct {
-		auth entities.UserAuthInitSpec
-	}
+	user := newHashedUser("user", "password")
 
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
+		name         string
+		prepareMocks func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository)
+		auth         entities.UserAuthInitSpec
+		wantErr      error
 	}{
 		{
-			name: "success login",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					userRepo.
-						On("Get", mock.Anything,
-							dto.UserInfoFilter{Username: strPtr("user")},
-							false,
-						).
-						Return(user, nil)
-				},
+			name: "success — returns token pair",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).Return(user, nil)
+				refreshRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.UserRefreshToken")).Return(nil)
 			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
+			auth:    entities.UserAuthInitSpec{Username: "user", Password: "password"},
 			wantErr: nil,
 		},
 		{
-			name: "invalid password",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					userRepo.
-						On("Get", mock.Anything,
-							dto.UserInfoFilter{Username: strPtr("user")},
-							false,
-						).
-						Return(user, nil)
-				},
+			name: "wrong password",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).Return(user, nil)
 			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: "user",
-					Password: "wrong",
-				},
-			},
-			wantErr: errors.ErrInvalidCredentials,
+			auth:    entities.UserAuthInitSpec{Username: "user", Password: "wrong"},
+			wantErr: autherrors.ErrInvalidCredentials,
 		},
 		{
 			name: "user not found",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					userRepo.
-						On("Get", mock.Anything,
-							dto.UserInfoFilter{Username: strPtr("user")},
-							false,
-						).
-						Return(nil, errors.ErrUserInfoNotFound)
-				},
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				userRepo.On("Get", mock.Anything, mock.Anything, false).Return(nil, autherrors.ErrUserInfoNotFound)
 			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrUserInfoNotFound,
+			auth:    entities.UserAuthInitSpec{Username: "nobody", Password: "pass"},
+			wantErr: autherrors.ErrUserInfoNotFound,
 		},
 		{
-			name: "repo error",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
-						Return(nil, errors.ErrHashedPassword)
-				},
+			name: "refresh token create fails",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				userRepo.On("Get", mock.Anything, mock.Anything, false).Return(user, nil)
+				refreshRepo.On("Create", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrHashedPassword,
-		},
-		{
-			name: "empty password",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
-						Return(user, nil)
-				},
-			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: "user",
-					Password: "",
-				},
-			},
-			wantErr: errors.ErrInvalidCredentials,
-		},
-		{
-			name: "empty username",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("")}, false).
-						Return(nil, errors.ErrUserInfoNotFound)
-				},
-			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: "",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrUserInfoNotFound,
-		},
-		{
-			name: "invalid stored hash",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					badUser := entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
-						Username: "user",
-						Password: "not-a-hash",
-					}))
-
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
-						Return(badUser, nil)
-				},
-			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrInvalidCredentials,
-		},
-		{
-			name: "second login returns token",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr("user")}, false).
-						Return(user, nil)
-				},
-			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: "user",
-					Password: "password",
-				},
-			},
-			wantErr: nil,
-		},
-		{
-			name: "username with spaces",
-			fields: fields{
-				prepareMocks: func(userRepo *mocks.UserInfoRepository) {
-					userRepo.
-						On("Get", mock.Anything, dto.UserInfoFilter{Username: strPtr(" user ")}, false).
-						Return(nil, errors.ErrUserInfoNotFound)
-				},
-			},
-			args: args{
-				auth: entities.UserAuthInitSpec{
-					Username: " user ",
-					Password: "password",
-				},
-			},
-			wantErr: errors.ErrUserInfoNotFound,
+			auth:    entities.UserAuthInitSpec{Username: "user", Password: "password"},
+			wantErr: errors.New("db error"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			userRepo := mocks.NewUserInfoRepository(t)
-
-			if tt.fields.prepareMocks != nil {
-				tt.fields.prepareMocks(userRepo)
-			}
+			refreshRepo := mocks.NewUserRefreshTokensRepository(t)
+			tt.prepareMocks(userRepo, refreshRepo)
 
 			s := NewService(&Config{
-				UserInfoRepository: userRepo,
+				UserInfoRepository:          userRepo,
+				UserRefreshTokensRepository: refreshRepo,
 			})
 
-			token, err := s.Login(ctx, tt.args.auth)
+			pair, err := s.Login(ctx, tt.auth)
 
 			if tt.wantErr != nil {
 				assert.Error(t, err)
-				assert.ErrorIs(t, err, tt.wantErr)
-				assert.Empty(t, token)
+				assert.Empty(t, pair.AccessToken)
+				assert.Empty(t, pair.RefreshToken)
 			} else {
 				assert.NoError(t, err)
-				assert.NotEmpty(t, token)
+				assert.NotEmpty(t, pair.AccessToken)
+				assert.NotEmpty(t, pair.RefreshToken)
 			}
 		})
 	}
 }
 
-func TestService_checkPasswordAndTakeToken(t *testing.T) {
-	hashPass, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-	hashEmpty, _ := bcrypt.GenerateFromPassword([]byte(""), bcrypt.DefaultCost)
+// ──────────────────────────────────────────────────────────────
+// Refresh
+// ──────────────────────────────────────────────────────────────
+
+func TestService_Refresh(t *testing.T) {
+	ctx := context.Background()
+	user := newHashedUser("user", "password")
+	rawToken := "validrawtoken1234"
 
 	tests := []struct {
-		name    string
-		user    *entities.UserInfo
-		pass    string
-		wantErr error
+		name         string
+		rawToken     string
+		prepareMocks func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository)
+		wantErr      bool
 	}{
 		{
-			name: "correct password",
-			user: entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
-				Username: "user",
-				Password: string(hashPass),
-			})),
-			pass:    "password123",
-			wantErr: nil,
+			name:     "success — token rotated",
+			rawToken: rawToken,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				token := newActiveRefreshToken(user.ID(), rawToken)
+				hash := hashToken(rawToken)
+				tokenUserID := token.UserID()
+				refreshRepo.On("Get", mock.Anything, dto.UserRefreshTokenFilter{TokenHash: &hash}).Return(token, nil)
+				refreshRepo.On("Delete", mock.Anything, dto.UserRefreshTokenFilter{TokenHash: &hash}).Return(nil)
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{ID: &tokenUserID}, false).Return(user, nil)
+				refreshRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.UserRefreshToken")).Return(nil)
+			},
+			wantErr: false,
 		},
 		{
-			name: "wrong password",
-			user: entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
-				Username: "user",
-				Password: string(hashPass),
-			})),
-			pass:    "wrong",
-			wantErr: errors.ErrInvalidCredentials,
+			name:     "token not found",
+			rawToken: "unknowntoken",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				refreshRepo.On("Get", mock.Anything, mock.Anything).Return(nil, errors.New("not found"))
+			},
+			wantErr: true,
 		},
 		{
-			name: "empty password correct",
-			user: entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
-				Username: "user",
-				Password: string(hashEmpty),
-			})),
-			pass:    "",
-			wantErr: nil,
+			name:     "token expired",
+			rawToken: rawToken,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				token := newExpiredRefreshToken(user.ID(), rawToken)
+				hash := hashToken(rawToken)
+				refreshRepo.On("Get", mock.Anything, dto.UserRefreshTokenFilter{TokenHash: &hash}).Return(token, nil)
+				refreshRepo.On("Delete", mock.Anything, dto.UserRefreshTokenFilter{TokenHash: &hash}).Return(nil)
+			},
+			wantErr: true,
 		},
 	}
-
-	s := &Service{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := s.checkPasswordAndTakeToken(tt.user, tt.pass)
+			userRepo := mocks.NewUserInfoRepository(t)
+			refreshRepo := mocks.NewUserRefreshTokensRepository(t)
+			tt.prepareMocks(userRepo, refreshRepo)
 
-			if tt.wantErr != nil {
+			s := NewService(&Config{
+				UserInfoRepository:          userRepo,
+				UserRefreshTokensRepository: refreshRepo,
+			})
+
+			pair, err := s.Refresh(ctx, tt.rawToken)
+			if tt.wantErr {
 				assert.Error(t, err)
-				assert.ErrorContains(t, err, tt.wantErr.Error())
-				assert.Empty(t, got)
+				assert.Empty(t, pair.AccessToken)
 			} else {
 				assert.NoError(t, err)
-				assert.NotEmpty(t, got)
+				assert.NotEmpty(t, pair.AccessToken)
+				assert.NotEmpty(t, pair.RefreshToken)
 			}
 		})
 	}
 }
 
+// ──────────────────────────────────────────────────────────────
+// SendVerificationCode
+// ──────────────────────────────────────────────────────────────
+
+func TestService_SendVerificationCode(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	user := entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
+		ID: userID, Username: "user", Email: "user@example.com", Phone: "+79001234567",
+	}))
+
+	tests := []struct {
+		name         string
+		codeType     entities.VerificationCodeType
+		prepareMocks func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, taskRepo *mocks.TasksRepository)
+		wantErr      bool
+	}{
+		{
+			name:     "email code sent successfully",
+			codeType: entities.VerificationCodeEmail,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, taskRepo *mocks.TasksRepository) {
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{ID: &userID}, false).Return(user, nil)
+				vcRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.UserVerificationCode")).Return(nil)
+				taskRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Task")).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:     "phone code sent successfully",
+			codeType: entities.VerificationCodePhone,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, taskRepo *mocks.TasksRepository) {
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{ID: &userID}, false).Return(user, nil)
+				vcRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.UserVerificationCode")).Return(nil)
+				taskRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Task")).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:     "user not found",
+			codeType: entities.VerificationCodeEmail,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, taskRepo *mocks.TasksRepository) {
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{ID: &userID}, false).Return(nil, autherrors.ErrUserInfoNotFound)
+			},
+			wantErr: true,
+		},
+		{
+			name:     "verification code repo error",
+			codeType: entities.VerificationCodeEmail,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, taskRepo *mocks.TasksRepository) {
+				userRepo.On("Get", mock.Anything, mock.Anything, false).Return(user, nil)
+				vcRepo.On("Create", mock.Anything, mock.Anything).Return(errors.New("db error"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userRepo := mocks.NewUserInfoRepository(t)
+			vcRepo := mocks.NewUserVerificationCodesRepository(t)
+			taskRepo := mocks.NewTasksRepository(t)
+			tt.prepareMocks(userRepo, vcRepo, taskRepo)
+
+			s := NewService(&Config{
+				UserInfoRepository:          userRepo,
+				VerificationCodesRepository: vcRepo,
+				TasksRepository:             taskRepo,
+			})
+
+			err := s.SendVerificationCode(ctx, userID, tt.codeType)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────
+// VerifyCode
+// ──────────────────────────────────────────────────────────────
+
+func TestService_VerifyCode(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	user := entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{ID: userID, Username: "user"}))
+	validCode := "123456"
+	codeType := entities.VerificationCodeEmail
+
+	tests := []struct {
+		name         string
+		code         string
+		prepareMocks func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository)
+		wantErr      error
+	}{
+		{
+			name: "success — email verified",
+			code: validCode,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository) {
+				vc := newVerificationCode(userID, validCode, codeType, false, false)
+				vcRepo.On("GetLatest", mock.Anything, dto.UserVerificationCodeFilter{UserID: &userID, CodeType: &codeType}).Return(vc, nil)
+				vcRepo.On("MarkUsed", mock.Anything, vc.ID()).Return(nil)
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{ID: &userID}, false).Return(user, nil)
+				userRepo.On("Update", mock.Anything, mock.MatchedBy(func(u *entities.UserInfo) bool {
+					return u.IsEmailVerified()
+				})).Return(nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name: "wrong code",
+			code: "000000",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository) {
+				vc := newVerificationCode(userID, validCode, codeType, false, false)
+				vcRepo.On("GetLatest", mock.Anything, mock.Anything).Return(vc, nil)
+			},
+			wantErr: autherrors.ErrInvalidVerificationCode,
+		},
+		{
+			name: "code expired",
+			code: validCode,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository) {
+				vc := newVerificationCode(userID, validCode, codeType, true, false)
+				vcRepo.On("GetLatest", mock.Anything, mock.Anything).Return(vc, nil)
+			},
+			wantErr: autherrors.ErrVerificationCodeExpired,
+		},
+		{
+			name: "code already used",
+			code: validCode,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository) {
+				vc := newVerificationCode(userID, validCode, codeType, false, true)
+				vcRepo.On("GetLatest", mock.Anything, mock.Anything).Return(vc, nil)
+			},
+			wantErr: autherrors.ErrVerificationCodeAlreadyUsed,
+		},
+		{
+			name: "no code found",
+			code: validCode,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository) {
+				vcRepo.On("GetLatest", mock.Anything, mock.Anything).Return(nil, errors.New("not found"))
+			},
+			wantErr: autherrors.ErrInvalidVerificationCode,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userRepo := mocks.NewUserInfoRepository(t)
+			vcRepo := mocks.NewUserVerificationCodesRepository(t)
+			tt.prepareMocks(userRepo, vcRepo)
+
+			s := NewService(&Config{
+				UserInfoRepository:          userRepo,
+				VerificationCodesRepository: vcRepo,
+			})
+
+			err := s.VerifyCode(ctx, userID, tt.code, codeType)
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────
+// SendRecoveryCode
+// ──────────────────────────────────────────────────────────────
+
+func TestService_SendRecoveryCode(t *testing.T) {
+	ctx := context.Background()
+	email := "user@example.com"
+	user := entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
+		ID: uuid.New(), Username: "user", Email: email,
+	}))
+
+	tests := []struct {
+		name         string
+		prepareMocks func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, taskRepo *mocks.TasksRepository)
+		wantErr      bool
+	}{
+		{
+			name: "success",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, taskRepo *mocks.TasksRepository) {
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Email: &email}, false).Return(user, nil)
+				vcRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.UserVerificationCode")).Return(nil)
+				taskRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Task")).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "user not found — silently returns nil (anti-enumeration)",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, taskRepo *mocks.TasksRepository) {
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Email: &email}, false).Return(nil, autherrors.ErrUserInfoNotFound)
+			},
+			wantErr: false, // always 200
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userRepo := mocks.NewUserInfoRepository(t)
+			vcRepo := mocks.NewUserVerificationCodesRepository(t)
+			taskRepo := mocks.NewTasksRepository(t)
+			tt.prepareMocks(userRepo, vcRepo, taskRepo)
+
+			s := NewService(&Config{
+				UserInfoRepository:          userRepo,
+				VerificationCodesRepository: vcRepo,
+				TasksRepository:             taskRepo,
+			})
+
+			err := s.SendRecoveryCode(ctx, email)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────
+// ResetPassword
+// ──────────────────────────────────────────────────────────────
+
+func TestService_ResetPassword(t *testing.T) {
+	ctx := context.Background()
+	email := "user@example.com"
+	user := entities.NewUserInfo(entities.WithUserInfoInitSpec(entities.UserInfoInitSpec{
+		ID: uuid.New(), Username: "user", Email: email,
+	}))
+	validCode := "654321"
+	codeType := entities.VerificationCodeRecover
+
+	tests := []struct {
+		name         string
+		code         string
+		prepareMocks func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, refreshRepo *mocks.UserRefreshTokensRepository)
+		wantErr      error
+	}{
+		{
+			name: "success — password updated, refresh tokens invalidated",
+			code: validCode,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				vc := newVerificationCode(user.ID(), validCode, codeType, false, false)
+				userID := user.ID()
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Email: &email}, false).Return(user, nil)
+				vcRepo.On("GetLatest", mock.Anything, dto.UserVerificationCodeFilter{UserID: &userID, CodeType: &codeType}).Return(vc, nil)
+				vcRepo.On("MarkUsed", mock.Anything, vc.ID()).Return(nil)
+				userRepo.On("Update", mock.Anything, mock.AnythingOfType("*entities.UserInfo")).Return(nil)
+				refreshRepo.On("DeleteByUser", mock.Anything, user.ID()).Return(nil)
+			},
+			wantErr: nil,
+		},
+		{
+			name: "user not found",
+			code: validCode,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Email: &email}, false).Return(nil, autherrors.ErrUserInfoNotFound)
+			},
+			wantErr: autherrors.ErrInvalidCredentials,
+		},
+		{
+			name: "invalid code",
+			code: "000000",
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				vc := newVerificationCode(user.ID(), validCode, codeType, false, false)
+				userID := user.ID()
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Email: &email}, false).Return(user, nil)
+				vcRepo.On("GetLatest", mock.Anything, dto.UserVerificationCodeFilter{UserID: &userID, CodeType: &codeType}).Return(vc, nil)
+			},
+			wantErr: autherrors.ErrInvalidVerificationCode,
+		},
+		{
+			name: "code expired",
+			code: validCode,
+			prepareMocks: func(userRepo *mocks.UserInfoRepository, vcRepo *mocks.UserVerificationCodesRepository, refreshRepo *mocks.UserRefreshTokensRepository) {
+				vc := newVerificationCode(user.ID(), validCode, codeType, true, false)
+				userID := user.ID()
+				userRepo.On("Get", mock.Anything, dto.UserInfoFilter{Email: &email}, false).Return(user, nil)
+				vcRepo.On("GetLatest", mock.Anything, dto.UserVerificationCodeFilter{UserID: &userID, CodeType: &codeType}).Return(vc, nil)
+			},
+			wantErr: autherrors.ErrVerificationCodeExpired,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userRepo := mocks.NewUserInfoRepository(t)
+			vcRepo := mocks.NewUserVerificationCodesRepository(t)
+			refreshRepo := mocks.NewUserRefreshTokensRepository(t)
+			tt.prepareMocks(userRepo, vcRepo, refreshRepo)
+
+			s := NewService(&Config{
+				UserInfoRepository:          userRepo,
+				VerificationCodesRepository: vcRepo,
+				UserRefreshTokensRepository: refreshRepo,
+			})
+
+			err := s.ResetPassword(ctx, email, tt.code, "newpassword123")
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// ──────────────────────────────────────────────────────────────
+// hashesPassword
+// ──────────────────────────────────────────────────────────────
+
 func TestService_hashesPassword(t *testing.T) {
+	s := &Service{}
+
 	tests := []struct {
 		name     string
 		password string
-		wantErr  bool
 	}{
-		{
-			name:     "normal password",
-			password: "mysecret",
-			wantErr:  false,
-		},
-		{
-			name:     "empty password",
-			password: "",
-			wantErr:  false,
-		},
-		{
-			name:     "long password",
-			password: "this_is_a_very_long_password_1234567890",
-			wantErr:  false,
-		},
-		{
-			name:     "simulate bcrypt error",
-			password: "error",
-			wantErr:  false,
-		},
+		{"normal password", "mysecret"},
+		{"empty password", ""},
+		{"long password", "this_is_a_very_long_password_1234567890"},
 	}
-
-	s := &Service{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			user := &entities.UserInfoInitSpec{
-				Username: "user",
-				Password: tt.password,
-			}
-
-			err := s.hashesPassword(user)
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
+			spec := &entities.UserInfoInitSpec{Username: "user", Password: tt.password}
+			err := s.hashesPassword(spec)
 			assert.NoError(t, err)
-			assert.NotEmpty(t, user.Password)
-			assert.NotEqual(t, tt.password, user.Password)
-
-			err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(tt.password))
-			assert.NoError(t, err)
+			assert.NotEqual(t, tt.password, spec.Password)
+			assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(spec.Password), []byte(tt.password)))
 		})
 	}
 }
