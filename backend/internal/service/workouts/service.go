@@ -23,7 +23,6 @@ const (
 
 	locationName = "Europe/Moscow"
 
-	// Константы для генерации тренировок
 	defaultWorkoutsLimit      = 10
 	minExercisesPerWorkout    = 4
 	maxExercisesPerWorkout    = 12
@@ -34,13 +33,20 @@ const (
 	maxConcurrentDBOperations = 5
 
 	// Коэффициенты для расчета
-	preferredExercisesPercent  = 0.6 // 60% предпочтительных упражнений
-	restBetweenExercises       = 60  // 60 секунд отдыха между упражнениями
-	defaultCaloriesPerExercise = 150 // Калорий по умолчанию для упражнения
+	preferredExercisesPercent = 0.6 // 60% предпочтительных упражнений
+	restBetweenExercises      = 60  // 60 секунд отдыха между упражнениями
 
 	// Таймауты
 	dbOperationTimeout = 30 * time.Second
 	generateTimeout    = 2 * time.Minute
+
+	// Progressive overload parameters
+	progressRepsIncreasePercent = 0.10 // +10% reps per confirmed progression
+	progressMaxRepsMultiplier   = 2.0  // never more than 2× base reps
+	progressMinRelaxTime        = 30   // seconds minimum rest
+	progressRelaxDecreaseRatio  = 0.85 // rest reduction at high reps
+	progressLookbackDays        = 30   // days to look back for history
+	progressCompletionsRequired = 2    // min completions to trigger overload
 )
 
 type (
@@ -80,6 +86,7 @@ type (
 	WorkoutExerciseRepository interface {
 		CreateBulk(ctx context.Context, workoutExercises []entities.WorkoutsExercise) error
 		ListSkippedExercises(ctx context.Context, userID uuid.UUID, since time.Time) ([]dto.SkippedExerciseInfo, error)
+		ListExerciseProgress(ctx context.Context, userID uuid.UUID, since time.Time) ([]dto.ExerciseProgressInfo, error)
 	}
 
 	UserDevicesRepository interface {
@@ -657,13 +664,47 @@ func (s *Service) analyzeUserPreferences(ctx context.Context, userID uuid.UUID, 
 	defaultExerciseType := entities.UpperBody
 	defaultPlace := entities.Home
 
-	if len(workouts) == 0 {
+	if s.workoutExerciseRepository == nil {
+		return defaultExerciseType, defaultPlace
+	}
+	since := time.Now().AddDate(0, 0, -progressLookbackDays)
+	progress, err := s.workoutExerciseRepository.ListExerciseProgress(ctx, userID, since)
+	if err != nil || len(progress) == 0 {
 		return defaultExerciseType, defaultPlace
 	}
 
-	// TODO: Реализовать анализ реальных предпочтений из workout_exercises
+	// Count completions per exercise type and place to find the most popular.
+	typeCounts := make(map[entities.ExerciseType]int)
+	placeCounts := make(map[entities.PlaceExercise]int)
 
-	return defaultExerciseType, defaultPlace
+	for _, p := range progress {
+		if p.CompletedCount > 0 && p.TypeExercise != "" {
+			typeCounts[p.TypeExercise] += p.CompletedCount
+		}
+		if p.CompletedCount > 0 && p.PlaceExercise != "" {
+			placeCounts[p.PlaceExercise] += p.CompletedCount
+		}
+	}
+
+	bestType := defaultExerciseType
+	bestTypeCount := 0
+	for t, c := range typeCounts {
+		if c > bestTypeCount {
+			bestTypeCount = c
+			bestType = t
+		}
+	}
+
+	bestPlace := defaultPlace
+	bestPlaceCount := 0
+	for p, c := range placeCounts {
+		if c > bestPlaceCount {
+			bestPlaceCount = c
+			bestPlace = p
+		}
+	}
+
+	return bestType, bestPlace
 }
 
 func (s *Service) generateWorkoutWithRetry(ctx context.Context, userParams *entities.UserParams, stats *dto.AnalyzeWorkoutStats) (*entities.Workout, error) {
@@ -771,9 +812,15 @@ func (s *Service) getExercisesForWorkout(ctx context.Context, userLevel string, 
 func (s *Service) saveWorkout(ctx context.Context, userID uuid.UUID, exercises []*entities.Exercise,
 	totalCalories int, totalDuration int, userLevel string) (*entities.Workout, error) {
 
+	progressMap, err := s.buildProgressMap(ctx, userID)
+	if err != nil {
+		s.log.Warnf("buildProgressMap: %v (continuing without progressive overload)", err)
+		progressMap = nil
+	}
+
 	var workout *entities.Workout
 
-	err := s.transactionManager.Do(ctx, func(txCtx context.Context) error {
+	err = s.transactionManager.Do(ctx, func(txCtx context.Context) error {
 		workout = entities.NewWorkout(entities.WithWorkoutInitSpec(entities.WorkoutInitSpec{
 			ID:                 uuid.New(),
 			UserID:             userID,
@@ -789,7 +836,7 @@ func (s *Service) saveWorkout(ctx context.Context, userID uuid.UUID, exercises [
 			return fmt.Errorf("create workout: %w", err)
 		}
 
-		workoutExercises := s.prepareWorkoutExercises(workout.ID(), exercises)
+		workoutExercises := s.prepareWorkoutExercises(workout.ID(), exercises, progressMap)
 
 		if len(workoutExercises) == 0 {
 			return fmt.Errorf("no exercises available for workout")
@@ -810,17 +857,32 @@ func (s *Service) saveWorkout(ctx context.Context, userID uuid.UUID, exercises [
 	return workout, nil
 }
 
-func (s *Service) prepareWorkoutExercises(workoutID uuid.UUID, exercises []*entities.Exercise) []entities.WorkoutsExercise {
+func (s *Service) prepareWorkoutExercises(workoutID uuid.UUID, exercises []*entities.Exercise, progressMap map[uuid.UUID]dto.ExerciseProgressInfo) []entities.WorkoutsExercise {
 	result := make([]entities.WorkoutsExercise, 0, len(exercises))
 
 	for i, ex := range exercises {
+		reps := ex.BaseCountReps()
+		relaxTime := ex.BaseRelaxTime()
+
+		if progressMap != nil {
+			if info, ok := progressMap[ex.ID()]; ok {
+				reps, relaxTime = s.applyProgressiveOverload(ex, info)
+			}
+		}
+
+		// Real calorie calculation using entity helper.
+		calories := int(math.Round(ex.AvgCaloriesPer() * float64(reps)))
+		if calories <= 0 {
+			calories = reps * 5 // fallback: ~5 kcal per rep
+		}
+
 		workoutExercise := *entities.NewWorkoutsExercise(entities.WithWorkoutsExerciseInitSpec(
 			entities.WorkoutsExerciseInitSpec{
 				WorkoutID:       workoutID,
 				ExerciseID:      ex.ID(),
-				ModifyReps:      ex.BaseCountReps(),
-				ModifyRelaxTime: ex.BaseRelaxTime(),
-				Calories:        defaultCaloriesPerExercise, // TODO: Рассчитывать реальные калории
+				ModifyReps:      reps,
+				ModifyRelaxTime: relaxTime,
+				Calories:        calories,
 				Status:          entities.ExerciseStatusPending,
 				OrderIndex:      i + 1,
 				UpdatedAt:       time.Now(),
@@ -830,6 +892,74 @@ func (s *Service) prepareWorkoutExercises(workoutID uuid.UUID, exercises []*enti
 	}
 
 	return result
+}
+
+// applyProgressiveOverload computes the reps and relax time for a workout exercise
+// based on the user's recent completion history for that exercise.
+//
+// Rules:
+//   - Need at least progressCompletionsRequired completions to trigger overload.
+//   - Reps increase by progressRepsIncreasePercent (10%) per qualified step,
+//     capped at progressMaxRepsMultiplier × base reps.
+//   - When reps reach ≥75% of cap, reduce rest time by progressRelaxDecreaseRatio,
+//     but never below progressMinRelaxTime seconds.
+func (s *Service) applyProgressiveOverload(ex *entities.Exercise, info dto.ExerciseProgressInfo) (reps, relaxTime int) {
+	baseReps := ex.BaseCountReps()
+	baseRelax := ex.BaseRelaxTime()
+
+	if info.CompletedCount < progressCompletionsRequired {
+		// Not enough data yet — use base values.
+		return baseReps, baseRelax
+	}
+
+	// Start from the last used reps (or base if we have no completion data).
+	lastReps := info.LastReps
+	if lastReps <= 0 {
+		lastReps = baseReps
+	}
+
+	// Apply +10% increase.
+	newReps := int(math.Round(float64(lastReps) * (1 + progressRepsIncreasePercent)))
+
+	// Cap at 2× base.
+	maxReps := int(math.Round(float64(baseReps) * progressMaxRepsMultiplier))
+	if newReps > maxReps {
+		newReps = maxReps
+	}
+
+	// Determine relax time.
+	lastRelax := info.LastRelaxTime
+	if lastRelax <= 0 {
+		lastRelax = baseRelax
+	}
+
+	newRelax := lastRelax
+	// When reps reach ≥75% of the cap, start reducing rest to increase intensity.
+	if newReps >= int(math.Round(float64(maxReps)*0.75)) {
+		newRelax = int(math.Round(float64(lastRelax) * progressRelaxDecreaseRatio))
+		if newRelax < progressMinRelaxTime {
+			newRelax = progressMinRelaxTime
+		}
+	}
+
+	return newReps, newRelax
+}
+
+// buildProgressMap fetches 30-day exercise history for the user and returns a lookup map.
+func (s *Service) buildProgressMap(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]dto.ExerciseProgressInfo, error) {
+	if s.workoutExerciseRepository == nil {
+		return nil, nil
+	}
+	since := time.Now().AddDate(0, 0, -progressLookbackDays)
+	progress, err := s.workoutExerciseRepository.ListExerciseProgress(ctx, userID, since)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[uuid.UUID]dto.ExerciseProgressInfo, len(progress))
+	for _, p := range progress {
+		m[p.ExerciseID] = p
+	}
+	return m, nil
 }
 
 func (s *Service) selectExercisesForWorkout(exercises []*entities.Exercise, stats *dto.AnalyzeWorkoutStats) []*entities.Exercise {
@@ -1352,7 +1482,6 @@ func (s *Service) weightProgressTypePreference(weightDelta float64, goal entitie
 		}
 		return entities.Cardio
 	case weightDelta < -threshold:
-		// More than 1 kg below target: favour strength exercises.
 		return entities.UpperBody
 	default:
 		return ""

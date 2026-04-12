@@ -92,11 +92,11 @@ type (
 	AvatarService interface {
 		PresignPutAvatar(ctx context.Context, userID string, contentType string) (uploadURL string, objectKey string, err error)
 		PublicAvatarURL(objectKey string) string
+		UploadFoodPhoto(ctx context.Context, userID, objectName, contentType string, data io.Reader) (string, error)
 	}
 
 	NutritionService interface {
 		AnalyzePhoto(ctx context.Context, imageURL string) (*ai.NutritionAnalysis, error)
-		UploadAndAnalyzePhoto(ctx context.Context, userID, filename, contentType string, data io.Reader) (*nutricion.UploadPhotoResult, error)
 		CreateFoodEntry(ctx context.Context, spec entities.UserFoodInitSpec) error
 		GetFoodEntry(ctx context.Context, id, userID uuid.UUID) (*entities.UserFood, error)
 		UpdateFoodEntry(ctx context.Context, id, userID uuid.UUID, params entities.UserFoodUpdateParams) error
@@ -261,11 +261,21 @@ func (a *API) getUserIDFromContext(ctx *gin.Context) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("missing user_id")
 	}
 
-	userID, ok := userIDRaw.(uuid.UUID)
+	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		a.log.Errorf("invalid user_id in context")
+		a.log.Errorf("user info error: delete user info: invalid user_id type in context")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error": "invalid user_id in context",
+			"error": "invalid user_id type in context",
+		})
+		return uuid.Nil, fmt.Errorf("invalid user_id type in context")
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		a.log.Errorf("user info error: delete user info: invalid user_id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid user_id format",
+			"details": err.Error(),
 		})
 		return uuid.Nil, fmt.Errorf("invalid user_id")
 	}

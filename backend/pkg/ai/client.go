@@ -109,11 +109,12 @@ Suggest 3-5 recipes for their next meal that complement what they've already eat
 Return ONLY a JSON array (no markdown, no extra text):
 [{
   "name": "Recipe name",
-  "description": "Short description with brief preparation steps (1-2 sentences)",
+  "description": "Brief taste/flavour description (1 sentence, max 80 chars)",
+  "ingredients": [{"name": "Ingredient name", "grams": 150}],
   "macros": {"protein": 0.0, "fat": 0.0, "carbs": 0.0},
   "preparation_time": 10
 }]
-Rules: macros in grams (floats), preparation_time in minutes (integer), description max 150 chars, name max 50 chars.`,
+Rules: macros in grams (floats), preparation_time in minutes (integer), name max 50 chars, list 3-6 ingredients with realistic gram weights.`,
 		intake.ConsumedCalories, intake.ConsumedProtein, intake.ConsumedCarbs, intake.ConsumedFat)
 
 	resp, err := cl.c.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
@@ -121,7 +122,7 @@ Rules: macros in grams (floats), preparation_time in minutes (integer), descript
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: prompt},
 		},
-		MaxTokens: 800,
+		MaxTokens: 1400,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("openai recipes: %w", err)
@@ -169,9 +170,15 @@ type DailyIntake struct {
 	ConsumedFat      float64
 }
 
+type Ingredient struct {
+	Name  string  `json:"name"`
+	Grams float64 `json:"grams"`
+}
+
 type RecipeItem struct {
 	Name            string         `json:"name"`
 	Description     string         `json:"description"`
+	Ingredients     []Ingredient   `json:"ingredients"`
 	Macros          MacroNutrients `json:"macros"`
 	PreparationTime int            `json:"preparation_time"`
 }
