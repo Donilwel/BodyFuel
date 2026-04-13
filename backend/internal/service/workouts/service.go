@@ -168,11 +168,9 @@ func NewService(cfg *Config) *Service {
 		loc = time.UTC
 	}
 
-	// Создаем отдельный источник случайных чисел
 	source := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(source)
 
-	// Устанавливаем значения по умолчанию
 	if cfg.MinExercisesPerWorkout == 0 {
 		cfg.MinExercisesPerWorkout = minExercisesPerWorkout
 	}
@@ -587,7 +585,6 @@ func (s *Service) analyzeWorkoutStats(ctx context.Context, userInfo *entities.Us
 	return stats, nil
 }
 
-// getTodayCalories sums calories from all food entries for the user today.
 func (s *Service) getTodayCalories(ctx context.Context, userID uuid.UUID, now time.Time) int {
 	if s.userFoodRepository == nil {
 		return 0
@@ -605,7 +602,6 @@ func (s *Service) getTodayCalories(ctx context.Context, userID uuid.UUID, now ti
 	return total
 }
 
-// getLatestWeight returns the most recent logged weight for the user, or 0 if unavailable.
 func (s *Service) getLatestWeight(ctx context.Context, userID uuid.UUID) float64 {
 	if s.userWeightRepository == nil {
 		return 0
@@ -894,15 +890,6 @@ func (s *Service) prepareWorkoutExercises(workoutID uuid.UUID, exercises []*enti
 	return result
 }
 
-// applyProgressiveOverload computes the reps and relax time for a workout exercise
-// based on the user's recent completion history for that exercise.
-//
-// Rules:
-//   - Need at least progressCompletionsRequired completions to trigger overload.
-//   - Reps increase by progressRepsIncreasePercent (10%) per qualified step,
-//     capped at progressMaxRepsMultiplier × base reps.
-//   - When reps reach ≥75% of cap, reduce rest time by progressRelaxDecreaseRatio,
-//     but never below progressMinRelaxTime seconds.
 func (s *Service) applyProgressiveOverload(ex *entities.Exercise, info dto.ExerciseProgressInfo) (reps, relaxTime int) {
 	baseReps := ex.BaseCountReps()
 	baseRelax := ex.BaseRelaxTime()
@@ -945,7 +932,6 @@ func (s *Service) applyProgressiveOverload(ex *entities.Exercise, info dto.Exerc
 	return newReps, newRelax
 }
 
-// buildProgressMap fetches 30-day exercise history for the user and returns a lookup map.
 func (s *Service) buildProgressMap(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]dto.ExerciseProgressInfo, error) {
 	if s.workoutExerciseRepository == nil {
 		return nil, nil
@@ -1370,9 +1356,6 @@ func (s *Service) selectCustomExercises(exercises []*entities.Exercise, params *
 	return s.selectBalancedExercisesByType(exercises, exerciseCount)
 }
 
-// ── Skip-tracking helpers ──────────────────────────────────────────────────
-
-// buildSkipMap fetches skip data for the past 7 days and builds a lookup map keyed by exercise ID.
 func (s *Service) buildSkipMap(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]dto.SkippedExerciseInfo, error) {
 	since := time.Now().Add(-7 * 24 * time.Hour)
 	skipped, err := s.workoutExerciseRepository.ListSkippedExercises(ctx, userID, since)
@@ -1386,8 +1369,6 @@ func (s *Service) buildSkipMap(ctx context.Context, userID uuid.UUID) (map[uuid.
 	return m, nil
 }
 
-// filterSkippedExercises removes exercises that have been skipped twice within the last 7 days.
-// Exercises skipped only once remain available (they get one more chance).
 func (s *Service) filterSkippedExercises(exercises []*entities.Exercise, skipMap map[uuid.UUID]dto.SkippedExerciseInfo) []*entities.Exercise {
 	if len(skipMap) == 0 {
 		return exercises
@@ -1409,13 +1390,6 @@ func (s *Service) filterSkippedExercises(exercises []*entities.Exercise, skipMap
 	return result
 }
 
-// ── Phase-ordering helpers ─────────────────────────────────────────────────
-
-// exercisePhase assigns an ordering phase to an exercise type:
-//
-//	0 = Flexibility (warm-up / cooldown – goes first)
-//	1 = Strength (upper/lower/full body)
-//	2 = Cardio (goes last)
 func exercisePhase(t entities.ExerciseType) int {
 	switch t {
 	case entities.Flexibility:
@@ -1429,8 +1403,6 @@ func exercisePhase(t entities.ExerciseType) int {
 	}
 }
 
-// sortExercisesByPhase returns a copy of exercises sorted by phase, preserving relative order
-// within each phase (stable sort).
 func sortExercisesByPhase(exercises []*entities.Exercise) []*entities.Exercise {
 	sorted := make([]*entities.Exercise, len(exercises))
 	copy(sorted, exercises)
@@ -1440,13 +1412,6 @@ func sortExercisesByPhase(exercises []*entities.Exercise) []*entities.Exercise {
 	return sorted
 }
 
-// ── Nutrition-aware intensity helpers ─────────────────────────────────────
-
-// nutritionCoefAdjustment returns a multiplier (0.8–1.2) based on today's calorie balance.
-//
-//   - Surplus > 300 kcal  → push harder (+20 %)
-//   - Deficit > 300 kcal  → ease off (−20 %) – protect muscle when under-fuelled
-//   - Otherwise           → no adjustment
 func (s *Service) nutritionCoefAdjustment(consumed, target int, goal entities.Want) float64 {
 	if target <= 0 {
 		return 1.0
@@ -1466,12 +1431,6 @@ func (s *Service) nutritionCoefAdjustment(consumed, target int, goal entities.Wa
 	}
 }
 
-// weightProgressTypePreference returns the exercise type that should be emphasised given the
-// user's weight delta (current − target) and their stated goal.
-//
-//   - Need to lose weight (delta > 1 kg) → prefer Cardio or FullBody
-//   - Need to gain / build muscle (delta < -1 kg) → prefer strength (UpperBody)
-//   - On-target → no preference (empty string)
 func (s *Service) weightProgressTypePreference(weightDelta float64, goal entities.Want) entities.ExerciseType {
 	const threshold = 1.0
 	switch {

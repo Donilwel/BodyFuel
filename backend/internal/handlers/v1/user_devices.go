@@ -24,7 +24,7 @@ func (a *API) registerUserDevicesHandlers(router *gin.RouterGroup) {
 // @Accept json
 // @Produce json
 // @Param request body models.RegisterDeviceRequest true "Device token и платформа"
-// @Success 200 {object} models.UserDeviceResponse "Зарегистрированное устройство"
+// @Success 200 {object} models.SuccessResponse "Устройство успешно зарегистрировано"
 // @Failure 400 {object} models.ErrorResponse "Ошибка валидации"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"

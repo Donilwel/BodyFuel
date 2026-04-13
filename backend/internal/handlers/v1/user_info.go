@@ -21,7 +21,7 @@ func (a *API) registerUserInfoHandlers(router *gin.RouterGroup) {
 // @Tags User Info
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {string} models.SuccessResponse "Успешное удаление"
+// @Success 200 {object} models.SuccessResponse "Успешное удаление"
 // @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
@@ -74,7 +74,7 @@ func (a *API) deleteUserInfo(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body models.UserInfoUpdateRequestModel true "Данные для обновления"
-// @Success 200 {string} models.SuccessResponse "Успешное обновление"
+// @Success 200 {object} models.SuccessResponse "Успешное обновление"
 // @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
