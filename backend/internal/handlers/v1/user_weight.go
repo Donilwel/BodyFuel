@@ -74,7 +74,7 @@ func (a *API) getUserWeight(ctx *gin.Context) {
 // @Tags User Weight
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {array} []models.UserWeightResponseModel "История веса пользователя"
+// @Success 200 {array} models.UserWeightResponseModel "История веса пользователя"
 // @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
@@ -124,9 +124,8 @@ func (a *API) getUserWeightHistory(ctx *gin.Context) {
 // @Description Обновляет текущий вес пользователя
 // @Tags User Weight
 // @Security BearerAuth
-// @Accept json
 // @Produce json
-// @Success 200 {string} models.SuccessResponse "Успешное обновление"
+// @Success 200 {object} models.SuccessResponse "Успешное обновление"
 // @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
@@ -140,7 +139,7 @@ func (a *API) updateUserWeight(ctx *gin.Context) {}
 // @Security BearerAuth
 // @Produce json
 // @Param uuid path string true "ID записи о весе"
-// @Success 200 {string} models.SuccessResponse "Успешное удаление"
+// @Success 200 {object} models.SuccessResponse "Успешное удаление"
 // @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
@@ -184,7 +183,7 @@ func (a *API) deleteUserWeight(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body models.UserWeightCreateRequestModel true "Данные веса для создания"
-// @Success 200 {string} models.SuccessResponse "Успешное создание"
+// @Success 200 {object} models.SuccessResponse "Успешное создание"
 // @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"

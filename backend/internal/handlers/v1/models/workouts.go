@@ -8,9 +8,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// UpdateWorkoutRequest содержит поля для обновления тренировки.
+// Duration задаётся в наносекундах (int64).
 type UpdateWorkoutRequest struct {
-	Status   *entities.WorkoutsStatus `json:"status" binding:"omitempty,oneof=pending in_progress completed cancelled"`
-	Duration *time.Duration           `json:"duration" binding:"omitempty,min=60000000000"`
+	Status   *entities.WorkoutsStatus `json:"status"   binding:"omitempty,oneof=pending in_progress completed cancelled"`
+	Duration *int64                   `json:"duration" binding:"omitempty,min=60000000000"`
 }
 
 type WorkoutResponse struct {

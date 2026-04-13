@@ -24,8 +24,8 @@ func (a *API) registerWorkoutsHandlers(router *gin.RouterGroup) {
 	workout.PATCH("/:uuid", a.updateUserWorkout)
 	workout.GET("/:uuid/exercises", a.listWorkoutExercises)
 	workout.POST("/:uuid/exercises", a.addWorkoutExercise)
-	workout.PATCH("/exercises/:exerciseId", a.updateWorkoutExercise)
-	workout.DELETE("/exercises/:exerciseId", a.deleteWorkoutExercise)
+	workout.PATCH("/exercises/:uuid", a.updateWorkoutExercise)
+	workout.DELETE("/exercises/:uuid", a.deleteWorkoutExercise)
 }
 
 // getUserWorkout получает тренировку пользователя по ID
@@ -183,7 +183,7 @@ func (a *API) getUserWorkout(ctx *gin.Context) {
 // @Tags Workouts
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {array} []models.UserWorkoutResponse "История тренировок пользователя"
+// @Success 200 {array} models.UserWorkoutResponse "История тренировок пользователя"
 // @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
@@ -241,6 +241,7 @@ func (a *API) getUserWorkouts(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param uuid path string true "ID тренировки"
+// @Param request body models.UpdateWorkoutRequest true "Данные для обновления тренировки"
 // @Success 200 {object} models.SuccessResponse "Успешное обновление"
 // @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
@@ -289,8 +290,7 @@ func (a *API) updateUserWorkout(ctx *gin.Context) {
 		UpdatedAt: &now,
 	}
 	if req.Duration != nil {
-		d := req.Duration.Nanoseconds()
-		params.Duration = &d
+		params.Duration = req.Duration
 	}
 
 	f := dto.WorkoutsFilter{
@@ -569,13 +569,13 @@ func (a *API) generateWorkout(ctx *gin.Context) {
 // @Tags Workout Exercises
 // @Security BearerAuth
 // @Produce json
-// @Param workoutId path string true "ID тренировки"
+// @Param uuid path string true "ID тренировки"
 // @Success 200 {array} models.WorkoutExerciseFullResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
-// @Router /workouts/{workoutId}/exercises [get]
+// @Router /workouts/{uuid}/exercises [get]
 func (a *API) listWorkoutExercises(ctx *gin.Context) {
-	workoutID, err := uuid.Parse(ctx.Param("workoutId"))
+	workoutID, err := uuid.Parse(ctx.Param("uuid"))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid workout id"})
 		return
@@ -598,14 +598,14 @@ func (a *API) listWorkoutExercises(ctx *gin.Context) {
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param workoutId path string true "ID тренировки"
+// @Param uuid path string true "ID тренировки"
 // @Param request body models.AddWorkoutExerciseRequest true "Данные упражнения"
 // @Success 201 {object} models.WorkoutExerciseFullResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
-// @Router /workouts/{workoutId}/exercises [post]
+// @Router /workouts/{uuid}/exercises [post]
 func (a *API) addWorkoutExercise(ctx *gin.Context) {
-	workoutID, err := uuid.Parse(ctx.Param("workoutId"))
+	workoutID, err := uuid.Parse(ctx.Param("uuid"))
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid workout id"})
 		return
@@ -703,7 +703,7 @@ func (a *API) updateWorkoutExercise(ctx *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param uuid path string true "ID упражнения в тренировке"
-// @Success 204 {object} models.SuccessResponse
+// @Success 204 "Успешно удалено"
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Router /workouts/exercises/{uuid} [delete]

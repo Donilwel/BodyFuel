@@ -721,7 +721,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ExerciseRequestModel"
+                            "$ref": "#/definitions/models.UpdateExerciseRequestModel"
                         }
                     }
                 ],
@@ -816,6 +816,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/nutrition/analyze/upload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Принимает файл изображения (multipart/form-data), сохраняет в S3 и возвращает публичный URL. Для анализа питательной ценност�� передайте полученный URL в POST /nutrition/analyze.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nutrition"
+                ],
+                "summary": "Загрузка фото еды",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Файл изображения еды",
+                        "name": "photo",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL загруженного фото",
+                        "schema": {
+                            "$ref": "#/definitions/models.UploadPhotoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nutrition/diary": {
             "get": {
                 "security": [
@@ -886,7 +941,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.FoodEntryResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -1558,10 +1613,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Запись удалена",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
+                        "description": "Запись удалена"
                     },
                     "400": {
                         "description": "Неверный формат ID",
@@ -1620,10 +1672,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Запись обновлена",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
+                        "description": "Запись обновлена"
                     },
                     "400": {
                         "description": "Ошибка валидации",
@@ -1715,9 +1764,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Зарегистрированное устройство",
+                        "description": "Устройство успешно зарегистрировано",
                         "schema": {
-                            "$ref": "#/definitions/models.UserDeviceResponse"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -1853,7 +1902,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное удаление",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -1908,7 +1957,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное обновление",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2200,7 +2249,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное создание",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2230,9 +2279,6 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Обновляет текущий вес пользователя",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2244,7 +2290,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное обновление",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2289,10 +2335,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/models.UserWeightResponseModel"
-                                }
+                                "$ref": "#/definitions/models.UserWeightResponseModel"
                             }
                         }
                     },
@@ -2345,7 +2388,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное удаление",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -2452,10 +2495,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "No Content",
-                        "schema": {
-                            "$ref": "#/definitions/models.SuccessResponse"
-                        }
+                        "description": "Успешно удалено"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2549,10 +2589,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/models.UserWorkoutResponse"
-                                }
+                                "$ref": "#/definitions/models.UserWorkoutResponse"
                             }
                         }
                     },
@@ -2714,6 +2751,15 @@ const docTemplate = `{
                         "name": "uuid",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Данные для обновления тренировки",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateWorkoutRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -2750,7 +2796,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/workouts/{workoutId}/exercises": {
+        "/workouts/{uuid}/exercises": {
             "get": {
                 "security": [
                     {
@@ -2769,7 +2815,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "ID тренировки",
-                        "name": "workoutId",
+                        "name": "uuid",
                         "in": "path",
                         "required": true
                     }
@@ -2819,7 +2865,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "ID тренировки",
-                        "name": "workoutId",
+                        "name": "uuid",
                         "in": "path",
                         "required": true
                     },
@@ -3275,6 +3321,17 @@ const docTemplate = `{
                 }
             }
         },
+        "models.IngredientResponse": {
+            "type": "object",
+            "properties": {
+                "grams": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "models.LoginRequestModel": {
             "type": "object",
             "required": [
@@ -3418,6 +3475,12 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "ingredients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.IngredientResponse"
+                    }
                 },
                 "macros": {
                     "$ref": "#/definitions/models.MacroNutrientsResponse"
@@ -3617,6 +3680,52 @@ const docTemplate = `{
                 }
             }
         },
+        "models.UpdateExerciseRequestModel": {
+            "type": "object",
+            "properties": {
+                "avg_calories_per": {
+                    "type": "number",
+                    "maximum": 1000,
+                    "minimum": 0
+                },
+                "base_count_reps": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 1
+                },
+                "base_relax_time": {
+                    "type": "integer",
+                    "maximum": 3600,
+                    "minimum": 0
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "minLength": 1
+                },
+                "level_preparation": {
+                    "type": "string",
+                    "enum": [
+                        "beginner",
+                        "medium",
+                        "sportsman"
+                    ]
+                },
+                "link_gif": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "steps": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 1
+                }
+            }
+        },
         "models.UpdateFoodEntryRequest": {
             "type": "object",
             "properties": {
@@ -3703,6 +3812,36 @@ const docTemplate = `{
                         "completed",
                         "skipped"
                     ]
+                }
+            }
+        },
+        "models.UpdateWorkoutRequest": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer",
+                    "minimum": 60000000000
+                },
+                "status": {
+                    "enum": [
+                        "pending",
+                        "in_progress",
+                        "completed",
+                        "cancelled"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entities.WorkoutsStatus"
+                        }
+                    ]
+                }
+            }
+        },
+        "models.UploadPhotoResponse": {
+            "type": "object",
+            "properties": {
+                "photo_url": {
+                    "type": "string"
                 }
             }
         },

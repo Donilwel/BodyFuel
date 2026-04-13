@@ -304,6 +304,13 @@ definitions:
         - cardio
         - flexibility
     type: object
+  models.IngredientResponse:
+    properties:
+      grams:
+        type: number
+      name:
+        type: string
+    type: object
   models.LoginRequestModel:
     properties:
       password:
@@ -398,6 +405,10 @@ definitions:
         type: string
       id:
         type: string
+      ingredients:
+        items:
+          $ref: '#/definitions/models.IngredientResponse'
+        type: array
       macros:
         $ref: '#/definitions/models.MacroNutrientsResponse'
       name:
@@ -533,6 +544,41 @@ definitions:
       refresh_token:
         type: string
     type: object
+  models.UpdateExerciseRequestModel:
+    properties:
+      avg_calories_per:
+        maximum: 1000
+        minimum: 0
+        type: number
+      base_count_reps:
+        maximum: 1000
+        minimum: 1
+        type: integer
+      base_relax_time:
+        maximum: 3600
+        minimum: 0
+        type: integer
+      description:
+        maxLength: 1000
+        minLength: 1
+        type: string
+      level_preparation:
+        enum:
+        - beginner
+        - medium
+        - sportsman
+        type: string
+      link_gif:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      steps:
+        maximum: 100
+        minimum: 1
+        type: integer
+    type: object
   models.UpdateFoodEntryRequest:
     properties:
       calories:
@@ -597,6 +643,25 @@ definitions:
         - in_progress
         - completed
         - skipped
+        type: string
+    type: object
+  models.UpdateWorkoutRequest:
+    properties:
+      duration:
+        minimum: 60000000000
+        type: integer
+      status:
+        allOf:
+        - $ref: '#/definitions/entities.WorkoutsStatus'
+        enum:
+        - pending
+        - in_progress
+        - completed
+        - cancelled
+    type: object
+  models.UploadPhotoResponse:
+    properties:
+      photo_url:
         type: string
     type: object
   models.UserCaloriesResponse:
@@ -1336,7 +1401,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.ExerciseRequestModel'
+          $ref: '#/definitions/models.UpdateExerciseRequestModel'
       produces:
       - application/json
       responses:
@@ -1402,6 +1467,43 @@ paths:
       summary: Анализ фото еды
       tags:
       - Nutrition
+  /nutrition/analyze/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Принимает файл изображения (multipart/form-data), сохраняет в S3
+        и возвращает публичный URL. Для анализа питательной ценност�� передайте полученный
+        URL в POST /nutrition/analyze.
+      parameters:
+      - description: Файл изображения еды
+        in: formData
+        name: photo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL загруженного фото
+          schema:
+            $ref: '#/definitions/models.UploadPhotoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Загрузка фото еды
+      tags:
+      - Nutrition
   /nutrition/diary:
     get:
       parameters:
@@ -1442,7 +1544,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.FoodEntryResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Bad Request
           schema:
@@ -1833,8 +1935,6 @@ paths:
       responses:
         "204":
           description: Запись удалена
-          schema:
-            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Неверный формат ID
           schema:
@@ -1873,8 +1973,6 @@ paths:
       responses:
         "204":
           description: Запись обновлена
-          schema:
-            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Ошибка валидации
           schema:
@@ -1968,9 +2066,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: Зарегистрированное устройство
+          description: Устройство успешно зарегистрировано
           schema:
-            $ref: '#/definitions/models.UserDeviceResponse'
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Ошибка валидации
           schema:
@@ -2030,7 +2128,7 @@ paths:
         "200":
           description: Успешное удаление
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Неверный формат ID
           schema:
@@ -2091,7 +2189,7 @@ paths:
         "200":
           description: Успешное обновление
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
@@ -2263,8 +2361,6 @@ paths:
       tags:
       - User Weight
     patch:
-      consumes:
-      - application/json
       description: Обновляет текущий вес пользователя
       produces:
       - application/json
@@ -2272,7 +2368,7 @@ paths:
         "200":
           description: Успешное обновление
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
@@ -2307,7 +2403,7 @@ paths:
         "200":
           description: Успешное создание
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Ошибка валидации или неверный формат ID
           schema:
@@ -2340,7 +2436,7 @@ paths:
         "200":
           description: Успешное удаление
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Неверный формат ID
           schema:
@@ -2368,9 +2464,7 @@ paths:
           description: История веса пользователя
           schema:
             items:
-              items:
-                $ref: '#/definitions/models.UserWeightResponseModel'
-              type: array
+              $ref: '#/definitions/models.UserWeightResponseModel'
             type: array
         "400":
           description: Неверный формат ID
@@ -2511,6 +2605,12 @@ paths:
         name: uuid
         required: true
         type: string
+      - description: Данные для обновления тренировки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateWorkoutRequest'
       produces:
       - application/json
       responses:
@@ -2539,13 +2639,13 @@ paths:
       summary: Обновление тренировки пользователя
       tags:
       - Workouts
-  /workouts/{workoutId}/exercises:
+  /workouts/{uuid}/exercises:
     get:
       description: Возвращает все упражнения конкретной тренировки
       parameters:
       - description: ID тренировки
         in: path
-        name: workoutId
+        name: uuid
         required: true
         type: string
       produces:
@@ -2577,7 +2677,7 @@ paths:
       parameters:
       - description: ID тренировки
         in: path
-        name: workoutId
+        name: uuid
         required: true
         type: string
       - description: Данные упражнения
@@ -2619,9 +2719,7 @@ paths:
       - application/json
       responses:
         "204":
-          description: No Content
-          schema:
-            $ref: '#/definitions/models.SuccessResponse'
+          description: Успешно удалено
         "400":
           description: Bad Request
           schema:
@@ -2681,9 +2779,7 @@ paths:
           description: История тренировок пользователя
           schema:
             items:
-              items:
-                $ref: '#/definitions/models.UserWorkoutResponse'
-              type: array
+              $ref: '#/definitions/models.UserWorkoutResponse'
             type: array
         "400":
           description: Неверный формат ID

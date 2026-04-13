@@ -109,7 +109,7 @@ func (a *API) uploadAndAnalyzeNutritionPhoto(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body models.CreateFoodEntryRequest true "Данные о еде"
-// @Success 201 {object} models.FoodEntryResponse
+// @Success 201 {object} models.SuccessResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Router /nutrition/entries [post]

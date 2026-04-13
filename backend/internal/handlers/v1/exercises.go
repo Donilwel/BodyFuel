@@ -59,8 +59,19 @@ func (a *API) getExercise(ctx *gin.Context) {
 		})
 		return
 	}
+	_ = userID
 
-	ue, err := a.CRUDService.GetExercise(ctx, dto.ExerciseFilter{ID: &userID}, false)
+	exerciseID, err := uuid.Parse(ctx.Param("uuid"))
+	if err != nil {
+		a.log.Errorf("exercise error: get exercise: invalid exercise id format: %s", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid exercise id format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	ue, err := a.CRUDService.GetExercise(ctx, dto.ExerciseFilter{ID: &exerciseID}, false)
 	if err != nil {
 		a.log.Errorf("user exercise error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"crud error: internal error": err.Error()})
@@ -133,7 +144,7 @@ func (a *API) getExercises(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param uuid path string true "ID упражнения"
-// @Param request body  models.ExerciseRequestModel true "Данные для обновления упражнения"
+// @Param request body models.UpdateExerciseRequestModel true "Данные для обновления упражнения"
 // @Success 200 {object} models.SuccessResponse "Упражнение успешно обновлено"
 // @Failure 400 {object} models.ErrorResponse "Ошибка валидации или неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"

@@ -781,12 +781,14 @@ Authorization: Bearer <access_token>
 
 | Метод | Путь | Авторизация | Описание |
 |-------|------|:-----------:|----------|
-| `POST` | `/nutrition/analyze` | ✓ | Анализ фото еды через GPT-4o Vision |
+| `POST` | `/nutrition/analyze/upload` | ✓ | Загрузить фото еды в S3, вернуть URL |
+| `POST` | `/nutrition/analyze` | ✓ | Анализ фото еды по URL через GPT-4o Vision |
 | `POST` | `/nutrition/entries` | ✓ | Добавить запись в дневник питания |
 | `PATCH` | `/nutrition/entries/:uuid` | ✓ | Обновить запись |
 | `DELETE` | `/nutrition/entries/:uuid` | ✓ | Удалить запись |
 | `GET` | `/nutrition/diary` | ✓ | Дневник за день с суммарными макросами |
 | `GET` | `/nutrition/report` | ✓ | Отчёт за период с усреднением |
+| `GET` | `/nutrition/recipes` | ✓ | AI-рекомендации рецептов на основе дневника |
 
 **Анализ фото** `POST /nutrition/analyze`
 
@@ -1652,9 +1654,8 @@ minio:
 | `HOST` | app | IP для прослушивания |
 | `PORT` | app | HTTP-порт |
 | `POSTGRES_HOST` | postgres | Хост БД |
-| `POSTGRES_PORT` | postgres | Порт БД |
 | `POSTGRES_DATABASE` | postgres | Название БД |
-| `POSTGRES_USER` | postgres | Пользователь БД |
+| `POSTGRES_USERNAME` | postgres | Пользователь БД |
 | `POSTGRES_PASSWORD` | postgres | Пароль БД |
 | `MINIO_ENDPOINT` | minio | URL MinIO |
 | `MINIO_ACCESS_KEY` | minio | Access key |

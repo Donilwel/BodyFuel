@@ -122,7 +122,7 @@ func (a *API) createUserCalories(ctx *gin.Context) {
 // @Produce json
 // @Param uuid path string true "ID записи"
 // @Param request body models.UpdateUserCaloriesRequest true "Поля для обновления"
-// @Success 204 {object} models.SuccessResponse "Запись обновлена"
+// @Success 204 "Запись обновлена"
 // @Failure 400 {object} models.ErrorResponse "Ошибка валидации"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
@@ -174,7 +174,7 @@ func (a *API) updateUserCalories(ctx *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param uuid path string true "ID записи"
-// @Success 204 {object} models.SuccessResponse "Запись удалена"
+// @Success 204 "Запись удалена"
 // @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
