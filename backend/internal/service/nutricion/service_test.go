@@ -75,6 +75,15 @@ func newFoodEntry(userID uuid.UUID, cal int, protein, carbs, fat float64) *entit
 	}))
 }
 
+func makeEntry(id, userID uuid.UUID) *entities.UserFood {
+	return entities.NewUserFood(entities.WithUserFoodInitSpec(entities.UserFoodInitSpec{
+		ID:       id,
+		UserID:   userID,
+		MealType: entities.MealTypeLunch,
+		Date:     time.Now(),
+	}))
+}
+
 // ── CreateFoodEntry ────────────────────────────────────────────
 
 func TestService_CreateFoodEntry(t *testing.T) {
@@ -296,12 +305,15 @@ func TestService_DeleteFoodEntry(t *testing.T) {
 		{
 			name: "success",
 			setup: func(r *mockFoodRepo) {
+				// Get is called first to obtain the date for cache invalidation.
+				r.On("Get", mock.Anything, mock.Anything).Return(makeEntry(entryID, userID), nil)
 				r.On("Delete", mock.Anything, entryID, userID).Return(nil)
 			},
 		},
 		{
 			name: "repo error",
 			setup: func(r *mockFoodRepo) {
+				r.On("Get", mock.Anything, mock.Anything).Return((*entities.UserFood)(nil), errors.New("not found"))
 				r.On("Delete", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
 			wantErr: true,

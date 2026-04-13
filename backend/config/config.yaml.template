@@ -4,6 +4,9 @@ app:
     port: 8080
     api_host: "localhost:8080"
     metric_port: 8081
+    read_timeout: "15s"
+    write_timeout: "30s"
+    idle_timeout: "60s"
   graceful_timeout: "5s"
   tasks_tracking_duration: "13s"
   workouts_config:
@@ -24,6 +27,15 @@ postgres:
   database: "backend_db"
   user: "danila"
   password: "postgres"
+  max_open_conn: 25
+  max_idle_conn: 10
+  conn_max_idle_time: "5m"
+  conn_max_lifetime: "30m"
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
 
 minio:
   endpoint: "http://localhost:9000"
@@ -49,4 +61,7 @@ apns:
   key_id: ""
   team_id: ""
   bundle_id: ""
-  sandbox: trueпр
+  sandbox: true
+
+openai:
+  api_key: ""

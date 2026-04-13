@@ -68,8 +68,9 @@ docker compose up --build
 ### 3. Что происходит при старте
 
 ```
-bodyfuel-postgres  → ждёт healthcheck (pg_isready)
-bodyfuel-minio     → ждёт healthcheck (curl /minio/health/live)
+bodyfuel-postgres   → ждёт healthcheck (pg_isready)
+bodyfuel-minio      → ждёт healthcheck (curl /minio/health/live)
+bodyfuel-redis      → ждёт healthcheck (redis-cli ping)
 bodyfuel-minio-init → создаёт bucket avatars + ставит public-read политику
 bodyfuel-app        → применяет goose-миграции → поднимает HTTP-сервер
 ```
@@ -82,6 +83,7 @@ bodyfuel-app        → применяет goose-миграции → подни
 | `http://localhost:8080/api/v1/health` | Health check |
 | `http://localhost:9001` | MinIO Console (minioadmin / minioadmin) |
 | `http://localhost:5432` | PostgreSQL (danila / postgres / backend_db) |
+| `localhost:6379` | Redis (без пароля) |
 
 ```bash
 # Быстрый тест — должен вернуть 200
@@ -113,12 +115,12 @@ docker compose logs app --tail=50
 
 ## Ручной запуск (без Docker)
 
-### 1. Поднять зависимости (PostgreSQL + MinIO)
+### 1. Поднять зависимости (PostgreSQL + MinIO + Redis)
 
 Можно использовать часть Compose:
 
 ```bash
-docker compose up -d postgres minio minio-init
+docker compose up -d postgres minio minio-init redis
 ```
 
 Или использовать уже запущенные локальные экземпляры.
@@ -133,6 +135,9 @@ postgres:
   database: "backend_db"
   user: "danila"
   password: "postgres"
+
+redis:
+  addr: "localhost:6379"  # оставьте пустым чтобы отключить кэш
 
 minio:
   endpoint: "http://localhost:9000"
@@ -186,7 +191,8 @@ app:
     limit_generate_workouts: 3        # Лимит авто-тренировок в день
 ```
 
-### Секция `postgres`
+
+### Секция `postgres` — пул соединений
 
 ```yaml
 postgres:
@@ -194,6 +200,10 @@ postgres:
   database: "backend_db"
   user: "danila"
   password: "postgres"
+  max_open_conn: 25       # максимум открытых соединений
+  max_idle_conn: 10       # максимум простаивающих соединений
+  conn_max_idle_time: "5m"    # время жизни простаивающего соединения
+  conn_max_lifetime: "30m"    # максимальное время жизни соединения
 ```
 
 Переменные окружения (префикс `POSTGRES_`):
@@ -204,6 +214,25 @@ postgres:
 | `POSTGRES_USERNAME` | `user` | `danila` |
 | `POSTGRES_PASSWORD` | `password` | `postgres` |
 | `POSTGRES_DATABASE` | `database` | `backend_db` |
+
+### Секция `redis` (кэш AI-ответов)
+
+```yaml
+redis:
+  addr: "localhost:6379"
+  password: ""   # пусто если без пароля
+  db: 0
+```
+
+Redis **опционален**: если `addr` пустой или Redis недоступен — приложение запускается без кэша и все запросы идут напрямую в OpenAI.
+
+Переменные окружения (префикс `REDIS_`):
+
+| Env var | Поле yaml | По умолчанию |
+|---------|-----------|-------------|
+| `REDIS_ADDR` | `addr` | `localhost:6379` |
+| `REDIS_PASSWORD` | `password` | _(пусто)_ |
+| `REDIS_DB` | `db` | `0` |
 
 ### Секция `minio`
 
@@ -320,6 +349,7 @@ internal/
 pkg/
 ├── JWT/                      # Генерация и валидация JWT
 ├── ai/                       # Клиент OpenAI (Vision + Chat)
+├── cache/                    # Redis-клиент (кэш AI-ответов)
 ├── logging/                  # Структурированное логирование (zerolog)
 └── notifications/
     ├── apns/                 # iOS push (APNs HTTP/2)
@@ -1000,6 +1030,8 @@ GPT-4o анализирует профиль пользователя (`user_par
 - Передаёт суммарные КБЖУ в GPT-4o mini
 - GPT предлагает 3–5 рецептов, которые дополнят рацион до баланса
 - Каждый рецепт: название, краткое описание вкуса, ингредиенты с граммами, КБЖУ (protein/fat/carbs), время приготовления в минутах
+- **Кэшируется в Redis** на 2 часа (ключ: `recipes:{userID}:{дата}`)
+- Кэш инвалидируется автоматически при создании, обновлении или удалении записи в дневнике за этот день
 
 ---
 
@@ -1008,10 +1040,12 @@ GPT-4o анализирует профиль пользователя (`user_par
 **Источник данных для AI:** `user_params` (вес, рост, цель `want`, образ жизни `lifestyle`). Если параметры не заполнены — используются дефолты (`general fitness`, `moderate`).
 
 **`POST /recommendations/refresh`:**
-1. Читает `user_params`
-2. Отправляет профиль в GPT-4o mini
-3. Удаляет все старые рекомендации пользователя
-4. Сохраняет новые (3–5 штук) с типами: `workout`, `nutrition`, `rest`, `general` и приоритетами 1–3
+1. Проверяет ключ `rec_cooldown:{userID}` в Redis — если есть, возвращает существующие рекомендации из БД **без вызова OpenAI** (кулдаун 6 часов)
+2. Читает `user_params` и историю веса
+3. Отправляет профиль в GPT-4o mini
+4. Удаляет все старые рекомендации пользователя
+5. Сохраняет новые (3–5 штук) с типами: `workout`, `nutrition`, `rest`, `general` и приоритетами 1–3
+6. Устанавливает ключ кулдауна в Redis (TTL 6 часов)
 
 **`PATCH /recommendations/:uuid/read`** — помечает рекомендацию прочитанной (`read_at`).
 
