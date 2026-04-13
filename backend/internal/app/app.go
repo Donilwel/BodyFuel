@@ -13,6 +13,7 @@ import (
 	"backend/internal/service/recomendation"
 	"backend/internal/service/workouts"
 	"backend/pkg/ai"
+	"backend/pkg/cache"
 	"backend/pkg/logging"
 	notifapns "backend/pkg/notifications/apns"
 	notifsg "backend/pkg/notifications/sendgrid"
@@ -68,8 +69,19 @@ func NewApp(configPaths ...string) *App {
 	}
 
 	workers := make([]BackgroundWorker, 0, 8)
-
 	closers := make([]io.Closer, 0, 8)
+
+	// Redis is optional — if addr is empty or unreachable we run without cache.
+	var redisClient *cache.Client
+	if cfg.Redis.Addr != "" {
+		rc, rerr := cache.NewClient(cfg.Redis)
+		if rerr != nil {
+			logger.Warnf("Redis unavailable (%v) — running without AI cache", rerr)
+		} else {
+			redisClient = rc
+			closers = append(closers, redisClient)
+		}
+	}
 
 	transactionManager := postgres.NewTransactionManager(db)
 	userInfoRepository := postgres.NewUserInfoRepository(db)
@@ -175,6 +187,7 @@ func NewApp(configPaths ...string) *App {
 		UserFoodRepository: userFoodRepository,
 		AIClient:           aiClient,
 		StorageService:     avatarService,
+		RecipeCache:        redisClient,
 	})
 
 	recommendationService := recomendation.NewService(&recomendation.Config{
@@ -182,12 +195,14 @@ func NewApp(configPaths ...string) *App {
 		UserParamsRepository:     userParamsRepository,
 		UserWeightRepository:     userWeightRepository,
 		AIClient:                 aiClient,
+		RecommendationCache:      redisClient,
 	})
 
 	validator := validator.New()
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
+	router.Use(gin.Recovery())
 
 	handlers.Register(
 		router.Group(""),
@@ -207,8 +222,11 @@ func NewApp(configPaths ...string) *App {
 	return &App{
 		cfg: cfg,
 		httpServer: &http.Server{
-			Addr:    fmt.Sprintf("%s:%d", cfg.AppConfig.HTTPServerConfig.Host, cfg.AppConfig.HTTPServerConfig.Port),
-			Handler: router,
+			Addr:         fmt.Sprintf("%s:%d", cfg.AppConfig.HTTPServerConfig.Host, cfg.AppConfig.HTTPServerConfig.Port),
+			Handler:      router,
+			ReadTimeout:  cfg.AppConfig.HTTPServerConfig.ReadTimeout,
+			WriteTimeout: cfg.AppConfig.HTTPServerConfig.WriteTimeout,
+			IdleTimeout:  cfg.AppConfig.HTTPServerConfig.IdleTimeout,
 		},
 		workers: workers,
 		closers: closers,

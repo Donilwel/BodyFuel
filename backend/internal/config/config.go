@@ -3,6 +3,7 @@ package config
 import (
 	"backend/internal/infrastructure/repositories/minio"
 	"backend/internal/infrastructure/repositories/postgres"
+	"backend/pkg/cache"
 	"backend/pkg/logging"
 	"time"
 
@@ -10,13 +11,16 @@ import (
 )
 
 type HTTPServerConfig struct {
-	Host       string `yaml:"host" env:"HOST" envDefault:"0.0.0.0"`
-	Port       int    `yaml:"port" env:"PORT" envDefault:"8080"`
-	ApiHost    string `yaml:"api_host" env:"API_HOST" envDefault:"0.0.0.0"`
-	MetricPort int    `yaml:"metric_port" env:"METRIC_PORT" envDefault:"8081"`
-	TLS        bool   `yaml:"tls" env:"TLS" envDefault:"false"`
-	CertPath   string `yaml:"cert_path" env:"CERT_PATH"`
-	KeyPath    string `yaml:"key_path" env:"KEY_PATH"`
+	Host         string        `yaml:"host" env:"HOST" envDefault:"0.0.0.0"`
+	Port         int           `yaml:"port" env:"PORT" envDefault:"8080"`
+	ApiHost      string        `yaml:"api_host" env:"API_HOST" envDefault:"0.0.0.0"`
+	MetricPort   int           `yaml:"metric_port" env:"METRIC_PORT" envDefault:"8081"`
+	TLS          bool          `yaml:"tls" env:"TLS" envDefault:"false"`
+	CertPath     string        `yaml:"cert_path" env:"CERT_PATH"`
+	KeyPath      string        `yaml:"key_path" env:"KEY_PATH"`
+	ReadTimeout  time.Duration `yaml:"read_timeout" env:"READ_TIMEOUT" envDefault:"15s"`
+	WriteTimeout time.Duration `yaml:"write_timeout" env:"WRITE_TIMEOUT" envDefault:"30s"`
+	IdleTimeout  time.Duration `yaml:"idle_timeout" env:"IDLE_TIMEOUT" envDefault:"60s"`
 }
 
 type AppConfig struct {
@@ -60,6 +64,7 @@ type Config struct {
 	Log       logging.Config  `yaml:"sage" env:"SAGE_"`
 	Postgres  postgres.Config `yaml:"postgres" env-prefix:"POSTGRES_"`
 	Minio     minio.Config    `yaml:"minio" env-prefix:"MINIO_"`
+	Redis     cache.Config    `yaml:"redis" env-prefix:"REDIS_"`
 	SendGrid  SendGridConfig  `yaml:"sendgrid" env-prefix:"SENDGRID_"`
 	Twilio    TwilioConfig    `yaml:"twilio" env-prefix:"TWILIO_"`
 	APNs      APNsConfig      `yaml:"apns" env-prefix:"APNS_"`

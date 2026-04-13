@@ -63,6 +63,21 @@ services:
     networks:
       - bodyfuel-network
 
+  # ── Redis ─────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: bodyfuel-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bodyfuel-network
+    restart: unless-stopped
+
   # ── Go application ────────────────────────────────────────────────────────
   app:
     build:
@@ -75,21 +90,23 @@ services:
     env_file:
       - .env          # put OPENAI_API_KEY, SENDGRID_API_KEY, etc. here
     environment:
-      # ── Postgres (prefix POSTGRES_ + field env tag) ──────────────────────
+      # ── Postgres ─────────────────────────────────────────────────────────
       POSTGRES_HOST:     postgres
       POSTGRES_USERNAME: danila
       POSTGRES_PASSWORD: postgres
       POSTGRES_DATABASE: backend_db
 
-      # ── MinIO (prefix MINIO_ + field env tag) ────────────────────────────
+      # ── MinIO ─────────────────────────────────────────────────────────────
       MINIO_ENDPOINT:   http://minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET:     avatars
       MINIO_REGION:     us-east-1
-      # PUBLIC_URL is what clients use — keep localhost so the mobile/browser
-      # can reach MinIO directly on the exposed port.
+      # PUBLIC_URL остаётся localhost — мобильный клиент скачивает фото напрямую
       MINIO_PUBLIC_URL: http://localhost:9000/avatars
+
+      # ── Redis ─────────────────────────────────────────────────────────────
+      REDIS_ADDR: redis:6379
 
     depends_on:
       postgres:
@@ -98,6 +115,8 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     networks:
       - bodyfuel-network
     restart: unless-stopped
