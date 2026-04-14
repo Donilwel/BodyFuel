@@ -96,7 +96,7 @@ type (
 	}
 
 	NutritionService interface {
-		AnalyzePhoto(ctx context.Context, imageURL string) (*ai.NutritionAnalysis, error)
+		UploadAndAnalyzePhoto(ctx context.Context, userID, filename, contentType string, data io.Reader) (*nutricion.UploadPhotoResult, error)
 		CreateFoodEntry(ctx context.Context, spec entities.UserFoodInitSpec) error
 		GetFoodEntry(ctx context.Context, id, userID uuid.UUID) (*entities.UserFood, error)
 		UpdateFoodEntry(ctx context.Context, id, userID uuid.UUID, params entities.UserFoodUpdateParams) error

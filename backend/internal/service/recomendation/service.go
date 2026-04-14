@@ -30,6 +30,14 @@ type (
 		List(ctx context.Context, f dto.UserWeightFilter, withBlock bool) ([]*entities.UserWeight, error)
 	}
 
+	UserDevicesRepository interface {
+		List(ctx context.Context, f dto.UserDeviceFilter) ([]*entities.UserDevice, error)
+	}
+
+	TasksRepository interface {
+		Create(ctx context.Context, task *entities.Task) error
+	}
+
 	AIClient interface {
 		GenerateRecommendations(ctx context.Context, profile ai.UserProfile) ([]ai.RecommendationItem, error)
 	}
@@ -48,6 +56,8 @@ type Service struct {
 	recRepo        UserRecommendationRepository
 	userParamsRepo UserParamsRepository
 	userWeightRepo UserWeightRepository
+	devicesRepo    UserDevicesRepository // optional, for push notifications
+	tasksRepo      TasksRepository       // optional, for push notifications
 	ai             AIClient
 	cache          RecommendationCache // optional, nil means no cooldown
 }
@@ -56,6 +66,8 @@ type Config struct {
 	RecommendationRepository UserRecommendationRepository
 	UserParamsRepository     UserParamsRepository
 	UserWeightRepository     UserWeightRepository
+	UserDevicesRepository    UserDevicesRepository // optional
+	TasksRepository          TasksRepository       // optional
 	AIClient                 AIClient
 	RecommendationCache      RecommendationCache // optional
 }
@@ -65,6 +77,8 @@ func NewService(c *Config) *Service {
 		recRepo:        c.RecommendationRepository,
 		userParamsRepo: c.UserParamsRepository,
 		userWeightRepo: c.UserWeightRepository,
+		devicesRepo:    c.UserDevicesRepository,
+		tasksRepo:      c.TasksRepository,
 		ai:             c.AIClient,
 		cache:          c.RecommendationCache,
 	}
@@ -175,7 +189,45 @@ func (s *Service) Refresh(ctx context.Context, userID uuid.UUID) ([]*entities.Us
 		result = append(result, rec)
 	}
 
+	// Send push notification with the highest-priority recommendation.
+	go s.sendRecommendationPush(ctx, userID, result)
+
 	return result, nil
+}
+
+// sendRecommendationPush creates push notification tasks for all user devices
+// with the most important (priority=1) recommendation as the message body.
+func (s *Service) sendRecommendationPush(ctx context.Context, userID uuid.UUID, recs []*entities.UserRecommendation) {
+	if s.devicesRepo == nil || s.tasksRepo == nil || len(recs) == 0 {
+		return
+	}
+
+	// Pick highest-priority recommendation (lowest priority number = most important).
+	top := recs[0]
+	for _, r := range recs[1:] {
+		if r.Priority() < top.Priority() {
+			top = r
+		}
+	}
+
+	devices, err := s.devicesRepo.List(ctx, dto.UserDeviceFilter{UserID: &userID})
+	if err != nil || len(devices) == 0 {
+		return
+	}
+
+	for _, device := range devices {
+		task := entities.NewTask(entities.WithTaskInitSpec(entities.TaskInitSpec{
+			TypeNm:      entities.TaskTypeSendPushNotification,
+			MaxAttempts: 3,
+			Attribute: entities.TaskAttribute{
+				UserID:      userID,
+				DeviceToken: device.DeviceToken(),
+				Title:       "Совет дня",
+				Body:        top.Description(),
+			},
+		}))
+		_ = s.tasksRepo.Create(ctx, task)
+	}
 }
 
 // MarkRead marks a recommendation as read.

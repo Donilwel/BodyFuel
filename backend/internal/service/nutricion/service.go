@@ -5,6 +5,7 @@ import (
 	"backend/internal/dto"
 	"backend/pkg/ai"
 	"backend/pkg/cache"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -26,6 +27,7 @@ type (
 
 	AIClient interface {
 		AnalyzeNutritionPhoto(ctx context.Context, imageURL string) (*ai.NutritionAnalysis, error)
+		AnalyzeNutritionPhotoData(ctx context.Context, data []byte, mediaType string) (*ai.NutritionAnalysis, error)
 		GenerateRecipes(ctx context.Context, intake ai.DailyIntake) ([]ai.RecipeItem, error)
 	}
 
@@ -109,18 +111,25 @@ type UploadPhotoResult struct {
 	PhotoURL string
 }
 
-// UploadAndAnalyzePhoto uploads the food photo to S3, then analyzes it with OpenAI Vision.
+// UploadAndAnalyzePhoto uploads the food photo to S3 and analyzes it with OpenAI Vision.
+// Bytes are read once into memory so they can be used for both upload and base64 analysis
+// (MinIO public URL is localhost-only and not reachable by OpenAI).
 func (s *Service) UploadAndAnalyzePhoto(ctx context.Context, userID, filename, contentType string, data io.Reader) (*UploadPhotoResult, error) {
 	if s.storage == nil {
 		return nil, fmt.Errorf("storage service not configured")
 	}
 
-	photoURL, err := s.storage.UploadFoodPhoto(ctx, userID, filename, contentType, data)
+	imgBytes, err := io.ReadAll(data)
+	if err != nil {
+		return nil, fmt.Errorf("read photo data: %w", err)
+	}
+
+	photoURL, err := s.storage.UploadFoodPhoto(ctx, userID, filename, contentType, bytes.NewReader(imgBytes))
 	if err != nil {
 		return nil, fmt.Errorf("upload food photo: %w", err)
 	}
 
-	analysis, err := s.ai.AnalyzeNutritionPhoto(ctx, photoURL)
+	analysis, err := s.ai.AnalyzeNutritionPhotoData(ctx, imgBytes, contentType)
 	if err != nil {
 		return nil, fmt.Errorf("analyze uploaded photo: %w", err)
 	}
