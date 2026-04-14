@@ -43,7 +43,7 @@ struct WorkoutWidgetView: View {
             }
         }
         .containerBackground(for: .widget) {
-            AppColors.gradient.opacity(0.9)
+            AppColors.widgetBackground
         }
         .widgetURL(URL(string: "bodyfuel://workouts"))
     }

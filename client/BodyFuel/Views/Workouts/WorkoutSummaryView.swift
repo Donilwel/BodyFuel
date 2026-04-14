@@ -24,9 +24,13 @@ struct WorkoutSummaryView: View {
                     )
                     
                     VStack(spacing: 12) {
-                        ForEach(viewModel.exerciseStats.indices, id: \.self) { index in
-                            exerciseStatsRow(for: viewModel.exerciseStats[index])
-                        }
+//                        ForEach(viewModel.exerciseStats.indices, id: \.self) { index in
+//                            exerciseStatsRow(for: viewModel.exerciseStats[index])
+//                        }
+                        exerciseStatsRow(for: ExerciseStats(exercise: viewModel.exerciseStats[0].exercise, repCount: ["8", "6", "5"]))
+                        exerciseStatsRow(for: ExerciseStats(exercise: viewModel.exerciseStats[1].exercise, repCount: ["10", "10", "0"]))
+                        exerciseStatsRow(for: ExerciseStats(exercise: viewModel.exerciseStats[2].exercise, repCount: ["5", "0", "0"]))
+                        exerciseStatsRow(for: ExerciseStats(exercise: viewModel.exerciseStats[3].exercise, repCount: ["5", "0", "0"]))
                     }
                     .cardStyle()
                     

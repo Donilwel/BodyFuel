@@ -12,4 +12,10 @@ enum API {
         static let register = "/auth/register"
         static let login = "/auth/login"
     }
+
+    enum Workouts {
+        static let base = "/workouts"
+        static let history = "/workouts/history"
+        static func workout(id: String) -> String { "/workouts/\(id)" }
+    }
 }

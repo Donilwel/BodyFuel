@@ -6,5 +6,6 @@ struct BodyFuelWidgetsBundle: WidgetBundle {
     var body: some Widget {
         WorkoutTodayWidget()
         CaloriesRingWidget()
+        WorkoutLiveActivity()
     }
 }

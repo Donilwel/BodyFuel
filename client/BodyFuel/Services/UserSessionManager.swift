@@ -4,6 +4,8 @@ import SwiftKeychainWrapper
 final class UserSessionManager {
     static let shared = UserSessionManager()
     
+    var hasCompletedOnboarding = false
+    
     private let keychain = KeychainWrapper.standard
     private let defaults = UserDefaults.standard
     

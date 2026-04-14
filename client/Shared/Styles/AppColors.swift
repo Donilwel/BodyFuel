@@ -8,4 +8,5 @@ enum AppColors {
     )
     static let background =  Color.blue
     static let primary = Color.indigo
+    static let widgetBackground: some View = gradient.opacity(0.9)
 }

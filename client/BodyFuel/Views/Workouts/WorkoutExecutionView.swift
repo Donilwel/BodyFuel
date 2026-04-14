@@ -49,6 +49,12 @@ struct WorkoutExecutionView: View {
                                     .font(.title2)
                                     .foregroundColor(.white)
                                 
+                                if let repCount = exercise.repCount {
+                                    Text("\(exercise.setCount) подхода по \(repCount) раз")
+                                        .font(.title3)
+                                        .foregroundColor(.white)
+                                }
+                                
                                 ExerciseGifView(exercise: exercise)
                             }
                             .cardStyle()
@@ -65,7 +71,7 @@ struct WorkoutExecutionView: View {
                             } else if viewModel.phase == .exercise {
                                 ValidatedField(error: viewModel.currentExerciseRepCountError) {
                                     CustomTextField(
-                                        title: "Количество повторов",
+                                        title: "Количество сделанных повторов",
                                         field: ExerciseStatsField.repCount,
                                         focusedField: $repCountFocused,
                                         text: $viewModel.currentExerciseRepCount

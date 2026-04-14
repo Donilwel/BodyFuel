@@ -37,18 +37,30 @@ final class WorkoutViewModel: ObservableObject {
     @Published var totalWorkoutProgress: Double = 0
     
     @Published var totalCaloriesBurned: Double? = nil
-    
-    private let healthKitService: HealthKitServiceProtocol = HealthKitService.shared
+
+    private(set) var currentWorkoutID: String?
+
+    private var restTimeBetweenExercises = 90
 
     private var exerciseTimerCancellable: AnyCancellable?
     private var workoutTimerCancellable: AnyCancellable?
     
     private let workoutService: WorkoutServiceProtocol = WorkoutService.shared
+    private let healthKitService: HealthKitServiceProtocol = HealthKitService.shared
     private let sharedWidgetStorage = SharedWidgetStorage.shared
+    private lazy var liveActivityService: LiveActivityServiceProtocol = LiveActivityService.shared
     
     var currentExercise: Exercise? {
         guard currentExerciseIndex < exercises.count else { return nil }
-        return exercises[currentExerciseIndex]
+        
+        switch phase {
+        case .restBetweenExercises:
+            let nextIndex = currentExerciseIndex + 1
+            guard nextIndex < exercises.count else { return exercises.last }
+            return exercises[nextIndex]
+        default:
+            return exercises[currentExerciseIndex]
+        }
     }
     
     var progress: Double {
@@ -56,11 +68,11 @@ final class WorkoutViewModel: ObservableObject {
 
         switch phase {
         case .exercise:
-            total = currentExercise?.duration ?? 1
+            total = currentExercise?.duration ?? 60
         case .restBetweenSets:
-            total = currentExercise?.rest ?? 1
+            total = currentExercise?.rest ?? 60
         case .restBetweenExercises:
-            total = 90
+            total = restTimeBetweenExercises
         default:
             return 0
         }
@@ -71,21 +83,28 @@ final class WorkoutViewModel: ObservableObject {
     }
     
     var workoutProgress: Double {
-        guard exercises.count > 0 else { return 0 }
+        guard !exercises.isEmpty else { return 0 }
         
-        var total: Int = 0
-        var currentCount: Int = 0
-        for i in 0..<exercises.count {
-            total += exercises[i].setCount
+        var total = 0
+        var completed = 0
+        
+        for (index, exercise) in exercises.enumerated() {
+            total += exercise.setCount
             
-            if i < currentExerciseIndex {
-                currentCount += exercises[i].setCount
-            } else if i == currentExerciseIndex && phase != .exercise && phase != .waitingForStart {
-                currentCount += currentSet
+            if index < currentExerciseIndex {
+                if let stats = exerciseStats.first(where: { $0.exercise.name == exercise.name }) {
+                    completed += stats.repCount.count
+                }
+            } else if index == currentExerciseIndex {
+                if let stats = exerciseStats.first(where: { $0.exercise.name == exercise.name }) {
+                    completed += stats.repCount.count
+                } else {
+                    completed += currentSetRepCount.count
+                }
             }
         }
         
-        return Double(currentCount) / Double(total)
+        return Double(completed) / Double(total)
     }
     
     var phaseTitle: String {
@@ -110,9 +129,10 @@ final class WorkoutViewModel: ObservableObject {
     func load() async {
         screenState = .loading
         do {
-            let workout = try await workoutService.fetchTodayWorkout()
-            
+            let (workoutID, workout) = try await workoutService.generateWorkout(level: .beginner)
+
             await MainActor.run {
+                currentWorkoutID = workoutID
                 recommendedWorkout = workout
                 screenState = .loaded
             }
@@ -128,6 +148,7 @@ final class WorkoutViewModel: ObservableObject {
         currentWorkout = workout
         exercises = workout.exercises
 
+        exerciseStats = []
         currentExerciseIndex = 0
         currentSet = 1
 
@@ -149,6 +170,15 @@ final class WorkoutViewModel: ObservableObject {
         Task {
             await healthKitService.startWorkout(activityType: activityType)
         }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.liveActivityService.start(
+                workoutName: workout.title,
+                exerciseName: self.currentExercise?.name ?? "",
+                exerciseType: self.currentExercise?.type ?? .fullBody
+            )
+        }
     }
     
     func changeWorkout() {
@@ -169,6 +199,8 @@ final class WorkoutViewModel: ObservableObject {
         elapsedTime = 0
 
         startExerciseTimer()
+        
+        updateLiveActivity()
     }
     
     func skipWorkout() {
@@ -180,20 +212,32 @@ final class WorkoutViewModel: ObservableObject {
         stopExerciseTimer()
         stopWorkoutTimer()
         
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            liveActivityService.end()
+        }
+        
         if currentExerciseIndex == 0 && currentSet == 1 && (phase == .waitingForStart || phase == .exercise) { // если вообще ничего не начали
             isWorkoutActive = false
             Task {
                 await healthKitService.discardWorkout()
+                if let id = currentWorkoutID {
+                    try? await workoutService.updateWorkout(id: id, status: .cancelled, duration: nil)
+                }
             }
-            // отправить на сервер статус failed
         } else {
             exerciseStats.append(ExerciseStats(
                 exercise: exercise,
                 repCount: currentSetRepCount
             ))
             currentExerciseRepCount = ""
+            if let id = currentWorkoutID {
+                let durationNano = Int64(totalWorkoutElapsedTime) * 1_000_000_000
+                Task {
+                    try? await workoutService.updateWorkout(id: id, status: .cancelled, duration: durationNano)
+                }
+            }
             finishWorkout()
-            // отправить ответ к серверу
         }
         
         phase = .finished
@@ -204,10 +248,21 @@ final class WorkoutViewModel: ObservableObject {
     
     func skipExercise() {
         stopExerciseTimer()
+        
+        if let exercise = currentExercise {
+            let skippedReps = Array(repeating: "0", count: exercise.setCount)
+            exerciseStats.append(ExerciseStats(
+                exercise: exercise,
+                repCount: skippedReps
+            ))
+        }
+        
         currentExerciseRepCount = ""
         currentExerciseRepCountError = ""
         currentSet = 1
+        currentSetRepCount = []
         startRestBetweenExercises()
+        updateLiveActivity()
     }
     
     func moveToNextPhase() {
@@ -291,10 +346,10 @@ final class WorkoutViewModel: ObservableObject {
             
             currentExerciseRepCount = ""
             currentSetRepCount = []
+            
             startRestBetweenExercises()
         }
     }
-    
     private func startRestBetweenSets() {
         guard let exercise = currentExercise else { return }
         stopExerciseTimer()
@@ -305,6 +360,8 @@ final class WorkoutViewModel: ObservableObject {
         elapsedTime = 0
 
         startExerciseTimer()
+        
+        updateLiveActivity()
     }
     
     private func startRestBetweenExercises() {
@@ -315,13 +372,15 @@ final class WorkoutViewModel: ObservableObject {
         elapsedTime = 0
 
         startExerciseTimer()
+        
+        updateLiveActivity()
     }
     
     private func nextExercise() {
         stopExerciseTimer()
 
-        currentExerciseIndex += 1
         currentSet = 1
+        currentExerciseIndex += 1
 
         if currentExerciseIndex >= exercises.count {
             finishWorkout()
@@ -331,27 +390,66 @@ final class WorkoutViewModel: ObservableObject {
         sharedWidgetStorage.saveWorkout(nil)
         
         phase = .waitingForStart
+        
+        updateLiveActivity()
     }
     
     private func finishWorkout() {
         stopWorkoutTimer()
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.liveActivityService.end()
+        }
+        
         phase = .finished
         isWorkoutActive = false
         showWorkoutSummary = true
         
         Task {
             let (calories, _) = await healthKitService.endWorkout()
-            
+
+            if let id = currentWorkoutID {
+                let durationNano = Int64(totalWorkoutElapsedTime) * 1_000_000_000
+                try? await workoutService.updateWorkout(id: id, status: .completed, duration: durationNano)
+            }
+
             await MainActor.run {
                 self.totalCaloriesBurned = calories
                 self.phase = .finished
                 self.isWorkoutActive = false
                 self.showWorkoutSummary = true
-                
+
                 exerciseStats.forEach { stats in
                     print("\(stats.exercise.name): \(stats.repCount.joined(separator: ", ")), calories: \(calories)")
                 }
             }
+        }
+    }
+    
+    private func updateLiveActivity() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self, self.isWorkoutActive, let exercise = self.currentExercise else { return }
+            
+            let duration: Int
+            switch self.phase {
+            case .exercise:
+                duration = exercise.duration
+            case .restBetweenSets:
+                duration = exercise.rest
+            case .restBetweenExercises:
+                duration = self.restTimeBetweenExercises
+            default:
+                duration = 0
+            }
+            
+            self.liveActivityService.update(
+                exerciseName: exercise.name,
+                exerciseType: exercise.type,
+                exerciseDuration: duration,
+                workoutPhase: self.phase,
+                workoutProgress: self.workoutProgress
+            )
         }
     }
 }

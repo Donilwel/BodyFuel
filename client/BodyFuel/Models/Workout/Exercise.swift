@@ -10,11 +10,3 @@ struct Exercise: Identifiable {
     let setCount: Int
     let rest: Int
 }
-
-enum ExerciseType {
-    case cardio
-    case upperBody
-    case lowerBody
-    case fullBody
-    case flexibility
-}

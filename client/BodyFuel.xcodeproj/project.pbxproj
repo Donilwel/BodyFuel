@@ -46,7 +46,6 @@
 		151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyFuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		153D0B462F5F7E8400A1C7BF /* BodyFuelWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BodyFuelWidgetsExtension.entitlements; sourceTree = "<group>"; };
 		156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedWidgetStorage.swift; sourceTree = "<group>"; };
-		15A742222F6081AA003DC0B9 /* BodyFuelWidgetsExtension copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "BodyFuelWidgetsExtension copy-Info.plist"; path = "/Users/drobysheva.daria/Projects/BodyFuel/client/BodyFuelWidgetsExtension copy-Info.plist"; sourceTree = "<absolute>"; };
 		15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BodyFuelWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		15C6BA632F5F808E00DF35E7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -137,7 +136,6 @@
 				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
 				15A742462F608214003DC0B9 /* BodyFuelWidgets */,
 				1510CF022F5F104E004CAE54 /* Frameworks */,
-				15A742222F6081AA003DC0B9 /* BodyFuelWidgetsExtension copy-Info.plist */,
 				151AD4D52F1E7C77002AB6B6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -436,8 +434,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BodyFuel/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Приложение использует камеру для сканирования штрихкода продукта и добавления приема пищи по фото";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложение использует данные здоровья для персонализации плана";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложение записывает данные о тренировках";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -472,8 +472,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BodyFuel/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Приложение использует камеру для сканирования штрихкода продукта и добавления приема пищи по фото";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложение использует данные здоровья для персонализации плана";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложение записывает данные о тренировках";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -509,6 +511,7 @@
 				INFOPLIST_FILE = BodyFuelWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BodyFuelWidgets;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -540,6 +543,7 @@
 				INFOPLIST_FILE = BodyFuelWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = BodyFuelWidgets;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
