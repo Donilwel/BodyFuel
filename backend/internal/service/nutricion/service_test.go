@@ -4,8 +4,10 @@ import (
 	"backend/internal/domain/entities"
 	"backend/internal/dto"
 	"backend/pkg/ai"
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"testing"
 	"time"
 
@@ -51,12 +53,26 @@ func (m *mockAIClient) AnalyzeNutritionPhoto(ctx context.Context, imageURL strin
 	}
 	return args.Get(0).(*ai.NutritionAnalysis), args.Error(1)
 }
+func (m *mockAIClient) AnalyzeNutritionPhotoData(ctx context.Context, data []byte, mediaType string) (*ai.NutritionAnalysis, error) {
+	args := m.Called(ctx, data, mediaType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*ai.NutritionAnalysis), args.Error(1)
+}
 func (m *mockAIClient) GenerateRecipes(ctx context.Context, intake ai.DailyIntake) ([]ai.RecipeItem, error) {
 	args := m.Called(ctx, intake)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]ai.RecipeItem), args.Error(1)
+}
+
+type mockStorageService struct{ mock.Mock }
+
+func (m *mockStorageService) UploadFoodPhoto(ctx context.Context, userID, objectName, contentType string, data io.Reader) (string, error) {
+	args := m.Called(ctx, userID, objectName, contentType, data)
+	return args.String(0), args.Error(1)
 }
 
 // ── helpers ────────────────────────────────────────────────────
@@ -451,6 +467,80 @@ func TestService_RecommendRecipes(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Len(t, recipes, tt.wantLen)
+			}
+		})
+	}
+}
+
+// ── UploadAndAnalyzePhoto ──────────────────────────────────────
+
+func TestService_UploadAndAnalyzePhoto(t *testing.T) {
+	ctx := context.Background()
+	imgBytes := []byte("fake-image-data")
+	const photoURL = "http://minio/avatars/food-photos/user1/photo.jpg"
+	const mediaType = "image/jpeg"
+
+	analysis := &ai.NutritionAnalysis{
+		Description: "Греческий салат",
+		Calories:    220,
+		Protein:     8.5,
+		Carbs:       12.0,
+		Fat:         15.0,
+	}
+
+	tests := []struct {
+		name    string
+		setup   func(storage *mockStorageService, aiMock *mockAIClient)
+		wantErr bool
+	}{
+		{
+			name: "success — uploads then analyzes via base64",
+			setup: func(storage *mockStorageService, aiMock *mockAIClient) {
+				storage.On("UploadFoodPhoto", mock.Anything, "user1", "photo.jpg", mediaType, mock.Anything).
+					Return(photoURL, nil)
+				aiMock.On("AnalyzeNutritionPhotoData", mock.Anything, imgBytes, mediaType).
+					Return(analysis, nil)
+			},
+		},
+		{
+			name: "upload error propagates",
+			setup: func(storage *mockStorageService, aiMock *mockAIClient) {
+				storage.On("UploadFoodPhoto", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return("", errors.New("s3 error"))
+			},
+			wantErr: true,
+		},
+		{
+			name: "ai error propagates",
+			setup: func(storage *mockStorageService, aiMock *mockAIClient) {
+				storage.On("UploadFoodPhoto", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(photoURL, nil)
+				aiMock.On("AnalyzeNutritionPhotoData", mock.Anything, mock.Anything, mock.Anything).
+					Return(nil, errors.New("openai error"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := &mockStorageService{}
+			aiMock := &mockAIClient{}
+			tt.setup(storage, aiMock)
+			s := NewService(&Config{
+				UserFoodRepository: &mockFoodRepo{},
+				AIClient:           aiMock,
+				StorageService:     storage,
+			})
+			result, err := s.UploadAndAnalyzePhoto(ctx, "user1", "photo.jpg", mediaType, bytes.NewReader(imgBytes))
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, photoURL, result.PhotoURL)
+				assert.Equal(t, "Греческий салат", result.Analysis.Description)
+				assert.Equal(t, 220, result.Analysis.Calories)
 			}
 		})
 	}

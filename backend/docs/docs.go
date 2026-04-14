@@ -759,63 +759,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/nutrition/analyze": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Отправляет URL изображения еды в OpenAI Vision и возвращает питательную ценность",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Nutrition"
-                ],
-                "summary": "Анализ фото еды",
-                "parameters": [
-                    {
-                        "description": "URL изображения",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.AnalyzePhotoRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Результат анализа",
-                        "schema": {
-                            "$ref": "#/definitions/models.NutritionAnalysisResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/nutrition/analyze/upload": {
             "post": {
                 "security": [
@@ -823,7 +766,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Принимает файл изображения (multipart/form-data), сохраняет в S3 и возвращает публичный URL. Для анализа питательной ценност�� передайте полученный URL в POST /nutrition/analyze.",
+                "description": "Принимает файл (JPEG/PNG/WebP) + тип приёма пищи. Загружает в S3, определяет КБЖУ через OpenAI Vision и автоматически создаёт запись в дневнике питания. Форматы HEIC/HEIF не поддерживаются.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -833,21 +776,40 @@ const docTemplate = `{
                 "tags": [
                     "Nutrition"
                 ],
-                "summary": "Загрузка фото еды",
+                "summary": "Загрузка фото еды с автоматическим добавлением в дневник",
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "Файл изображения еды",
+                        "description": "Файл изображения еды (JPEG, PNG, WebP)",
                         "name": "photo",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "breakfast",
+                            "lunch",
+                            "dinner",
+                            "snack"
+                        ],
+                        "type": "string",
+                        "description": "Тип приёма пищи",
+                        "name": "meal_type",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Дата приёма пищи (YYYY-MM-DD), по умолчанию сегодня",
+                        "name": "date",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "URL загруженного фото",
+                    "201": {
+                        "description": "Созданная запись в дневнике",
                         "schema": {
-                            "$ref": "#/definitions/models.UploadPhotoResponse"
+                            "$ref": "#/definitions/models.FoodEntryResponse"
                         }
                     },
                     "400": {
@@ -3036,17 +2998,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AnalyzePhotoRequest": {
-            "type": "object",
-            "required": [
-                "image_url"
-            ],
-            "properties": {
-                "image_url": {
-                    "type": "string"
-                }
-            }
-        },
         "models.CreateFoodEntryRequest": {
             "type": "object",
             "required": [
@@ -3352,26 +3303,6 @@ const docTemplate = `{
             "properties": {
                 "carbs": {
                     "type": "number"
-                },
-                "fat": {
-                    "type": "number"
-                },
-                "protein": {
-                    "type": "number"
-                }
-            }
-        },
-        "models.NutritionAnalysisResponse": {
-            "type": "object",
-            "properties": {
-                "calories": {
-                    "type": "integer"
-                },
-                "carbs": {
-                    "type": "number"
-                },
-                "description": {
-                    "type": "string"
                 },
                 "fat": {
                     "type": "number"
@@ -3837,14 +3768,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.UploadPhotoResponse": {
-            "type": "object",
-            "properties": {
-                "photo_url": {
-                    "type": "string"
-                }
-            }
-        },
         "models.UserCaloriesResponse": {
             "type": "object",
             "properties": {
@@ -3897,10 +3820,16 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "email_verified_at": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                },
+                "phone_verified_at": {
                     "type": "string"
                 },
                 "surname": {

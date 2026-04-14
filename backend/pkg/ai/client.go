@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -18,15 +19,15 @@ func NewClient(apiKey string) *Client {
 
 // AnalyzeNutritionPhoto sends an image URL to GPT-4o Vision and returns parsed nutrition data.
 func (cl *Client) AnalyzeNutritionPhoto(ctx context.Context, imageURL string) (*NutritionAnalysis, error) {
-	prompt := `Analyze the food in this image and return ONLY a JSON object with this exact structure (no markdown, no extra text):
+	prompt := `Проанализируй еду на изображении и верни ТОЛЬКО JSON-объект следующей структуры (без markdown, без лишнего текста):
 {
-  "description": "brief food description",
+  "description": "краткое описание блюда на русском",
   "calories": 0,
   "protein": 0.0,
   "carbs": 0.0,
   "fat": 0.0
 }
-All numeric values must be estimates per portion shown. Calories as integer, macros as float with 1 decimal.`
+Все числовые значения — оценки на порцию. Калории целым числом, макросы — float с 1 знаком. Описание писать на русском языке.`
 
 	resp, err := cl.c.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4oMini,
@@ -57,26 +58,70 @@ All numeric values must be estimates per portion shown. Calories as integer, mac
 	return &result, nil
 }
 
+// AnalyzeNutritionPhotoData sends image bytes as base64 to GPT-4o Vision and returns parsed nutrition data.
+// Use this instead of AnalyzeNutritionPhoto when the image is not publicly accessible (e.g. local MinIO).
+func (cl *Client) AnalyzeNutritionPhotoData(ctx context.Context, data []byte, mediaType string) (*NutritionAnalysis, error) {
+	prompt := `Проанализируй еду на изображении и верни ТОЛЬКО JSON-объект следующей структуры (без markdown, без лишнего текста):
+{
+  "description": "краткое описание блюда на русском",
+  "calories": 0,
+  "protein": 0.0,
+  "carbs": 0.0,
+  "fat": 0.0
+}
+Все числовые значения — оценки на порцию. Калории целым числом, макросы — float с 1 знаком. Описание писать на русском языке.`
+
+	dataURL := fmt.Sprintf("data:%s;base64,%s", mediaType, base64.StdEncoding.EncodeToString(data))
+
+	resp, err := cl.c.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model: openai.GPT4oMini,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role: openai.ChatMessageRoleUser,
+				MultiContent: []openai.ChatMessagePart{
+					{Type: openai.ChatMessagePartTypeText, Text: prompt},
+					{Type: openai.ChatMessagePartTypeImageURL, ImageURL: &openai.ChatMessageImageURL{URL: dataURL}},
+				},
+			},
+		},
+		MaxTokens: 200,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("openai vision: %w", err)
+	}
+
+	if len(resp.Choices) == 0 {
+		return nil, fmt.Errorf("openai vision: empty response")
+	}
+
+	var result NutritionAnalysis
+	if err := json.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
+		return nil, fmt.Errorf("openai vision: parse response: %w", err)
+	}
+
+	return &result, nil
+}
+
 // GenerateRecommendations asks GPT to generate personalized fitness recommendations.
 func (cl *Client) GenerateRecommendations(ctx context.Context, profile UserProfile) ([]RecommendationItem, error) {
 	weightProgress := ""
 	if profile.TargetWeight > 0 && profile.Weight > 0 {
 		delta := profile.Weight - profile.TargetWeight
 		if delta > 0.5 {
-			weightProgress = fmt.Sprintf(", needs to lose %.1fkg to reach target %.1fkg", delta, profile.TargetWeight)
+			weightProgress = fmt.Sprintf(", нужно сбросить %.1f кг до целевого веса %.1f кг", delta, profile.TargetWeight)
 		} else if delta < -0.5 {
-			weightProgress = fmt.Sprintf(", needs to gain %.1fkg to reach target %.1fkg", -delta, profile.TargetWeight)
+			weightProgress = fmt.Sprintf(", нужно набрать %.1f кг до целевого веса %.1f кг", -delta, profile.TargetWeight)
 		} else {
-			weightProgress = ", is at target weight"
+			weightProgress = ", целевой вес достигнут"
 		}
 	}
 
-	prompt := fmt.Sprintf(`You are a fitness coach. Generate 3-5 personalized recommendations for this user.
-User profile: weight=%.1fkg, height=%.0fcm, age=%d, goal=%s, activity_level=%s%s.
-Include at least one recommendation about their nutrition/workout plan relative to their weight progress toward target.
-Return ONLY a JSON array (no markdown):
-[{"type":"workout|nutrition|rest|general","description":"actionable advice","priority":1-3}]
-Priority: 1=high, 2=medium, 3=low. Keep each description under 100 characters.`,
+	prompt := fmt.Sprintf(`Ты фитнес-тренер. Составь 3-5 персональных рекомендаций для пользователя.
+Профиль: вес=%.1f кг, рост=%.0f см, возраст=%d лет, цель=%s, уровень активности=%s%s.
+Включи хотя бы одну рекомендацию о питании/тренировках относительно прогресса к целевому весу.
+Верни ТОЛЬКО JSON-массив (без markdown), все описания на русском языке:
+[{"type":"workout|nutrition|rest|general","description":"конкретный совет","priority":1-3}]
+Приоритет: 1=высокий, 2=средний, 3=низкий. Каждое описание не более 100 символов.`,
 		profile.Weight, profile.Height, profile.Age, profile.Goal, profile.ActivityLevel, weightProgress)
 
 	resp, err := cl.c.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
@@ -104,17 +149,17 @@ Priority: 1=high, 2=medium, 3=low. Keep each description under 100 characters.`,
 
 // GenerateRecipes asks GPT to suggest recipes based on what the user has already eaten today.
 func (cl *Client) GenerateRecipes(ctx context.Context, intake DailyIntake) ([]RecipeItem, error) {
-	prompt := fmt.Sprintf(`You are a nutritionist. A user has consumed today: %d kcal, %.1fg protein, %.1fg carbs, %.1fg fat.
-Suggest 3-5 recipes for their next meal that complement what they've already eaten (balance the remaining macros).
-Return ONLY a JSON array (no markdown, no extra text):
+	prompt := fmt.Sprintf(`Ты нутрициолог. Пользователь уже съел сегодня: %d ккал, %.1f г белка, %.1f г углеводов, %.1f г жиров.
+Предложи 3-5 рецептов для следующего приёма пищи, которые дополнят уже съеденное (сбалансируй оставшиеся макросы).
+Верни ТОЛЬКО JSON-массив (без markdown, без лишнего текста), все текстовые поля на русском языке:
 [{
-  "name": "Recipe name",
-  "description": "Brief taste/flavour description (1 sentence, max 80 chars)",
-  "ingredients": [{"name": "Ingredient name", "grams": 150}],
+  "name": "Название рецепта",
+  "description": "Краткое описание вкуса (1 предложение, не более 80 символов)",
+  "ingredients": [{"name": "Название ингредиента", "grams": 150}],
   "macros": {"protein": 0.0, "fat": 0.0, "carbs": 0.0},
   "preparation_time": 10
 }]
-Rules: macros in grams (floats), preparation_time in minutes (integer), name max 50 chars, list 3-6 ingredients with realistic gram weights.`,
+Правила: макросы в граммах (float), preparation_time в минутах (integer), название не более 50 символов, 3-6 ингредиентов с реальными граммовками.`,
 		intake.ConsumedCalories, intake.ConsumedProtein, intake.ConsumedCarbs, intake.ConsumedFat)
 
 	resp, err := cl.c.CreateChatCompletion(ctx, openai.ChatCompletionRequest{

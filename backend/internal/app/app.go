@@ -194,6 +194,8 @@ func NewApp(configPaths ...string) *App {
 		RecommendationRepository: userRecommendationsRepository,
 		UserParamsRepository:     userParamsRepository,
 		UserWeightRepository:     userWeightRepository,
+		UserDevicesRepository:    userDevicesRepository,
+		TasksRepository:          tasksRepository,
 		AIClient:                 aiClient,
 		RecommendationCache:      redisClient,
 	})

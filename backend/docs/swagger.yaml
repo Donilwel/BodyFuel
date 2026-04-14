@@ -103,13 +103,6 @@ definitions:
     required:
     - exercise_id
     type: object
-  models.AnalyzePhotoRequest:
-    properties:
-      image_url:
-        type: string
-    required:
-    - image_url
-    type: object
   models.CreateFoodEntryRequest:
     properties:
       calories:
@@ -325,19 +318,6 @@ definitions:
     properties:
       carbs:
         type: number
-      fat:
-        type: number
-      protein:
-        type: number
-    type: object
-  models.NutritionAnalysisResponse:
-    properties:
-      calories:
-        type: integer
-      carbs:
-        type: number
-      description:
-        type: string
       fat:
         type: number
       protein:
@@ -659,11 +639,6 @@ definitions:
         - completed
         - cancelled
     type: object
-  models.UploadPhotoResponse:
-    properties:
-      photo_url:
-        type: string
-    type: object
   models.UserCaloriesResponse:
     properties:
       calories:
@@ -698,9 +673,13 @@ definitions:
         type: string
       email:
         type: string
+      email_verified_at:
+        type: string
       name:
         type: string
       phone:
+        type: string
+      phone_verified_at:
         type: string
       surname:
         type: string
@@ -1430,63 +1409,40 @@ paths:
       summary: Обновление упражнения
       tags:
       - Exercises
-  /nutrition/analyze:
-    post:
-      consumes:
-      - application/json
-      description: Отправляет URL изображения еды в OpenAI Vision и возвращает питательную
-        ценность
-      parameters:
-      - description: URL изображения
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/models.AnalyzePhotoRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Результат анализа
-          schema:
-            $ref: '#/definitions/models.NutritionAnalysisResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Анализ фото еды
-      tags:
-      - Nutrition
   /nutrition/analyze/upload:
     post:
       consumes:
       - multipart/form-data
-      description: Принимает файл изображения (multipart/form-data), сохраняет в S3
-        и возвращает публичный URL. Для анализа питательной ценност�� передайте полученный
-        URL в POST /nutrition/analyze.
+      description: Принимает файл (JPEG/PNG/WebP) + тип приёма пищи. Загружает в S3,
+        определяет КБЖУ через OpenAI Vision и автоматически создаёт запись в дневнике
+        питания. Форматы HEIC/HEIF не поддерживаются.
       parameters:
-      - description: Файл изображения еды
+      - description: Файл изображения еды (JPEG, PNG, WebP)
         in: formData
         name: photo
         required: true
         type: file
+      - description: Тип приёма пищи
+        enum:
+        - breakfast
+        - lunch
+        - dinner
+        - snack
+        in: formData
+        name: meal_type
+        required: true
+        type: string
+      - description: Дата приёма пищи (YYYY-MM-DD), по умолчанию сегодня
+        in: formData
+        name: date
+        type: string
       produces:
       - application/json
       responses:
-        "200":
-          description: URL загруженного фото
+        "201":
+          description: Созданная запись в дневнике
           schema:
-            $ref: '#/definitions/models.UploadPhotoResponse'
+            $ref: '#/definitions/models.FoodEntryResponse'
         "400":
           description: Bad Request
           schema:
@@ -1501,7 +1457,7 @@ paths:
             $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Загрузка фото еды
+      summary: Загрузка фото еды с автоматическим добавлением в дневник
       tags:
       - Nutrition
   /nutrition/diary:

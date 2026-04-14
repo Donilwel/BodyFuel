@@ -11,10 +11,6 @@ import (
 
 // --- Requests ---
 
-type AnalyzePhotoRequest struct {
-	ImageURL string `json:"image_url" validate:"required,url"`
-}
-
 type CreateFoodEntryRequest struct {
 	Description string    `json:"description" validate:"required,max=500"`
 	Calories    int       `json:"calories" validate:"required,min=0,max=10000"`
@@ -55,13 +51,6 @@ func NewNutritionAnalysisResponse(a *ai.NutritionAnalysis) NutritionAnalysisResp
 		Carbs:       a.Carbs,
 		Fat:         a.Fat,
 	}
-}
-
-// UploadPhotoResponse is returned by POST /nutrition/analyze/upload.
-// It contains only the public URL of the uploaded photo.
-// Pass this URL to POST /nutrition/analyze to get the nutritional analysis.
-type UploadPhotoResponse struct {
-	PhotoURL string `json:"photo_url"`
 }
 
 type FoodEntryResponse struct {
