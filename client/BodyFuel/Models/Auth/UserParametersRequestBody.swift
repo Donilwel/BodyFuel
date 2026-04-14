@@ -11,7 +11,7 @@ struct UserParametersRequestBody: Encodable {
 extension UserParametersRequestBody {
     init(from payload: UserParametersPayload, avatarURL: String) {
         self.height = payload.height
-        self.lifestyle = payload.lifestyle.rawValue
+        self.lifestyle = payload.fitnessLevel.rawValue
         self.photo = avatarURL
         self.targetCaloriesDaily = payload.targetCaloriesDaily
         self.targetWeight = payload.targetWeight

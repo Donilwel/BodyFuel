@@ -6,9 +6,6 @@ struct UserParametersView: View {
     
     @StateObject private var viewModel = UserParametersViewModel()
     
-    @State private var isLifestylePickerPresented = false
-    @State private var isGoalPickerPresented = false
-    
     @FocusState private var parametersFocused: ParametersField?
     
     private enum ParametersField: Hashable {
@@ -51,46 +48,31 @@ struct UserParametersView: View {
             
             CustomPickerField(
                 title: "Образ жизни",
-                value: viewModel.lifestyle?.title ?? ""
-            ) {
-                isLifestylePickerPresented = true
-            }
-            .confirmationDialog(
-                "Образ жизни",
-                isPresented: $isLifestylePickerPresented,
-                titleVisibility: .hidden
-            ) {
-                ForEach(Lifestyle.allCases) { lifestyle in
-                    Button(lifestyle.title) {
-                        viewModel.lifestyle = lifestyle
-                    }
-                }
-            }
+                options: Lifestyle.allCases,
+                optionTitle: \.title,
+                selection: $viewModel.lifestyle
+            )
+
+            CustomPickerField(
+                title: "Спортивная подготовка",
+                options: FitnessLevel.allCases,
+                optionTitle: \.title,
+                selection: $viewModel.fitnessLevel
+            )
         }
     }
     
     private var goalsFields: some View {
         VStack(spacing: 16) {
-            ValidatedField(
-                error: viewModel.goalError
-            ) {
+            ValidatedField(error: viewModel.goalError) {
                 CustomPickerField(
                     title: "Цель",
-                    value: viewModel.goal?.title ?? ""
-                ) {
-                    isGoalPickerPresented = true
-                }
-                .confirmationDialog(
-                    "Цель",
-                    isPresented: $isGoalPickerPresented,
-                    titleVisibility: .visible
-                ) {
-                    ForEach(MainGoal.allCases) { goal in
-                        Button(goal.title) {
-                            viewModel.goal = goal
-                            viewModel.validateLive()
-                        }
-                    }
+                    options: MainGoal.allCases,
+                    optionTitle: \.title,
+                    selection: $viewModel.goal
+                )
+                .onChange(of: viewModel.goal) { _ in
+                    viewModel.validateLive()
                 }
             }
             

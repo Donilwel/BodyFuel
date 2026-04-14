@@ -18,4 +18,14 @@ enum API {
         static let history = "/workouts/history"
         static func workout(id: String) -> String { "/workouts/\(id)" }
     }
+
+    enum Nutrition {
+        static let diary        = "/nutrition/diary"
+        static let report       = "/nutrition/report"
+        static let recipes      = "/nutrition/recipes"
+        static let entries      = "/nutrition/entries"
+        static let analyze      = "/nutrition/analyze"
+        static let uploadPhoto  = "/nutrition/analyze/upload"
+        static func entry(id: String) -> String { "/nutrition/entries/\(id)" }
+    }
 }

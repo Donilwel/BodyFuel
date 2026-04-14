@@ -3,6 +3,7 @@ import Foundation
 struct UserParametersPayload {
     let height: Int
     let lifestyle: Lifestyle
+    let fitnessLevel: FitnessLevel
     let avatarData: Data
     let targetCaloriesDaily: Int
     let targetWeight: Float

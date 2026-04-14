@@ -23,6 +23,7 @@ final class UserParametersViewModel: ObservableObject {
     @Published var weightString = ""
     @Published var weightError: String? = nil
     @Published var lifestyle: Lifestyle?
+    @Published var fitnessLevel: FitnessLevel?
     @Published var goal: MainGoal?
     @Published var goalError: String? = nil
     @Published var targetWeight: Float = 0.0
@@ -94,13 +95,14 @@ final class UserParametersViewModel: ObservableObject {
                 caloriesFormState = .preview
             }
             
-            guard let lifestyle, let goal else {
+            guard let lifestyle, let fitnessLevel, let goal else {
                 return
             }
-            
+
             let userParametersPayload = UserParametersPayload(
                 height: height,
                 lifestyle: lifestyle,
+                fitnessLevel: fitnessLevel,
                 avatarData: avatarData ?? Data(),
                 targetCaloriesDaily: Int(targetCaloriesDaily),
                 targetWeight: targetWeight,
@@ -161,7 +163,7 @@ final class UserParametersViewModel: ObservableObject {
     }
 
     private func validate() throws {
-        let hasEmptyFields = height == 0 || weight == 0.0 || lifestyle == .none || goal == .none || targetWeight == 0.0
+        let hasEmptyFields = height == 0 || weight == 0.0 || lifestyle == .none || fitnessLevel == .none || goal == .none || targetWeight == 0.0
         
         let hasErrors = [heightError, weightError, healthIntegrationError, targetCaloriesError, goalError].contains { $0 != nil }
         

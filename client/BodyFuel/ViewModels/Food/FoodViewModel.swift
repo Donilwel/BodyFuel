@@ -78,8 +78,7 @@ final class FoodViewModel: ObservableObject {
     func saveMeal(_ meal: Meal) async {
         do {
             try await nutritionService.saveMeal(meal)
-            meals.append(meal)
-            await refreshSummary()
+            await load()
             showAddMeal = false
         } catch {
             addMealError = "Не удалось сохранить блюдо"
@@ -87,9 +86,23 @@ final class FoodViewModel: ObservableObject {
     }
 
     func confirmAndSaveAnalyzedMeal(_ meal: Meal) async {
-        meals.append(meal)
-        await refreshSummary()
+        do {
+            try await nutritionService.saveMeal(meal)
+            await load()
+        } catch {
+            addMealError = "Не удалось сохранить блюдо"
+        }
         showCamera = false
+    }
+
+    func deleteMeal(_ meal: Meal) async {
+        do {
+            try await nutritionService.deleteFoodEntry(id: meal.id.uuidString)
+            meals.removeAll { $0.id == meal.id }
+            await refreshSummary()
+        } catch {
+            screenState = .error("Не удалось удалить блюдо")
+        }
     }
 
     func loadRecipes() async {
