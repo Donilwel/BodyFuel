@@ -6,22 +6,26 @@ import (
 )
 
 type UserInfoResponseModel struct {
-	Username  string    `json:"username"`
-	Name      string    `json:"name"`
-	Surname   string    `json:"surname"`
-	Email     string    `json:"email"`
-	Phone     string    `json:"phone"`
-	CreatedAt time.Time `json:"created_at"`
+	Username        string     `json:"username"`
+	Name            string     `json:"name"`
+	Surname         string     `json:"surname"`
+	Email           string     `json:"email"`
+	Phone           string     `json:"phone"`
+	CreatedAt       time.Time  `json:"created_at"`
+	EmailVerifiedAt *time.Time `json:"email_verified_at"`
+	PhoneVerifiedAt *time.Time `json:"phone_verified_at"`
 }
 
 func NewUserInfoResponse(params *entities.UserInfo) UserInfoResponseModel {
 	return UserInfoResponseModel{
-		params.Username(),
-		params.Name(),
-		params.Surname(),
-		params.Email(),
-		params.Phone(),
-		params.CreatedAt(),
+		Username:        params.Username(),
+		Name:            params.Name(),
+		Surname:         params.Surname(),
+		Email:           params.Email(),
+		Phone:           params.Phone(),
+		CreatedAt:       params.CreatedAt(),
+		EmailVerifiedAt: params.EmailVerifiedAt(),
+		PhoneVerifiedAt: params.PhoneVerifiedAt(),
 	}
 }
 
