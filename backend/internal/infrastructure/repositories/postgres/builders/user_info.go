@@ -89,6 +89,8 @@ func NewUserInfoSelectBuilder() *UserInfoSelectBuilder {
 		"user_info.email",
 		"user_info.phone",
 		"user_info.created_at",
+		"user_info.email_verified_at",
+		"user_info.phone_verified_at",
 	).From(userInfoTable)
 
 	return &UserInfoSelectBuilder{b: selectBuilder}
