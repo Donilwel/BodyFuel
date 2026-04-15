@@ -33,6 +33,7 @@ final class FoodViewModel: ObservableObject {
     }
 
     private let nutritionService: NutritionServiceProtocol = NutritionService.shared
+    private let offService: OpenFoodFactsServiceProtocol = OpenFoodFactsService.shared
 
     func load() async {
         screenState = .loading
@@ -44,6 +45,7 @@ final class FoodViewModel: ObservableObject {
             self.meals = try await meals
             screenState = .loaded
         } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
             screenState = .error("Не удалось загрузить данные питания")
         }
     }
@@ -81,6 +83,7 @@ final class FoodViewModel: ObservableObject {
             await load()
             showAddMeal = false
         } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
             addMealError = "Не удалось сохранить блюдо"
         }
     }
@@ -90,6 +93,7 @@ final class FoodViewModel: ObservableObject {
             try await nutritionService.saveMeal(meal)
             await load()
         } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
             addMealError = "Не удалось сохранить блюдо"
         }
         showCamera = false
@@ -101,6 +105,7 @@ final class FoodViewModel: ObservableObject {
             meals.removeAll { $0.id == meal.id }
             await refreshSummary()
         } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
             screenState = .error("Не удалось удалить блюдо")
         }
     }
@@ -110,10 +115,19 @@ final class FoodViewModel: ObservableObject {
         do {
             recipes = try await nutritionService.generateRecipes()
         } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
             recipes = []
         }
         isLoadingRecipes = false
         showRecipes = true
+    }
+
+    func searchProducts(_ query: String) async throws -> [FoodProduct] {
+        try await offService.searchProducts(query: query)
+    }
+
+    func fetchProductByBarcode(_ barcode: String) async throws -> FoodProduct? {
+        try await offService.fetchProductByBarcode(barcode)
     }
 
     private func refreshSummary() async {

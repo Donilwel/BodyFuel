@@ -137,6 +137,7 @@ final class WorkoutViewModel: ObservableObject {
                 screenState = .loaded
             }
         } catch {
+            if await AppRouter.shared.handleIfUnauthorized(error) { return }
             let appError = ErrorMapper.map(error)
             screenState = .error(appError.errorDescription ?? "Попробуйте еще раз позже")
         }

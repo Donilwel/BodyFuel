@@ -2,8 +2,6 @@ import SwiftUI
 import Combine
 import AVFoundation
 
-// MARK: - AddMealView
-
 struct AddMealView: View {
     @EnvironmentObject var viewModel: FoodViewModel
     @Environment(\.dismiss) private var dismiss
@@ -29,48 +27,54 @@ struct AddMealView: View {
                     mealTypePicker
                     modePicker
 
-                    if let product = selectedProduct {
-                        ProductWeightSection(
-                            product: product,
-                            mealType: selectedMealType,
-                            onConfirm: { meal in
-                                Task { await viewModel.saveMeal(meal) }
-                            },
-                            onBack: { selectedProduct = nil }
-                        )
-                    } else {
-                        switch mode {
-                        case .search:
-                            ProductSearchSection(
-                                prefillQuery: prefillName,
-                                onSelect: { product in
-                                    prefillName = ""
-                                    selectedProduct = product
-                                },
-                                onNotFoundManual: { name in
-                                    prefillName = name
-                                    mode = .manual
-                                }
-                            )
-                        case .barcode:
-                            BarcodeScanSection(
-                                onSelect: { product in
-                                    selectedProduct = product
-                                },
-                                onNotFoundManual: {
-                                    mode = .manual
-                                }
-                            )
-                        case .manual:
-                            ManualEntrySection(
-                                prefillName: prefillName,
+                    Group {
+                        if let product = selectedProduct {
+                            ProductWeightSection(
+                                product: product,
                                 mealType: selectedMealType,
                                 onConfirm: { meal in
                                     Task { await viewModel.saveMeal(meal) }
-                                }
+                                },
+                                onBack: { selectedProduct = nil }
                             )
+                        } else {
+                            switch mode {
+                            case .search:
+                                ProductSearchSection(
+                                    prefillQuery: prefillName,
+                                    search: { try await viewModel.searchProducts($0) },
+                                    onSelect: { product in
+                                        prefillName = ""
+                                        selectedProduct = product
+                                    },
+                                    onNotFoundManual: { name in
+                                        prefillName = name
+                                        mode = .manual
+                                    }
+                                )
+                            case .barcode:
+                                BarcodeScanSection(
+                                    fetchByBarcode: { try await viewModel.fetchProductByBarcode($0) },
+                                    onSelect: { product in
+                                        selectedProduct = product
+                                    },
+                                    onNotFoundManual: {
+                                        mode = .manual
+                                    }
+                                )
+                            case .manual:
+                                ManualEntrySection(
+                                    prefillName: prefillName,
+                                    mealType: selectedMealType,
+                                    onConfirm: { meal in
+                                        Task { await viewModel.saveMeal(meal) }
+                                    }
+                                )
+                            }
                         }
                     }
+                    .animation(nil, value: mode)
+                    .animation(nil, value: selectedProduct != nil)
                 }
             }
             .navigationTitle("Добавить продукт")
@@ -116,10 +120,9 @@ struct AddMealView: View {
     }
 }
 
-// MARK: - Product Search Section
-
 struct ProductSearchSection: View {
     let prefillQuery: String
+    let search: (String) async throws -> [FoodProduct]
     let onSelect: (FoodProduct) -> Void
     let onNotFoundManual: (String) -> Void
 
@@ -128,8 +131,6 @@ struct ProductSearchSection: View {
     @State private var isSearching = false
     @State private var hasSearched = false
     @FocusState private var focused: Bool
-
-    private let offService: OpenFoodFactsServiceProtocol = OpenFoodFactsService.shared
 
     var body: some View {
         VStack(spacing: 12) {
@@ -140,9 +141,9 @@ struct ProductSearchSection: View {
                     .background(.ultraThinMaterial)
                     .cornerRadius(12)
                     .foregroundColor(.white)
-                    .onSubmit { search() }
+                    .onSubmit { performSearch() }
 
-                Button(action: search) {
+                Button(action: performSearch) {
                     Group {
                         if isSearching {
                             ProgressView().tint(.white)
@@ -180,7 +181,7 @@ struct ProductSearchSection: View {
         .onAppear {
             if !prefillQuery.isEmpty {
                 query = prefillQuery
-                search()
+                performSearch()
             } else {
                 focused = true
             }
@@ -212,7 +213,7 @@ struct ProductSearchSection: View {
         .padding()
     }
 
-    private func search() {
+    private func performSearch() {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
         focused = false
@@ -220,7 +221,7 @@ struct ProductSearchSection: View {
         hasSearched = false
         Task {
             do {
-                results = try await offService.searchProducts(query: trimmed)
+                results = try await search(trimmed)
             } catch {
                 results = []
             }
@@ -262,9 +263,8 @@ struct ProductRowView: View {
     }
 }
 
-// MARK: - Barcode Scan Section
-
 struct BarcodeScanSection: View {
+    let fetchByBarcode: (String) async throws -> FoodProduct?
     let onSelect: (FoodProduct) -> Void
     let onNotFoundManual: () -> Void
 
@@ -272,8 +272,6 @@ struct BarcodeScanSection: View {
     @State private var isLookingUp = false
     @State private var notFound = false
     @State private var lastScanned: String?
-
-    private let offService: OpenFoodFactsServiceProtocol = OpenFoodFactsService.shared
 
     var body: some View {
         Group {
@@ -365,7 +363,7 @@ struct BarcodeScanSection: View {
         isLookingUp = true
         Task {
             do {
-                if let product = try await offService.fetchProductByBarcode(barcode) {
+                if let product = try await fetchByBarcode(barcode) {
                     onSelect(product)
                 } else {
                     notFound = true
@@ -377,8 +375,6 @@ struct BarcodeScanSection: View {
         }
     }
 }
-
-// MARK: - Barcode Camera
 
 final class BarcodeManager: NSObject, ObservableObject, AVCaptureMetadataOutputObjectsDelegate {
     let session = AVCaptureSession()
@@ -474,8 +470,6 @@ private struct BarcodeCameraPreview: UIViewRepresentable {
     func updateUIView(_ uiView: BarcodePreviewUIView, context: Context) {}
 }
 
-/// MARK: - Product Weight Section
-
 struct ProductWeightSection: View {
     let product: FoodProduct
     let mealType: MealType
@@ -545,8 +539,6 @@ struct ProductWeightSection: View {
     }
 }
 
-// MARK: - Manual Entry Section
-
 struct ManualEntrySection: View {
     let prefillName: String
     let mealType: MealType
@@ -567,7 +559,6 @@ struct ManualEntrySection: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Name
                 VStack(alignment: .leading, spacing: 4) {
                     TextField("Название блюда / продукта", text: $name)
                         .padding()
@@ -582,7 +573,6 @@ struct ManualEntrySection: View {
                     }
                 }
 
-                // Macro inputs
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Макронутриенты на порцию")
                         .font(.subheadline)

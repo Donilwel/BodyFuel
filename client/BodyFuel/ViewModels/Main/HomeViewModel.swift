@@ -43,6 +43,7 @@ final class HomeViewModel: ObservableObject {
             
             state = .loaded
         } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
             let appError = ErrorMapper.map(error)
             state = .error(appError.errorDescription ?? "Не удалось загрузить данные")
         }

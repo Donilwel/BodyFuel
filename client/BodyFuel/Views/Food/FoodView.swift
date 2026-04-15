@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FoodView: View {
     @StateObject private var viewModel = FoodViewModel()
+    @ObservedObject private var router = AppRouter.shared
     @State private var expandedSections: Set<MealType> = []
     @State private var showAddOptions = false
 
@@ -13,10 +14,6 @@ struct FoodView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-//                        Text("Питание")
-//                            .foregroundColor(.white)
-//                            .font(.largeTitle.bold())
-                        
                         switch viewModel.screenState {
                         case .loading:
                             ProgressView()
@@ -28,6 +25,7 @@ struct FoodView: View {
                                 Text(message)
                                     .foregroundColor(.white.opacity(0.8))
                                     .multilineTextAlignment(.center)
+                                    .frame(maxWidth: .infinity)
                                 PrimaryButton(title: "Повторить") {
                                     Task { await viewModel.load() }
                                 }
@@ -42,13 +40,13 @@ struct FoodView: View {
                             diarySection
 
                             recipesButton
+                            
+                            addFoodButton
                         }
                     }
                     .padding()
                     .padding(.bottom, 100)
                 }
-
-                addFoodButton
             }
             .navigationTitle("Питание")
             .navigationBarTitleDisplayMode(.large)
@@ -56,6 +54,15 @@ struct FoodView: View {
         }
         .task {
             await viewModel.load()
+        }
+        .refreshable {
+            await viewModel.load()
+        }
+        .onChange(of: router.pendingAddMeal) { pending in
+            if pending {
+                viewModel.showAddMeal = true
+                router.pendingAddMeal = false
+            }
         }
         .sheet(isPresented: $viewModel.showAddMeal) {
             AddMealView()

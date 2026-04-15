@@ -100,6 +100,7 @@ final class ProfileViewModel: ObservableObject {
 
             screenState = .idle
         } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
             screenState = .error(error.localizedDescription)
         }
     }
@@ -129,10 +130,11 @@ final class ProfileViewModel: ObservableObject {
             isEditing = false
             screenState = .idle
         } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
             screenState = .error("Ошибка сохранения")
         }
     }
-    
+
     func logout() {
         service.logout()
         event = .logoutSuccess

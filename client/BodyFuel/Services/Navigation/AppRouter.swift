@@ -10,6 +10,7 @@ final class AppRouter: ObservableObject {
     @Published var selectedTab: TabRoute = .home
     @Published var rootRoute: RootRoute = .auth
     @Published var currentUser: User?
+    @Published var pendingAddMeal = false
     
     private let sessionManager = UserSessionManager.shared
     
@@ -22,6 +23,19 @@ final class AppRouter: ObservableObject {
         self.workoutViewModel = workoutViewModel
     }
     
+    func logout() {
+        sessionManager.logout()
+        selectedTab = .home
+        pendingAddMeal = false
+        rootRoute = .auth
+    }
+
+    func handleIfUnauthorized(_ error: Error) -> Bool {
+        guard ErrorMapper.map(error) == .unauthorized else { return false }
+        logout()
+        return true
+    }
+
     func updateRoute() {
         if sessionManager.currentUserId == nil {
             rootRoute = .auth

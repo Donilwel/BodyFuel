@@ -3,6 +3,7 @@ import WidgetKit
 
 struct HomeView: View {
     @EnvironmentObject var workoutViewModel: WorkoutViewModel
+    @ObservedObject private var router = AppRouter.shared
     @StateObject private var viewModel = HomeViewModel()
     @State private var path = NavigationPath()
     
@@ -67,6 +68,13 @@ struct HomeView: View {
                     burned: stats.caloriesBurned,
                     basalMetabolicRate: basalMetabolicRate
                 )
+            } else {
+                CaloriesRingProgressView(
+                    consumed: 0,
+                    goal: 0,
+                    burned: 0,
+                    basalMetabolicRate: 1500
+                )
             }
         }
     }
@@ -96,7 +104,13 @@ struct HomeView: View {
             
             HStack {
                 PrimaryButton(title: "Добавить приём пищи") {
-                    path.append("nutrition")
+                    guard let userId = UserSessionManager.shared.currentUserId,
+                          UserSessionManager.shared.authToken(for: userId) != nil else {
+                        router.logout()
+                        return
+                    }
+                    router.selectedTab = .food
+                    router.pendingAddMeal = true
                 }
             }
         }
@@ -106,5 +120,8 @@ struct HomeView: View {
 }
 
 #Preview {
+//    HomeView()
     TabBarView()
+        .environmentObject(AppRouter.shared)
+        .environmentObject(WorkoutViewModel())
 }
