@@ -2,14 +2,14 @@ import SwiftUI
 
 struct PasswordRecoveryView: View {
     @StateObject private var viewModel = PasswordRecoveryViewModel()
-    
-    @FocusState private var loginEnterFocused: LoginEnterField?
-    @FocusState private var passwordRecoveryFocused: PasswordRecoveryField?
-    
-    private enum LoginEnterField: Hashable {
-        case login
+
+    @FocusState private var emailFocused: EmailField?
+    @FocusState private var recoveryFocused: RecoveryField?
+
+    private enum EmailField: Hashable {
+        case email
     }
-    private enum PasswordRecoveryField: Hashable {
+    private enum RecoveryField: Hashable {
         case smsCode
         case password
     }
@@ -27,29 +27,30 @@ struct PasswordRecoveryView: View {
                     Text("Восстановление пароля")
                         .font(.title2.bold())
                         .foregroundColor(.white)
-                    
+
                     Group {
                         switch viewModel.step {
-                        case .enterLogin:
+                        case .enterEmail:
                             CustomTextField(
-                                title: "Логин",
-                                field: LoginEnterField.login,
-                                focusedField: $loginEnterFocused,
-                                text: $viewModel.login
+                                title: "Email",
+                                keyboardType: .emailAddress,
+                                field: EmailField.email,
+                                focusedField: $emailFocused,
+                                text: $viewModel.email
                             )
                         case .enterCode:
                             CustomTextField(
-                                title: "Код из СМС",
+                                title: "Код из письма",
                                 keyboardType: .numberPad,
-                                field: PasswordRecoveryField.smsCode,
-                                focusedField: $passwordRecoveryFocused,
+                                field: RecoveryField.smsCode,
+                                focusedField: $recoveryFocused,
                                 text: $viewModel.code
                             )
                             ValidatedField(error: viewModel.passwordError) {
                                 PasswordField(
                                     title: "Новый пароль",
-                                    field: PasswordRecoveryField.password,
-                                    focusedField: $passwordRecoveryFocused,
+                                    field: RecoveryField.password,
+                                    focusedField: $recoveryFocused,
                                     text: $viewModel.newPassword.onChange {
                                         viewModel.validateLive()
                                     }
@@ -59,10 +60,10 @@ struct PasswordRecoveryView: View {
                             EmptyView()
                         }
                     }
-                    
+
                     PrimaryButton(
-                        title: viewModel.step == .enterLogin ? "Отправить код" : "Сменить пароль",
-                        isLoading: false
+                        title: viewModel.step == .enterEmail ? "Отправить код" : "Сменить пароль",
+                        isLoading: viewModel.screenState == .loading
                     ) {
                         Task { await viewModel.next() }
                     }
@@ -90,19 +91,18 @@ struct PasswordRecoveryView: View {
             resetFocusStates()
         }
     }
-    
+
     private var isError: Bool {
         if case .error = viewModel.screenState { return true }
         return false
     }
-    
+
     private func resetFocusStates() {
-        loginEnterFocused = nil
-        passwordRecoveryFocused = nil
+        emailFocused = nil
+        recoveryFocused = nil
     }
 }
 
 #Preview {
     PasswordRecoveryView()
 }
-

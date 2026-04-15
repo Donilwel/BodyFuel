@@ -11,6 +11,8 @@ enum API {
     enum Auth {
         static let register = "/auth/register"
         static let login = "/auth/login"
+        static let recover = "/auth/recover"
+        static let resetPassword = "/auth/reset-password"
     }
 
     enum Workouts {
