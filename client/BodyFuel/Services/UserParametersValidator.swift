@@ -55,23 +55,39 @@ final class UserParametersValidator: UserParametersValidatorProtocol {
     }
     
     func getCaloriesNormHint(_ targetCaloriesDaily: Float, basalMetabolicRate: Float, goal: MainGoal) -> String {
-        return "ИЗМЕНИТЬ ПОДСКАЗКУ Я УСТАЛА И НИЧЕГО НЕ ПОНИМАЮ"
-//        var hint = "Без движения твое тело тратит в среднем \(Int(basalMetabolicRate))."
-//        let difference = Int(targetCaloriesDaily) - Int(basalMetabolicRate)
-//        switch goal {
-//        case .loseWeight:
-//            if difference > 0 {
-//                hint.append("Для выбранного значения тебе нужно будет ежедневно питаться на \(difference) калорий больше.")
-//            }
-//        }
-//        if difference < 0 {
-//            hint.append("Для выбранного значения тебе нужно будет ежедневно тратить на тренировках около \(-difference) калорий.")
-//        } else if difference > 0 {
-//            hint.append("Для выбранного значения тебе нужно будет ежедневно питаться на \(abs(difference)) калорий больше.")
-//        } else {
-//            hint.append("Для выбранного значения тебе нужно будет ежедневно питаться на столько же калорий.")
-//        }
-//        return hint
+        let activityCalories = Int(targetCaloriesDaily) - Int(basalMetabolicRate)
+        let monthlyKg = String(format: "%.1f", Float(abs(activityCalories)) * 30 / 7700)
+        let runMinutes = max(10, abs(activityCalories) / 8)
+        let walkMinutes = max(15, abs(activityCalories) / 4)
+
+        switch goal {
+        case .loseWeight:
+            if activityCalories < 0 {
+                return "Дефицит создаётся уже за счёт питания — тело тратит в покое больше, чем получает. Потеря веса: ~\(monthlyKg) кг/мес. Добавь тренировки, чтобы не терять мышцы"
+            } else if activityCalories == 0 {
+                return "Покрываешь ровно базовый обмен — похудеть получится только за счёт тренировок. Чем активнее занимаешься, тем быстрее результат"
+            } else {
+                return "Нужно сжигать на активности ~\(activityCalories) ккал/день (~\(runMinutes) мин бега). Без тренировок этот излишек будет откладываться"
+            }
+
+        case .gainMuscle:
+            if activityCalories <= 0 {
+                return "Дефицит относительно покоя — мышцы расти не будут. Подними калорийность выше \(Int(basalMetabolicRate)) ккал"
+            } else if activityCalories < 200 {
+                return "Профицит небольшой (~\(activityCalories) ккал/день). Для уверенного роста мышц рекомендуется 200–400 ккал сверх нормы — рассмотри увеличение"
+            } else {
+                return "Профицит ~\(activityCalories) ккал/день — хорошая база для роста. Ориентировочный набор: ~\(monthlyKg) кг/мес. Без силовых тренировок часть уйдёт в жир"
+            }
+
+        case .maintain:
+            if activityCalories < -100 {
+                return "Небольшой дефицит даже без тренировок — будешь постепенно худеть (~\(monthlyKg) кг/мес). Если цель — именно поддержание, подними калорийность"
+            } else if activityCalories <= 100 {
+                return "Практически в балансе с покоем — достаточно лёгкой ежедневной активности, чтобы вес оставался стабильным"
+            } else {
+                return "Для поддержания веса нужно сжигать ~\(activityCalories) ккал/день на активности — около \(runMinutes) мин бега или \(walkMinutes) мин ходьбы"
+            }
+        }
     }
     
     func validateCaloriesNorm(_ targetCaloriesDaily: Float, dailyEnergyExpenditure: Float) -> String {

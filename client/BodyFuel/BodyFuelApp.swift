@@ -26,3 +26,9 @@ struct BodyFuelApp: App {
         }
     }
 }
+
+#Preview {
+    RootView()
+        .environmentObject(AppRouter.shared)
+        .environmentObject(WorkoutViewModel())
+}

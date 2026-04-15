@@ -36,7 +36,9 @@ struct WorkoutCardView: View {
             } else {
                 HStack {
                     Image(systemName: "cloud.drizzle.fill")
+                        .foregroundColor(.white)
                     Text("Нет информации о тренировках")
+                        .foregroundColor(.white)
                 }
             }
         }
