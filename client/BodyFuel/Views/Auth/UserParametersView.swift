@@ -190,6 +190,14 @@ struct UserParametersView: View {
                     .font(.footnote)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
+
+                if let hint = viewModel.healthIntegrationError {
+                    Label(hint, systemImage: "exclamationmark.triangle")
+                        .font(.footnote)
+                        .foregroundColor(.yellow.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
+                }
             }
             
             Spacer()

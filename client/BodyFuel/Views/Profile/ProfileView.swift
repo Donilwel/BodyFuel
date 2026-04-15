@@ -188,11 +188,11 @@ struct ProfileView: View {
         .onChange(of: viewModel.event) { event in
             switch event {
             case .logoutSuccess:
-                router.rootRoute = .auth
+                router.logout()
             default:
                 break
             }
-            
+
             viewModel.event = .idle
         }
         .onTapGesture {

@@ -136,7 +136,7 @@ final class ProfileViewModel: ObservableObject {
     }
 
     func logout() {
-        service.logout()
+        AppRouter.shared.logout()
         event = .logoutSuccess
     }
     
@@ -179,12 +179,8 @@ final class ProfileViewModel: ObservableObject {
     }
 
     private func fetchHealthInfo() async {
-        do {
-            dateOfBirth = try healthService.fetchDateOfBirth()
-            gender = try healthService.fetchGender()
-        } catch {
-            screenState = .error(error.localizedDescription)
-        }
+        do { dateOfBirth = try healthService.fetchDateOfBirth() } catch { dateOfBirth = nil }
+        do { gender = try healthService.fetchGender() } catch { gender = nil }
     }
 }
 

@@ -25,6 +25,7 @@ final class AppRouter: ObservableObject {
     
     func logout() {
         sessionManager.logout()
+        SharedWidgetStorage.shared.clearAll()
         selectedTab = .home
         pendingAddMeal = false
         rootRoute = .auth

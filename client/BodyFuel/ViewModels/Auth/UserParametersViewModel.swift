@@ -156,9 +156,20 @@ final class UserParametersViewModel: ObservableObject {
     private func fetchHealthInfo() async {
         do {
             dateOfBirth = try healthService.fetchDateOfBirth()
+        } catch {
+            dateOfBirth = nil
+        }
+
+        do {
             gender = try healthService.fetchGender()
         } catch {
-            screenState = .error(error.localizedDescription)
+            gender = nil
+        }
+
+        if dateOfBirth == nil || gender == nil {
+            healthIntegrationError = "Данные о поле и возрасте не найдены в приложении Здоровье — используются средние значения"
+        } else {
+            healthIntegrationError = nil
         }
     }
 

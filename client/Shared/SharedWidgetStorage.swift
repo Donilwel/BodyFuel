@@ -6,7 +6,7 @@ final class SharedWidgetStorage {
     private let defaults = UserDefaults(
         suiteName: "group.com.bodyfuel.shared"
     )
-    
+
     func saveTodayBurnedCalories(_ calories: Int) {
         defaults?.set(calories, forKey: "todayBurnedCalories")
     }
@@ -14,27 +14,27 @@ final class SharedWidgetStorage {
     func getTodayBurnedCalories() -> Int? {
         defaults?.integer(forKey: "todayBurnedCalories")
     }
-    
+
     func saveTodayConsumedCalories(_ calories: Int) {
         defaults?.set(calories, forKey: "todayConsumedCalories")
     }
-    
+
     func getTodayConsumedCalories() -> Int? {
         defaults?.integer(forKey: "todayConsumedCalories")
     }
-    
+
     func saveTargetCalories(_ calories: Int) {
         defaults?.set(calories, forKey: "targetCalories")
     }
-    
+
     func getTargetCalories() -> Int? {
         defaults?.integer(forKey: "targetCalories")
     }
-    
+
     func saveBasalMetabolicRate(_ bmr: Int) {
         defaults?.set(bmr, forKey: "basalMetabolicRate")
     }
-    
+
     func getBasalMetabolicRate() -> Int? {
         defaults?.integer(forKey: "basalMetabolicRate")
     }
@@ -57,5 +57,13 @@ final class SharedWidgetStorage {
             WorkoutModel.self,
             from: data
         )
+    }
+
+    func clearAll() {
+        defaults?.removeObject(forKey: "todayBurnedCalories")
+        defaults?.removeObject(forKey: "todayConsumedCalories")
+        defaults?.removeObject(forKey: "targetCalories")
+        defaults?.removeObject(forKey: "basalMetabolicRate")
+        defaults?.removeObject(forKey: "todayWorkout")
     }
 }
