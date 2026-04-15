@@ -50,24 +50,6 @@ final class FoodViewModel: ObservableObject {
         }
     }
 
-    func addMealByText(description: String, mealType: MealType) async {
-        guard !description.trimmingCharacters(in: .whitespaces).isEmpty else {
-            addMealError = "Введите описание блюда"
-            return
-        }
-        isAddingMeal = true
-        addMealError = ""
-        do {
-            let meal = try await nutritionService.addMealByText(description: description, mealType: mealType)
-            meals.append(meal)
-            await refreshSummary()
-            showAddMeal = false
-        } catch {
-            addMealError = "Не удалось добавить блюдо"
-        }
-        isAddingMeal = false
-    }
-
     func analyzeMealFromPhoto(_ imageData: Data, mealType: MealType) async -> Meal? {
         do {
             let meal = try await nutritionService.analyzeMealFromPhoto(imageData, mealType: mealType)

@@ -129,33 +129,33 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
     }
 
     func fetchTodaySteps() async throws -> Int {
-        6540
-//        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-//
-//        let startOfDay = Calendar.current.startOfDay(for: Date())
-//        let predicate = HKQuery.predicateForSamples(
-//            withStart: startOfDay,
-//            end: Date(),
-//            options: .strictStartDate
-//        )
-//
-//        return try await withCheckedThrowingContinuation { continuation in
-//            let query = HKStatisticsQuery(
-//                quantityType: stepType,
-//                quantitySamplePredicate: predicate,
-//                options: .cumulativeSum
-//            ) { _, result, error in
-//                if let error = error {
-//                    continuation.resume(throwing: error)
-//                    return
-//                }
-//
-//                let count = result?.sumQuantity()?.doubleValue(for: .count()) ?? 0
-//                continuation.resume(returning: Int(count))
-//            }
-//
-//            healthStore.execute(query)
-//        }
+//        6540
+        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+
+        let startOfDay = Calendar.current.startOfDay(for: Date())
+        let predicate = HKQuery.predicateForSamples(
+            withStart: startOfDay,
+            end: Date(),
+            options: .strictStartDate
+        )
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let query = HKStatisticsQuery(
+                quantityType: stepType,
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum
+            ) { _, result, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                let count = result?.sumQuantity()?.doubleValue(for: .count()) ?? 0
+                continuation.resume(returning: Int(count))
+            }
+
+            healthStore.execute(query)
+        }
     }
     
     func startWorkout(activityType: HKWorkoutActivityType) async {

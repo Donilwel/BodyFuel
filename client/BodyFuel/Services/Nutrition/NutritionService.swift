@@ -12,7 +12,6 @@ protocol NutritionServiceProtocol {
     func deleteFoodEntry(id: String) async throws
     func analyzeMealFromPhoto(_ imageData: Data, mealType: MealType) async throws -> Meal
     func generateRecipes() async throws -> [Recipe]
-    func addMealByText(description: String, mealType: MealType) async throws -> Meal
 }
 
 final class NutritionService: NutritionServiceProtocol {
@@ -148,16 +147,6 @@ final class NutritionService: NutritionServiceProtocol {
 
         print("[INFO] [NutritionService/generateRecipes]: Got \(bodies.count) recipes")
         return bodies.map(mapToRecipe)
-    }
-
-    func addMealByText(description: String, mealType: MealType) async throws -> Meal {
-        // Not used by current views; kept for protocol compliance
-        return Meal(
-            name: description,
-            mealType: mealType,
-            macros: MacroNutrients(protein: 0, fat: 0, carbs: 0),
-            time: Date()
-        )
     }
 
     // MARK: - Private
