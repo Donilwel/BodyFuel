@@ -1,4 +1,4 @@
-enum Lifestyle: String, CaseIterable, Identifiable {
+enum Lifestyle: String, CaseIterable, Identifiable, Codable {
     case sedentary = "not_active"
     case active = "active"
     case sporty = "sportive"

@@ -1,4 +1,4 @@
-enum MainGoal: String, CaseIterable, Identifiable {
+enum MainGoal: String, CaseIterable, Identifiable, Codable {
     case loseWeight = "lose_weight"
     case gainMuscle = "build_muscle"
     case maintain = "stay_fit"

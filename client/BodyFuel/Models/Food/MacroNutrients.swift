@@ -1,6 +1,6 @@
 import Foundation
 
-struct MacroNutrients: Equatable {
+struct MacroNutrients: Equatable, Codable {
     let protein: Double
     let fat: Double
     let carbs: Double
@@ -18,7 +18,7 @@ struct NutritionDailySummary {
     let burned: Int
 
     var remainingCalories: Int {
-        goal.calories - consumed.calories + burned
+        goal.calories - consumed.calories
     }
 
     var proteinProgress: Double {

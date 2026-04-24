@@ -2,11 +2,6 @@ import Foundation
 
 // MARK: - Requests
 
-struct AnalyzePhotoRequestBody: Encodable {
-    let imageURL: String
-    enum CodingKeys: String, CodingKey { case imageURL = "image_url" }
-}
-
 struct CreateFoodEntryRequestBody: Encodable {
     let description: String
     let calories: Int
@@ -50,20 +45,7 @@ struct UpdateFoodEntryRequestBody: Encodable {
 
 // MARK: - Responses
 
-struct NutritionAnalysisResponseBody: Decodable {
-    let description: String
-    let calories: Int
-    let protein: Double
-    let carbs: Double
-    let fat: Double
-}
-
-struct UploadPhotoResponseBody: Decodable {
-    let photoURL: String
-    enum CodingKeys: String, CodingKey { case photoURL = "photo_url" }
-}
-
-struct FoodEntryResponseBody: Decodable {
+struct FoodEntryResponseBody: Codable {
     let id: String
     let description: String
     let calories: Int
@@ -122,5 +104,28 @@ struct RecipeResponseBody: Decodable {
     enum CodingKeys: String, CodingKey {
         case id, name, description, ingredients, macros
         case preparationTime = "preparation_time"
+    }
+}
+
+// MARK: - Nutrition Report
+
+struct NutritionReportResponse: Codable {
+    let from: String
+    let to: String
+    let days: Int
+    let entries: [FoodEntryResponseBody]
+    let totalCalories: Double
+    let totalProtein: Double
+    let totalCarbs: Double
+    let totalFat: Double
+    let avgCaloriesPerDay: Double
+
+    enum CodingKeys: String, CodingKey {
+        case from, to, days, entries
+        case totalCalories     = "total_calories"
+        case totalProtein      = "total_protein"
+        case totalCarbs        = "total_carbs"
+        case totalFat          = "total_fat"
+        case avgCaloriesPerDay = "avg_calories_per_day"
     }
 }

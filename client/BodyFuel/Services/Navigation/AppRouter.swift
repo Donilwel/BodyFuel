@@ -4,28 +4,34 @@ import Foundation
 
 final class AppRouter: ObservableObject {
     static let shared = AppRouter()
-    
+
     private var workoutViewModel: WorkoutViewModel?
-    
+
     @Published var selectedTab: TabRoute = .home
     @Published var rootRoute: RootRoute = .auth
     @Published var currentUser: User?
     @Published var pendingAddMeal = false
-    
+
     private let sessionManager = UserSessionManager.shared
-    
+
     private init() {
         updateRoute()
         loadCurrentUser()
     }
-    
+
     func configure(workoutViewModel: WorkoutViewModel) {
         self.workoutViewModel = workoutViewModel
     }
-    
+
     func logout() {
+        ToastService.shared.dismiss()
         sessionManager.logout()
         SharedWidgetStorage.shared.clearAll()
+        DiskCache.shared.removeAll()
+        NutritionStore.shared.reset()
+        UserStore.shared.reset()
+        StatsStore.shared.reset()
+        MutationQueue.shared.clear()
         selectedTab = .home
         pendingAddMeal = false
         rootRoute = .auth
@@ -45,6 +51,7 @@ final class AppRouter: ObservableObject {
             rootRoute = .parametersSetup
 
         } else {
+            MutationQueue.shared.reload()
             rootRoute = .main
         }
     }
@@ -74,7 +81,10 @@ final class AppRouter: ObservableObject {
 
         switch deepLink {
         case .workouts:
-            workoutViewModel.shouldStartFromDeepLink = true
+            selectedTab = .home
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak workoutViewModel] in
+                workoutViewModel?.shouldStartFromDeepLink = true
+            }
 
         case .food:
             selectedTab = .food

@@ -17,6 +17,7 @@ struct PasswordRecoveryView: View {
     var body: some View {
         ZStack {
             AnimatedBackground()
+                .ignoresSafeArea()
 
             VStack(spacing: 20) {
                 if viewModel.step == .success {

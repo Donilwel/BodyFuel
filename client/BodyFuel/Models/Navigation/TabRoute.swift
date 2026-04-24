@@ -3,5 +3,6 @@ enum TabRoute {
     case parametersSetup
     case home
     case food
+    case stats
     case profile
 }

@@ -2,40 +2,46 @@ import Foundation
 
 // MARK: - Enums
 
-enum WorkoutLevel: String, Encodable {
-    case beginner
-    case intermediate
-    case advanced
+enum WorkoutLevel: String, Encodable, CaseIterable {
+    case light = "Лёгкий"
+    case middle = "Средний"
+    case hard = "Интенсивный"
+
+    var apiValue: String {
+        switch self {
+        case .light: return "workout_light"
+        case .middle: return "workout_middle"
+        case .hard: return "workout_hard"
+        }
+    }
 }
 
 enum WorkoutStatus: String, Encodable {
-    case pending
-    case inProgress = "in_progress"
-    case completed
-    case cancelled
+    case created = "workout_created"
+    case inProgress = "workout_in_active"
+    case completed = "workout_done"
+    case failed = "workout_failed"
 }
 
 // MARK: - Request Bodies
 
 struct GenerateWorkoutRequestBody: Encodable {
-    let level: WorkoutLevel
-    let duration: Int64?
+    var placeExercise: String?
+    var typeExercise: String?
+    var level: String?
+    var exercisesCount: Int?
+
+    private enum CodingKeys: String, CodingKey {
+        case placeExercise = "place_exercise"
+        case typeExercise = "type_exercise"
+        case level
+        case exercisesCount = "exercises_count"
+    }
 }
 
 struct UpdateWorkoutRequestBody: Encodable {
-    let status: WorkoutStatus?
+    let status: String?
     let duration: Int64?
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(status, forKey: .status)
-        try container.encodeIfPresent(duration, forKey: .duration)
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case status
-        case duration
-    }
 }
 
 // MARK: - Response Bodies
@@ -45,6 +51,7 @@ struct WorkoutResponseBody: Decodable {
     let userID: String
     let level: String
     let totalCalories: Int
+    let predictionCalories: Int
     let status: String
     let duration: Int64?
     let createdAt: String
@@ -56,6 +63,7 @@ struct WorkoutResponseBody: Decodable {
         case userID = "user_id"
         case level
         case totalCalories = "total_calories"
+        case predictionCalories = "prediction_calories"
         case status
         case duration
         case createdAt = "created_at"
@@ -72,11 +80,9 @@ struct WorkoutExerciseResponseBody: Decodable {
     let placeExercise: String
     let levelPreparation: String
     let linkGif: String
-    let baseCountReps: Int
-    let baseRelaxTime: Int
     let modifyReps: Int
     let modifyRelaxTime: Int
-    let calories: Int
+    let calories: Int = 0
     let status: String
     let avgCaloriesPer: Double
     let steps: Int
@@ -90,11 +96,9 @@ struct WorkoutExerciseResponseBody: Decodable {
         case placeExercise = "place_exercise"
         case levelPreparation = "level_preparation"
         case linkGif = "link_gif"
-        case baseCountReps = "base_count_reps"
-        case baseRelaxTime = "base_relax_time"
         case modifyReps = "modify_reps"
         case modifyRelaxTime = "modify_relax_time"
-        case calories
+//        case calories
         case status
         case avgCaloriesPer = "avg_calories_per"
         case steps
@@ -102,12 +106,7 @@ struct WorkoutExerciseResponseBody: Decodable {
     }
 }
 
-struct WorkoutHistoryResponseBody: Decodable {
-    let workouts: [WorkoutSummaryResponseBody]
-    let total: Int
-    let limit: Int
-    let offset: Int
-}
+typealias WorkoutHistoryResponseBody = [WorkoutSummaryResponseBody]
 
 struct WorkoutSummaryResponseBody: Decodable {
     let id: String

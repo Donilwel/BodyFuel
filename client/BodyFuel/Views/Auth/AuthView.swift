@@ -60,9 +60,7 @@ struct AuthView: View {
                 text: $viewModel.surname
             )
             ValidatedField(error: viewModel.phoneError) {
-                CustomTextField(
-                    title: "Телефон",
-                    keyboardType: .phonePad,
+                PhoneTextField(
                     field: RegisterField.phone,
                     focusedField: $registerFocused,
                     text: $viewModel.phone.onChange {
@@ -150,17 +148,13 @@ struct AuthView: View {
         NavigationStack() {
             ZStack(alignment: .center) {
                 AnimatedBackground()
+                    .ignoresSafeArea()
 
                 ScrollView {
-//                    Image("emblema")
-//                        .clipShape(.rect(cornerRadius: 12))
-//                    
-//                    Spacer()
-                    
                     formContent
                 }
             }
-            .alert("Что-то пошло не так", isPresented: .constant(isError)) {
+            .alert("Ошибка", isPresented: .constant(isError)) {
                 Button("OK") { viewModel.screenState = .idle }
             } message: {
                 if case let .error(message) = viewModel.screenState {

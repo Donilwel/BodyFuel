@@ -1,6 +1,6 @@
 import Foundation
 
-struct Exercise: Identifiable {
+struct Exercise: Identifiable, Codable {
     var id: UUID = UUID()
     let name: String
     let type: ExerciseType
