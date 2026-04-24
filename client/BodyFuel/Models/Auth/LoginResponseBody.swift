@@ -1,7 +1,9 @@
 struct LoginResponseBody: Decodable {
-    let token: String
+    let accessToken: String
+    let refreshToken: String
 
     enum CodingKeys: String, CodingKey {
-        case token = "jwt"
+        case accessToken  = "access_token"
+        case refreshToken = "refresh_token"
     }
 }

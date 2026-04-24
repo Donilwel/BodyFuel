@@ -14,9 +14,12 @@ struct AnimatedBackground: View {
         )
         .hueRotation(.degrees(animateGradient ? 25 : 0))
         .ignoresSafeArea()
+        .drawingGroup()
         .onAppear {
-            withAnimation(.easeInOut(duration: 7.0).repeatForever(autoreverses: true)) {
-                animateGradient.toggle()
+            DispatchQueue.main.async {
+                withAnimation(.easeInOut(duration: 7.0).repeatForever(autoreverses: true)) {
+                    animateGradient.toggle()
+                }
             }
         }
     }

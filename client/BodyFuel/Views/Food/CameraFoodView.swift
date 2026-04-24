@@ -10,7 +10,9 @@ struct CameraFoodView: View {
     @State private var capturedImage: UIImage?
     @State private var analyzedMeal: Meal?
     @State private var isAnalyzing = false
+    @State private var analysisFailed = false
     @State private var selectedMealType: MealType = .breakfast
+    @State private var showPermissionAlert = false
 
     var body: some View {
         ZStack {
@@ -26,6 +28,19 @@ struct CameraFoodView: View {
         }
         .onDisappear {
             camera.stop()
+        }
+        .onChange(of: camera.permissionDenied) { denied in
+            if denied { showPermissionAlert = true }
+        }
+        .alert("Нет доступа к камере", isPresented: $showPermissionAlert) {
+            Button("Отмена", role: .cancel) {}
+            Button("Открыть настройки") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text("Разрешите доступ к камере в Настройках, чтобы фотографировать блюда.")
         }
     }
 
@@ -139,8 +154,22 @@ struct CameraFoodView: View {
                 Spacer()
 
                 if !isAnalyzing && analyzedMeal == nil {
+                    if analysisFailed {
+                        VStack(spacing: 12) {
+                            Text("Не удалось распознать блюдо")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.8))
+                                .multilineTextAlignment(.center)
+                            Text("Попробуйте сфотографировать ещё раз или введите данные вручную")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.55))
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.horizontal)
+                    }
                     Button("Сфотографировать снова") {
                         capturedImage = nil
+                        analysisFailed = false
                     }
                     .foregroundColor(.white)
                     .padding()
@@ -149,10 +178,14 @@ struct CameraFoodView: View {
             .padding(.top)
         }
         .task {
-            guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+            guard let data = image.jpegData(compressionQuality: 0.8) else {
+                analysisFailed = true
+                return
+            }
             isAnalyzing = true
             analyzedMeal = await viewModel.analyzeMealFromPhoto(data, mealType: selectedMealType)
             isAnalyzing = false
+            if analyzedMeal == nil { analysisFailed = true }
         }
     }
 }
@@ -161,6 +194,7 @@ struct CameraFoodView: View {
 
 final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     let session = AVCaptureSession()
+    @Published var permissionDenied = false
     private let output = AVCapturePhotoOutput()
     private var captureCompletion: ((UIImage?) -> Void)?
 
@@ -170,10 +204,12 @@ final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDele
             setup()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
-                if granted { DispatchQueue.main.async { self?.setup() } }
+                DispatchQueue.main.async {
+                    if granted { self?.setup() } else { self?.permissionDenied = true }
+                }
             }
         default:
-            break
+            permissionDenied = true
         }
     }
 

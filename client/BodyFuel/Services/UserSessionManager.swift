@@ -20,7 +20,11 @@ final class UserSessionManager {
         static func authToken(for userId: String) -> String {
             return "auth_token_\(userId)"
         }
-        
+
+        static func refreshToken(for userId: String) -> String {
+            return "refresh_token_\(userId)"
+        }
+
         static func userData(for userId: String) -> String {
             return "user_data_\(userId)"
         }
@@ -66,12 +70,23 @@ final class UserSessionManager {
         let key = Keys.authToken(for: userId)
         keychain.set(token, forKey: key)
     }
-    
-    func login(userId: String, token: String) {
-        setAuthToken(token, for: userId)
-        
+
+    func refreshToken(for userId: String) -> String? {
+        let key = Keys.refreshToken(for: userId)
+        return keychain.string(forKey: key)
+    }
+
+    func setRefreshToken(_ token: String, for userId: String) {
+        let key = Keys.refreshToken(for: userId)
+        keychain.set(token, forKey: key)
+    }
+
+    func login(userId: String, accessToken: String, refreshToken: String) {
+        setAuthToken(accessToken, for: userId)
+        setRefreshToken(refreshToken, for: userId)
+
         currentUserId = userId
-        
+
         var users = allUsers
         if !users.contains(userId) {
             users.append(userId)
@@ -82,10 +97,10 @@ final class UserSessionManager {
     func logout(userId: String? = nil) {
         let userId = userId ?? currentUserId
         guard let userId = userId else { return }
-        
-        let tokenKey = Keys.authToken(for: userId)
-        keychain.removeObject(forKey: tokenKey)
-        
+
+        keychain.removeObject(forKey: Keys.authToken(for: userId))
+        keychain.removeObject(forKey: Keys.refreshToken(for: userId))
+
         if userId == currentUserId {
             currentUserId = nil
         }
@@ -95,6 +110,7 @@ final class UserSessionManager {
         let keysToRemove = [
             Keys.setupStatus(for: userId),
             Keys.authToken(for: userId),
+            Keys.refreshToken(for: userId),
             Keys.userData(for: userId)
         ]
         

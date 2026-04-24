@@ -12,6 +12,7 @@ final class AuthService: AuthServiceProtocol {
     static let shared = AuthService()
 
     private let networkClient = NetworkClient.shared
+    private let userParametersService: UserParametersServiceProtocol = UserParametersService.shared
 
     private init() {}
 
@@ -30,9 +31,16 @@ final class AuthService: AuthServiceProtocol {
                 requestBody: user
             )
 
-            UserSessionManager.shared.login(userId: user.username, token: response.token)
+            UserSessionManager.shared.login(
+                userId: user.username,
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken
+            )
 
-            print("[INFO] [AuthService/login]: Successfully logged in, token: \(response.token)")
+            let hasParams = await userParametersService.hasUserParameters()
+            UserSessionManager.shared.setHasCompletedParametersSetup(hasParams, for: user.username)
+
+            print("[INFO] [AuthService/login]: Successfully logged in for user \(user.username), hasParams: \(hasParams)")
         } catch {
             print("[ERROR] [AuthService/login]: \(error.localizedDescription)")
             throw mapToAuthError(error)

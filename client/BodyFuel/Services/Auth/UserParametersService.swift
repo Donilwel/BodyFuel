@@ -1,6 +1,7 @@
 import Foundation
 
 protocol UserParametersServiceProtocol {
+    func hasUserParameters() async -> Bool
     func sendUserParameters(_ parameters: UserParametersPayload) async throws
     func sendCurrentWeight(_ weight: Float) async throws
 }
@@ -24,6 +25,16 @@ final class UserParametersService: UserParametersServiceProtocol {
     
     private init() {}
     
+    func hasUserParameters() async -> Bool {
+        guard let url = URL(string: API.baseURLString + API.userParameters) else { return false }
+        do {
+            let _: DefaultDecodable = try await networkClient.request(url: url, method: .get)
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func sendUserParameters(_ parametersPayload: UserParametersPayload) async throws {
         let urlComponents = URLComponents(string: API.baseURLString + API.userParameters)
         
@@ -69,7 +80,7 @@ final class UserParametersService: UserParametersServiceProtocol {
                 requestBody: request
             )
             
-            print("[INFO] [UserParametersService/sendCurrentWeight] Successfully sent user weight")
+            print("[INFO] [UserParametersService/sendCurrentWeight] Successfully sent user weight: \(response)")
         } catch {
             throw UserParametersError.invalidData(error.localizedDescription)
         }

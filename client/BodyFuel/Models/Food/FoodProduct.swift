@@ -5,7 +5,6 @@ struct FoodProduct: Identifiable {
     let name: String
     let brand: String?
     let per100g: MacroNutrients
-    /// OFF product code, used to lazy-load nutriments after search
     let code: String?
 
     init(id: UUID = UUID(), name: String, brand: String?, per100g: MacroNutrients, code: String? = nil) {
