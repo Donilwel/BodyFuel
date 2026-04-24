@@ -12,7 +12,7 @@ struct CustomTextView<Value: LosslessStringConvertible>: View {
             
             Spacer()
             
-            Text(String(value) + (suffix ?? ""))
+            Text(suffix == nil ? String(value) : "\(value) \(suffix!)")
                 .foregroundColor(.white)
         }
     }

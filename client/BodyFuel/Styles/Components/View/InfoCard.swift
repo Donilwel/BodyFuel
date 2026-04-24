@@ -12,7 +12,5 @@ struct InfoCard<Content: View>: View {
             .padding(20)
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 28))
-            .padding(.horizontal, 20)
     }
 }
-

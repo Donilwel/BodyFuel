@@ -1,13 +1,17 @@
 import SwiftUI
 import PhotosUI
+import HealthKit
 
 struct UserParametersView: View {
     @ObservedObject var router = AppRouter.shared
-    
+
     @StateObject private var viewModel = UserParametersViewModel()
-    
+
     @FocusState private var parametersFocused: ParametersField?
-    
+    @State private var showLogoutAlert = false
+
+    private var noHealthKitAccess: Bool { !HealthKitService.shared.hasGrantedPermission }
+
     private enum ParametersField: Hashable {
         case height
         case weight
@@ -21,7 +25,7 @@ struct UserParametersView: View {
             .onChange(of: viewModel.avatarItem) { _ in
                 Task { await viewModel.loadAvatar() }
             }
-            
+
             ValidatedField(error: viewModel.heightError) {
                 CustomTextField(
                     title: "Рост",
@@ -33,7 +37,7 @@ struct UserParametersView: View {
                     }
                 )
             }
-            
+
             ValidatedField(error: viewModel.weightError) {
                 CustomTextField(
                     title: "Вес",
@@ -45,7 +49,11 @@ struct UserParametersView: View {
                     }
                 )
             }
-            
+
+            if noHealthKitAccess {
+                manualHealthFields
+            }
+
             CustomPickerField(
                 title: "Образ жизни",
                 options: Lifestyle.allCases,
@@ -59,6 +67,46 @@ struct UserParametersView: View {
                 optionTitle: \.title,
                 selection: $viewModel.fitnessLevel
             )
+        }
+    }
+
+    private var manualHealthFields: some View {
+        VStack(spacing: 16) {
+            ValidatedField(error: viewModel.manualDateOfBirthError) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Дата рождения")
+                        .font(.headline.bold())
+                        .foregroundColor(.white)
+                    DatePicker(
+                        "",
+                        selection: $viewModel.manualDateOfBirth,
+                        in: ...Calendar.current.date(byAdding: .year, value: -10, to: Date())!,
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .colorScheme(.dark)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .glassEffect(in: .rect(cornerRadius: 12.0))
+                }
+                .padding(.vertical, 4)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Пол")
+                    .font(.headline.bold())
+                    .foregroundColor(.white)
+                Picker("", selection: $viewModel.manualGender) {
+                    Text("Мужской").tag(HKBiologicalSex.male)
+                    Text("Женский").tag(HKBiologicalSex.female)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .glassEffect(in: .rect(cornerRadius: 12.0))
+            }
+            .padding(.vertical, 4)
         }
     }
     
@@ -185,7 +233,10 @@ struct UserParametersView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                 
-                Text("Рассчитано на основе роста, веса, возраста, активности, цели и данных о поле и дате рождения из приложения Здоровье")
+                Text(noHealthKitAccess
+                     ? "Рассчитано на основе роста, веса, возраста, активности и введённых вами данных о поле и дате рождения"
+                     : "Рассчитано на основе роста, веса, возраста, активности, цели и данных о поле и дате рождения из приложения Здоровье"
+                )
                     .foregroundColor(.white)
                     .font(.footnote)
                     .fixedSize(horizontal: false, vertical: true)
@@ -299,14 +350,31 @@ struct UserParametersView: View {
         NavigationStack {
             ZStack {
                 AnimatedBackground()
-                
+                    .ignoresSafeArea()
+
                 CustomCarousel(totalPages: 3) {
                     parametersFormContent
                     goalsFormContent
                     caloriesFormContent
                 }
             }
-            .alert("Что-то пошло не так", isPresented: .constant(isError)) {
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showLogoutAlert = true
+                    } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+            }
+            .alert("Выйти из аккаунта?", isPresented: $showLogoutAlert) {
+                Button("Выйти", role: .destructive) { router.logout() }
+                Button("Отмена", role: .cancel) {}
+            } message: {
+                Text("Ваши данные сохранятся — вы сможете войти снова")
+            }
+            .alert("Ошибка", isPresented: .constant(isError)) {
                 Button("OK") { viewModel.screenState = .idle }
             } message: {
                 if case let .error(message) = viewModel.screenState {

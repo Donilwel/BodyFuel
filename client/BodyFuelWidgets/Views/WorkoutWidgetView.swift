@@ -52,7 +52,7 @@ struct WorkoutWidgetView: View {
         Group {
             if widgetFamily == .systemSmall {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("\(duration) мин")
+                    Text(duration.formattedTime)
                         .foregroundColor(.white.opacity(0.7))
                         .widgetAccentable()
                         .symbolRenderingMode(.hierarchical)
@@ -63,7 +63,7 @@ struct WorkoutWidgetView: View {
                         .symbolRenderingMode(.hierarchical)
                 }
             } else {
-                Text("\(duration) мин • ~\(calories) ккал")
+                Text("\(duration.formattedTime) • ~\(calories) ккал")
                     .foregroundColor(.white.opacity(0.7))
                     .widgetAccentable()
                     .symbolRenderingMode(.hierarchical)

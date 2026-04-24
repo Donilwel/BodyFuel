@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WorkoutCardView: View {
     let workout: Workout?
+    let isChanging: Bool
     let startAction: () -> Void
     let changeAction: () -> Void
 
@@ -17,13 +18,13 @@ struct WorkoutCardView: View {
                     .foregroundColor(.white)
                 
                 HStack {
-                    Label("\(workout.duration) мин", systemImage: "clock")
+                    Label(workout.duration.formattedTime, systemImage: "clock")
                     Label("\(workout.calories) ккал", systemImage: "flame")
                 }
                 .font(.headline)
                 .foregroundColor(.white)
                 
-                Text("Мышцы: \(workout.muscles.joined(separator: ", ").lowercased())")
+                Text("Тип: \(workout.type.rawValue.lowercased())")
                     .foregroundColor(.white.opacity(0.7))
                 
                 Text("Место: \(workout.place.rawValue.lowercased())")
@@ -31,7 +32,7 @@ struct WorkoutCardView: View {
                 
                 HStack {
                     PrimaryButton(title: "Начать") { startAction() }
-                    SecondaryButton(title: "Выбрать другую") { changeAction() }
+                    SecondaryButton(title: "Выбрать другую", isLoading: isChanging) { changeAction() }
                 }
             } else {
                 HStack {

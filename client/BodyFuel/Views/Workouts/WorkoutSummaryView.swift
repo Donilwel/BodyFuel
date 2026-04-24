@@ -7,6 +7,7 @@ struct WorkoutSummaryView: View {
     var body: some View {
         ZStack {
             AnimatedBackground()
+                .ignoresSafeArea()
             
             VStack(spacing: 32) {
                 Text("Тренировка завершена")
@@ -16,21 +17,13 @@ struct WorkoutSummaryView: View {
                 VStack(spacing: 16) {
                     statRow(
                         title: "Время тренировки",
-                        value: String(
-                            format: "%02d:%02d",
-                            viewModel.totalWorkoutElapsedTime / 60,
-                            viewModel.totalWorkoutElapsedTime % 60
-                        )
+                        value: viewModel.totalWorkoutElapsedTime.formattedTime
                     )
                     
                     VStack(spacing: 12) {
-//                        ForEach(viewModel.exerciseStats.indices, id: \.self) { index in
-//                            exerciseStatsRow(for: viewModel.exerciseStats[index])
-//                        }
-                        exerciseStatsRow(for: ExerciseStats(exercise: viewModel.exerciseStats[0].exercise, repCount: ["8", "6", "5"]))
-                        exerciseStatsRow(for: ExerciseStats(exercise: viewModel.exerciseStats[1].exercise, repCount: ["10", "10", "0"]))
-                        exerciseStatsRow(for: ExerciseStats(exercise: viewModel.exerciseStats[2].exercise, repCount: ["5", "0", "0"]))
-                        exerciseStatsRow(for: ExerciseStats(exercise: viewModel.exerciseStats[3].exercise, repCount: ["5", "0", "0"]))
+                        ForEach(viewModel.exerciseStats.indices, id: \.self) { index in
+                            exerciseStatsRow(for: viewModel.exerciseStats[index])
+                        }
                     }
                     .cardStyle()
                     
@@ -119,12 +112,4 @@ struct WorkoutSummaryView: View {
             }
         }
     }
-    
-    private func formatTime(_ seconds: Int) -> String {
-        let minutes = seconds / 60
-        let remainingSeconds = seconds % 60
-
-        return String(format: "%02d:%02d", minutes, remainingSeconds)
-    }
-
 }

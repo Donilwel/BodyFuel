@@ -1,7 +1,8 @@
 import Foundation
 
 protocol WorkoutServiceProtocol {
-    func generateWorkout(level: WorkoutLevel) async throws -> (workoutID: String, workout: Workout)
+    func generateWorkout(place: WorkoutPlace?, type: ExerciseType?, level: WorkoutLevel?) async throws -> (workoutID: String, workout: Workout)
+    func generateWorkout() async throws -> (workoutID: String, workout: Workout)
     func fetchWorkout(id: String) async throws -> (workoutID: String, workout: Workout)
     func fetchWorkoutHistory(limit: Int, offset: Int) async throws -> WorkoutHistoryResponseBody
     func updateWorkout(id: String, status: WorkoutStatus?, duration: Int64?) async throws
@@ -16,13 +17,18 @@ final class WorkoutService: WorkoutServiceProtocol {
 
     private init() {}
 
-    func generateWorkout(level: WorkoutLevel) async throws -> (workoutID: String, workout: Workout) {
+    func generateWorkout(place: WorkoutPlace? = nil, type: ExerciseType? = nil, level: WorkoutLevel? = nil) async throws -> (workoutID: String, workout: Workout) {
         guard let url = URL(string: API.baseURLString + API.Workouts.base) else {
             print("[ERROR] [WorkoutService/generateWorkout]: Invalid URL")
             throw NetworkError.invalidURL
         }
 
-        let requestBody = GenerateWorkoutRequestBody(level: level, duration: nil)
+        let requestBody = GenerateWorkoutRequestBody(
+            placeExercise: place?.apiValue,
+            typeExercise: type?.apiValue,
+            level: level?.apiValue,
+            exercisesCount: nil
+        )
 
         do {
             let response: WorkoutResponseBody = try await networkClient.request(
@@ -40,6 +46,10 @@ final class WorkoutService: WorkoutServiceProtocol {
             print("[ERROR] [WorkoutService/generateWorkout]: \(error.localizedDescription)")
             throw error
         }
+    }
+    
+    func generateWorkout() async throws -> (workoutID: String, workout: Workout) {
+        try await generateWorkout(place: nil, type: nil, level: nil)
     }
 
     func fetchWorkout(id: String) async throws -> (workoutID: String, workout: Workout) {
@@ -83,7 +93,7 @@ final class WorkoutService: WorkoutServiceProtocol {
                 method: .get
             )
 
-            print("[INFO] [WorkoutService/fetchWorkoutHistory]: Successfully fetched \(response.total) workouts")
+            print("[INFO] [WorkoutService/fetchWorkoutHistory]: Successfully fetched \(response.count) workouts")
             return response
         } catch {
             print("[ERROR] [WorkoutService/fetchWorkoutHistory]: \(error.localizedDescription)")
@@ -97,7 +107,7 @@ final class WorkoutService: WorkoutServiceProtocol {
             throw NetworkError.invalidURL
         }
 
-        let requestBody = UpdateWorkoutRequestBody(status: status, duration: duration)
+        let requestBody = UpdateWorkoutRequestBody(status: status?.rawValue, duration: duration)
 
         do {
             let _: DefaultDecodable = try await networkClient.request(
@@ -143,10 +153,9 @@ private extension WorkoutService {
             id: UUID(uuidString: response.id) ?? UUID(),
             title: mapWorkoutTitle(response.level),
             type: resolveWorkoutType(from: response.exercises ?? []),
-            duration: Int((response.duration ?? 0) / 1_000_000_000 / 60),
-            calories: response.totalCalories,
-            muscles: resolveMuscles(from: exercises),
-            place: mapPlace(response.exercises?.first?.placeExercise ?? ""),
+            duration: Int(response.duration ?? 0),
+            calories: response.predictionCalories,
+            place: resolveWorkoutPlace(from: response.exercises ?? []),
             exercises: exercises
         )
     }
@@ -161,7 +170,7 @@ private extension WorkoutService {
             duration: isCardio ? body.modifyReps : 0,
             repCount: isCardio ? nil : body.modifyReps,
             setCount: max(body.steps, 1),
-            rest: body.modifyRelaxTime > 0 ? body.modifyRelaxTime : body.baseRelaxTime
+            rest: body.modifyRelaxTime 
         )
     }
 
@@ -185,7 +194,7 @@ private extension WorkoutService {
         }
     }
 
-    func mapPlace(_ placeString: String) -> WorkoutPlace {
+    func mapExercisePlace(_ placeString: String) -> WorkoutPlace {
         switch placeString {
         case "gym": return .gym
         case "home": return .home
@@ -198,28 +207,16 @@ private extension WorkoutService {
         let types = exercises.map { mapExerciseType($0.typeExercise) }
         if types.allSatisfy({ $0 == .cardio }) { return .cardio }
         if types.allSatisfy({ $0 == .flexibility }) { return .flexibility }
+        if types.allSatisfy({ $0 == .lowerBody }) { return .lowerBody }
+        if types.allSatisfy({ $0 == .upperBody }) { return .upperBody }
         return .fullBody
     }
-
-    func resolveMuscles(from exercises: [Exercise]) -> [String] {
-        var result: [String] = []
-        var seen: Set<String> = []
-
-        for exercise in exercises {
-            let label: String
-            switch exercise.type {
-            case .upperBody: label = "Верхняя часть тела"
-            case .lowerBody: label = "Нижняя часть тела"
-            case .fullBody: label = "Full body"
-            case .cardio: label = "Кардио"
-            case .flexibility: label = "Гибкость"
-            }
-            if seen.insert(label).inserted {
-                result.append(label)
-            }
-        }
-
-        return result
+    
+    func resolveWorkoutPlace(from exercises: [WorkoutExerciseResponseBody]) -> WorkoutPlace {
+        let places = exercises.map { mapExercisePlace($0.placeExercise) }
+        if places.contains(.gym) { return .gym }
+        if places.contains(.outdoor) { return .outdoor }
+        return .home
     }
 
     func saveWidgetData(workout: Workout, from response: WorkoutResponseBody) {

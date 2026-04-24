@@ -7,6 +7,9 @@ protocol HealthKitServiceProtocol {
     func fetchDateOfBirth() throws -> Date
     func fetchTodayActiveCalories() async throws -> Double
     func fetchTodaySteps() async throws -> Int
+    func fetchDailySteps(from startDate: Date, to endDate: Date) async -> [DailySteps]
+    func refreshDailyActivity() async
+    func startBackgroundObservers() async
     func startWorkout(activityType: HKWorkoutActivityType) async
     func startWorkout() async
     func pauseWorkout()
@@ -30,14 +33,21 @@ enum HealthError: LocalizedError {
 @MainActor
 final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtocol {
     static let shared = HealthKitService()
-    
+
     @Published var isAuthorized = false
     @Published var activeCalories: Double = 0
-    
+    @Published var todaySteps: Int = 0
+
+    var hasGrantedPermission: Bool {
+        get { UserDefaults.standard.bool(forKey: "healthkit_permission_granted") }
+        set { UserDefaults.standard.set(newValue, forKey: "healthkit_permission_granted") }
+    }
+
     private let healthStore = HKHealthStore()
     private var workoutSession: HKWorkoutSession?
     private var workoutBuilder: HKLiveWorkoutBuilder?
     private var workoutStartDate: Date?
+    private var observersStarted = false
     
     private let typesToRead: Set<HKObjectType> = [
         HKQuantityType.quantityType(forIdentifier: .stepCount)!,
@@ -60,9 +70,11 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
 
         do {
             try await healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead)
-            
+            let status = healthStore.authorizationStatus(for: HKWorkoutType.workoutType())
+            let granted = status == .sharingAuthorized
             await MainActor.run {
-                self.isAuthorized = true
+                self.isAuthorized = granted
+                if granted { self.hasGrantedPermission = true }
             }
         } catch {
             print("[ERROR] [HealthKitService/requestAuthorization]: Failed to request authorization: \(error)")
@@ -158,6 +170,83 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
         }
     }
     
+    func fetchDailySteps(from startDate: Date, to endDate: Date) async -> [DailySteps] {
+        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+        let anchor = Calendar.current.startOfDay(for: startDate)
+        let interval = DateComponents(day: 1)
+
+        return await withCheckedContinuation { continuation in
+            let query = HKStatisticsCollectionQuery(
+                quantityType: stepType,
+                quantitySamplePredicate: nil,
+                options: .cumulativeSum,
+                anchorDate: anchor,
+                intervalComponents: interval
+            )
+            query.initialResultsHandler = { _, results, _ in
+                guard let results else {
+                    continuation.resume(returning: [])
+                    return
+                }
+                var points: [DailySteps] = []
+                results.enumerateStatistics(from: startDate, to: endDate) { stats, _ in
+                    let count = Int(stats.sumQuantity()?.doubleValue(for: .count()) ?? 0)
+                    points.append(DailySteps(date: stats.startDate, count: count))
+                }
+                continuation.resume(returning: points)
+            }
+            healthStore.execute(query)
+        }
+    }
+
+    // MARK: - Daily Activity
+
+    func refreshDailyActivity() async {
+        async let cal = try? fetchTodayActiveCalories()
+        async let steps = try? fetchTodaySteps()
+        let (calories, stepsCount) = await (cal, steps)
+        if let calories { activeCalories = calories }
+        if let stepsCount { todaySteps = stepsCount }
+        print("[INFO] [HealthKitService]: Refreshed — \(Int(activeCalories)) kcal, \(todaySteps) steps")
+    }
+
+    func startBackgroundObservers() async {
+        guard HKHealthStore.isHealthDataAvailable(), isAuthorized, !observersStarted else { return }
+        observersStarted = true
+
+        let energyType = HKQuantityType(.activeEnergyBurned)
+        let stepType   = HKQuantityType(.stepCount)
+
+        try? await healthStore.enableBackgroundDelivery(for: energyType, frequency: .immediate)
+        try? await healthStore.enableBackgroundDelivery(for: stepType,   frequency: .immediate)
+
+        let caloriesQuery = HKObserverQuery(sampleType: energyType, predicate: nil) {
+            [weak self] _, completionHandler, error in
+            guard error == nil else { completionHandler(); return }
+            Task { @MainActor [weak self] in
+                if let cal = try? await self?.fetchTodayActiveCalories() {
+                    self?.activeCalories = cal
+                }
+                completionHandler()
+            }
+        }
+
+        let stepsQuery = HKObserverQuery(sampleType: stepType, predicate: nil) {
+            [weak self] _, completionHandler, error in
+            guard error == nil else { completionHandler(); return }
+            Task { @MainActor [weak self] in
+                if let steps = try? await self?.fetchTodaySteps() {
+                    self?.todaySteps = steps
+                }
+                completionHandler()
+            }
+        }
+
+        healthStore.execute(caloriesQuery)
+        healthStore.execute(stepsQuery)
+        print("[INFO] [HealthKitService]: Background observers registered")
+    }
+
     func startWorkout(activityType: HKWorkoutActivityType) async {
         guard isAuthorized else {
             await requestAuthorization()
@@ -303,7 +392,7 @@ extension HealthKitService: HKLiveWorkoutBuilderDelegate {
     }
     
     nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {
-        // События тренировки (пауза, возобновление и т.д.)
+        // TODO: возможно добавить паузу тренировки
     }
     
     private func updateMetrics(_ statistics: HKStatistics) {

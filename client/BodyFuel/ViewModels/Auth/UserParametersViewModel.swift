@@ -34,7 +34,11 @@ final class UserParametersViewModel: ObservableObject {
     @Published var targetCaloriesError: String? = nil
     @Published var targetWorkoutsWeekly: Float = 0.0
     @Published var healthIntegrationError: String? = nil
-    
+
+    @Published var manualDateOfBirth: Date = Calendar.current.date(byAdding: .year, value: -25, to: Date()) ?? Date()
+    @Published var manualGender: HKBiologicalSex = .male
+    @Published var manualDateOfBirthError: String? = nil
+
     var weight: Float {
         Float(weightString) ?? 0.0
     }
@@ -115,12 +119,11 @@ final class UserParametersViewModel: ObservableObject {
             
             let (_, _) = try await (sendUserWeight, sendUserParameters)
             
-            SharedWidgetStorage.shared.saveTargetCalories(Int(targetCaloriesDaily))
-            SharedWidgetStorage.shared.saveBasalMetabolicRate(Int(basalMetabolicRate))
-            
-            WidgetCenter.shared.reloadAllTimelines()
-            
+            UserStore.shared.setTargetCalories(Int(targetCaloriesDaily))
+            UserStore.shared.setBasalMetabolicRate(Int(basalMetabolicRate))
+
             UserSessionManager.shared.hasCompletedParametersSetup = true
+            WidgetCenter.shared.reloadAllTimelines()
         } catch {
             print("[ERROR] [UserParametersViewModel/submit]: \(error.localizedDescription)")
             screenState = .error("Попробуйте еще раз позже")
@@ -133,6 +136,7 @@ final class UserParametersViewModel: ObservableObject {
         if goal == nil {
             goalError = "Выберите цель"
         } else {
+            goal == .maintain ? targetWeight = weight : ()
             goalError = userParametersValidator.validateGoal(goal ?? .maintain, weight: weight, targetWeight: targetWeight)
         }
         targetWeightError = userParametersValidator.validateTargetWeight(targetWeight, weight: weight, goal: goal ?? .maintain)
@@ -154,6 +158,13 @@ final class UserParametersViewModel: ObservableObject {
     }
     
     private func fetchHealthInfo() async {
+        guard HealthKitService.shared.hasGrantedPermission else {
+            dateOfBirth = manualDateOfBirth
+            gender = manualGender
+            healthIntegrationError = nil
+            return
+        }
+
         do {
             dateOfBirth = try healthService.fetchDateOfBirth()
         } catch {
@@ -176,7 +187,7 @@ final class UserParametersViewModel: ObservableObject {
     private func validate() throws {
         let hasEmptyFields = height == 0 || weight == 0.0 || lifestyle == .none || fitnessLevel == .none || goal == .none || targetWeight == 0.0
         
-        let hasErrors = [heightError, weightError, healthIntegrationError, targetCaloriesError, goalError].contains { $0 != nil }
+        let hasErrors = [heightError, weightError, targetCaloriesError, goalError].contains { $0 != nil }
         
         guard targetWeightError == nil else {
             throw AuthError.invalidData("Введите корректное значение желаемого веса и/или цели")

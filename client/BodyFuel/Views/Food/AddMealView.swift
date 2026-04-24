@@ -18,15 +18,16 @@ struct AddMealView: View {
     @State private var prefillName: String = ""
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AnimatedBackground()
-                    .ignoresSafeArea()
-
+        ZStack {
+            Color.clear
+                .glassEffect(.regular.tint(AppColors.primary.opacity(0.6)).interactive(), in: .rect)
+                .ignoresSafeArea()
+            
+            NavigationStack {
                 VStack(spacing: 0) {
                     mealTypePicker
                     modePicker
-
+                    
                     Group {
                         if let product = selectedProduct {
                             ProductWeightSection(
@@ -76,22 +77,27 @@ struct AddMealView: View {
                     .animation(nil, value: mode)
                     .animation(nil, value: selectedProduct != nil)
                 }
-            }
-            .navigationTitle("Добавить продукт")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") { dismiss() }
-                        .foregroundColor(.white)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .title) {
+                        Text("Добавить продукт")
+                            .font(.title3.bold())
+                            .foregroundColor(.white)
+                    }
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Отмена", systemImage: "xmark") { dismiss() }
+                            .foregroundColor(.white)
+                            .background(.clear)
+                    }
                 }
-            }
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .onAppear {
-                selectedMealType = viewModel.addMealType
-            }
-            .onChange(of: mode) { _ in
-                selectedProduct = nil
-                if mode != .manual { prefillName = "" }
+                .toolbarBackground(.hidden, for: .navigationBar)
+                .onAppear {
+                    selectedMealType = viewModel.addMealType
+                }
+                .onChange(of: mode) { _ in
+                    selectedProduct = nil
+                    if mode != .manual { prefillName = "" }
+                }
             }
         }
     }
@@ -178,6 +184,9 @@ struct ProductSearchSection: View {
                 }
             }
         }
+        .onTapGesture {
+            focused = false
+        }
         .onAppear {
             if !prefillQuery.isEmpty {
                 query = prefillQuery
@@ -224,6 +233,7 @@ struct ProductSearchSection: View {
                 results = try await search(trimmed)
             } catch {
                 results = []
+                ToastService.shared.show("Не удалось выполнить поиск. Проверьте подключение к сети.")
             }
             hasSearched = true
             isSearching = false
@@ -272,6 +282,7 @@ struct BarcodeScanSection: View {
     @State private var isLookingUp = false
     @State private var notFound = false
     @State private var lastScanned: String?
+    @State private var showPermissionAlert = false
 
     var body: some View {
         Group {
@@ -290,6 +301,19 @@ struct BarcodeScanSection: View {
             lastScanned = barcode
             barcodeManager.stop()
             lookupBarcode(barcode)
+        }
+        .onChange(of: barcodeManager.permissionDenied) { denied in
+            if denied { showPermissionAlert = true }
+        }
+        .alert("Нет доступа к камере", isPresented: $showPermissionAlert) {
+            Button("Отмена", role: .cancel) {}
+            Button("Открыть настройки") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text("Разрешите доступ к камере в Настройках, чтобы сканировать штрихкоды.")
         }
     }
 
@@ -379,6 +403,7 @@ struct BarcodeScanSection: View {
 final class BarcodeManager: NSObject, ObservableObject, AVCaptureMetadataOutputObjectsDelegate {
     let session = AVCaptureSession()
     @Published var detectedBarcode: String?
+    @Published var permissionDenied = false
 
     private var isSetUp = false
 
@@ -388,10 +413,12 @@ final class BarcodeManager: NSObject, ObservableObject, AVCaptureMetadataOutputO
             setup()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
-                if granted { DispatchQueue.main.async { self?.setup() } }
+                DispatchQueue.main.async {
+                    if granted { self?.setup() } else { self?.permissionDenied = true }
+                }
             }
         default:
-            break
+            permissionDenied = true
         }
     }
 
@@ -477,6 +504,8 @@ struct ProductWeightSection: View {
     let onBack: () -> Void
 
     @State private var weightStr = "100"
+    @State private var weightError: String?
+    @FocusState private var weightFocused: Bool
 
     private var weight: Double { Double(weightStr.replacingOccurrences(of: ",", with: ".")) ?? 0 }
     private var calculatedMacros: MacroNutrients { product.macrosFor(grams: weight) }
@@ -511,10 +540,31 @@ struct ProductWeightSection: View {
                         .foregroundColor(.white.opacity(0.7))
                     TextField("100", text: $weightStr)
                         .keyboardType(.decimalPad)
+                        .focused($weightFocused)
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         .foregroundColor(.white)
+                        .toolbar {
+                            ToolbarItemGroup(placement: .keyboard) {
+                                Spacer()
+                                Button("Готово") { weightFocused = false }
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                    if let err = weightError {
+                        Text(err)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+                }
+                .onChange(of: weightStr) { newValue in
+                    weightError = Validator.gramsAmount(newValue)
+                }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        weightFocused = true
+                    }
                 }
 
                 if weight > 0 {
@@ -531,6 +581,7 @@ struct ProductWeightSection: View {
                     guard weight > 0 else { return }
                     onConfirm(Meal(name: product.name, mealType: mealType, macros: calculatedMacros))
                 }
+                .disabled(weightError != nil)
 
                 SecondaryButton(title: "Назад") { onBack() }
             }
@@ -549,22 +600,30 @@ struct ManualEntrySection: View {
     @State private var fatStr = ""
     @State private var carbsStr = ""
     @State private var nameError = ""
-    @State private var macroError = ""
+    @State private var proteinError: String?
+    @State private var fatError: String?
+    @State private var carbsError: String?
+    @FocusState private var nameFocused: Bool
+    @FocusState private var macrosFocused: Bool
 
     private var protein: Double { Double(proteinStr.replacingOccurrences(of: ",", with: ".")) ?? 0 }
     private var fat:     Double { Double(fatStr.replacingOccurrences(of: ",", with: ".")) ?? 0 }
     private var carbs:   Double { Double(carbsStr.replacingOccurrences(of: ",", with: ".")) ?? 0 }
     private var calories: Int   { Int(protein * 4 + fat * 9 + carbs * 4) }
+    private var hasFieldErrors: Bool { proteinError != nil || fatError != nil || carbsError != nil }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     TextField("Название блюда / продукта", text: $name)
+                        .focused($nameFocused)
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         .foregroundColor(.white)
+                        .submitLabel(.next)
+                        .onSubmit { nameFocused = false; macrosFocused = true }
 
                     if !nameError.isEmpty {
                         Text(nameError)
@@ -579,15 +638,17 @@ struct ManualEntrySection: View {
                         .foregroundColor(.white.opacity(0.7))
 
                     HStack(spacing: 12) {
-                        MacroInputField(label: "Белки, г", color: .blue, text: $proteinStr)
-                        MacroInputField(label: "Жиры, г", color: .orange, text: $fatStr)
-                        MacroInputField(label: "Углеводы, г", color: .green, text: $carbsStr)
+                        MacroInputField(label: "Белки, г", color: .blue, text: $proteinStr, error: proteinError)
+                        MacroInputField(label: "Жиры, г", color: .orange, text: $fatStr, error: fatError)
+                        MacroInputField(label: "Углеводы, г", color: .green, text: $carbsStr, error: carbsError)
                     }
-
-                    if !macroError.isEmpty {
-                        Text(macroError)
-                            .font(.caption)
-                            .foregroundColor(.red)
+                    .focused($macrosFocused)
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Готово") { macrosFocused = false; nameFocused = false }
+                                .foregroundStyle(.white)
+                        }
                     }
 
                     if calories > 0 {
@@ -604,22 +665,34 @@ struct ManualEntrySection: View {
                 .cardStyle()
 
                 PrimaryButton(title: "Добавить") { confirm() }
+                    .disabled(hasFieldErrors)
             }
             .padding()
         }
-        .onAppear { name = prefillName }
+        .onAppear {
+            name = prefillName
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                nameFocused = true
+            }
+        }
+        .onTapGesture {
+            nameFocused = false
+            macrosFocused = false
+        }
+        .onChange(of: proteinStr) { proteinError = Validator.macroGrams($0) }
+        .onChange(of: fatStr)     { fatError     = Validator.macroGrams($0) }
+        .onChange(of: carbsStr)   { carbsError   = Validator.macroGrams($0) }
     }
 
     private func confirm() {
         nameError = ""
-        macroError = ""
 
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
             nameError = "Введите название"
             return
         }
         guard protein > 0 || fat > 0 || carbs > 0 else {
-            macroError = "Введите хотя бы один макронутриент"
+            nameError = "Введите хотя бы один макронутриент"
             return
         }
 
@@ -635,6 +708,7 @@ struct MacroInputField: View {
     let label: String
     let color: Color
     @Binding var text: String
+    var error: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -648,6 +722,21 @@ struct MacroInputField: View {
                 .background(.ultraThinMaterial)
                 .cornerRadius(8)
                 .foregroundColor(.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(error != nil ? Color.red.opacity(0.7) : Color.clear, lineWidth: 1)
+                )
+            if let err = error {
+                Text(err)
+                    .font(.system(size: 9))
+                    .foregroundColor(.red)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
+}
+
+#Preview {
+    FoodView()
 }

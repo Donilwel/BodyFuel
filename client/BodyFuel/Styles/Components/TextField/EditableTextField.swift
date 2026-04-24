@@ -34,7 +34,7 @@ struct EditableTextField<Field: Hashable, Value: LosslessStringConvertible>: Vie
                         }
                     }
             } else {
-                Text(String(value) + (suffix ?? ""))
+                Text(suffix == nil ? String(value) : "\(value) \(suffix!)")
                     .foregroundColor(.white)
             }
         }

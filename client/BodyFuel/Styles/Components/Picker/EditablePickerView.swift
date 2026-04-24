@@ -8,8 +8,7 @@ struct EditablePickerView: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.headline.bold())
-                .foregroundColor(.white)
+                .foregroundColor(.white.opacity(0.8))
                 .fixedSize(horizontal: false, vertical: true)
             
             Spacer()
