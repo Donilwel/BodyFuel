@@ -2,6 +2,7 @@ import Foundation
 import HealthKit
 import Combine
 import SwiftUI
+import PhotosUI
 
 @MainActor
 final class ProfileViewModel: ObservableObject {
@@ -9,50 +10,49 @@ final class ProfileViewModel: ObservableObject {
         case idle
         case logoutSuccess
     }
-    
+
+    enum CaloriesFormState {
+        case preview
+        case counting
+        case editing
+    }
+
     @Published var avatarUrl: String = ""
+    @Published var avatarData: Data?
+    @Published var avatarItem: PhotosPickerItem?
+
+    @Published var showCaloriesSheet = false
+    @Published var caloriesFormState: CaloriesFormState = .preview
+    @Published var sheetDailyExpenditure: Float = 0.0
+    @Published var sheetBasalMetabolicRate: Float = 0.0
+    @Published var sheetTargetCalories: Float = 0.0
+    @Published var sheetHealthIntegrationError: String? = nil
+
+    private let validator = UserParametersValidator.shared
+
     @Published var height: Int = 0 {
-        willSet {
-            if newValue >= 100 && newValue <= 250 {
-                heightError = nil
-            } else {
-                heightError = "Введите корректное значение"
-            }
-        }
+        willSet { heightError = validator.validateHeight(newValue) }
     }
     @Published var heightError: String? = nil
     @Published var weight: Float = 0.0 {
-        willSet {
-            if newValue < 40 {
-                weightError = "Введите корректное значение"
-            } else {
-                weightError = nil
-            }
-        }
+        willSet { weightError = validator.validateWeight(newValue) }
     }
     @Published var weightError: String? = nil
     @Published var lifestyle: Lifestyle = .active
+    @Published var fitnessLevel: FitnessLevel = .beginner
     @Published var goal: MainGoal = .maintain {
         willSet {
-            switch newValue {
-            case .loseWeight:
-                targetWeightError = weight > targetWeight ? nil : "Введите корректное значение"
-            case .gainMuscle:
-                targetWeightError = weight < targetWeight ? nil : "Введите корректное значение"
-            case .maintain:
-                targetWeightError = nil
-                targetWeight = weight
-            default:
-                break
-            }
+            if newValue == .maintain { targetWeight = weight }
+            targetWeightError = validator.validateTargetWeight(targetWeight, weight: weight, goal: newValue)
         }
     }
     @Published var targetWeight: Float = 0.0 {
         willSet {
-            if newValue < 40 {
-                weightError = "Введите корректное значение"
+            let weightErr = validator.validateWeight(newValue)
+            if weightErr != nil {
+                targetWeightError = weightErr
             } else {
-                weightError = nil
+                targetWeightError = validator.validateTargetWeight(newValue, weight: weight, goal: goal)
             }
         }
     }
@@ -77,6 +77,7 @@ final class ProfileViewModel: ObservableObject {
             height = profile.height
             weight = Float(profile.currentWeight)
             lifestyle = profile.lifestyle
+            fitnessLevel = profile.fitnessLevel
             goal = profile.goal
             targetWeight = Float(profile.targetWeight)
             targetCaloriesDaily = profile.targetCaloriesDaily
@@ -93,15 +94,24 @@ final class ProfileViewModel: ObservableObject {
     private let healthService: HealthKitServiceProtocol = HealthKitService.shared
     private let service: ProfileServiceProtocol = ProfileService.shared
 
+    func loadAvatar() async {
+        avatarData = try? await avatarItem?.loadTransferable(type: Data.self)
+    }
+
     func load() async {
         do {
             screenState = .loading
-            profile = try await service.fetchProfile()
-
+            await UserStore.shared.load()
+            if let storedProfile = UserStore.shared.profile {
+                profile = storedProfile
+            } else {
+                profile = try await service.fetchProfile()
+            }
             screenState = .idle
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
-            screenState = .error(error.localizedDescription)
+            let appError = ErrorMapper.map(error)
+            screenState = .error(appError.errorDescription ?? "Не удалось загрузить профиль")
         }
     }
 
@@ -109,12 +119,19 @@ final class ProfileViewModel: ObservableObject {
         do {
             try validate()
             screenState = .loading
-            
+
+            if let data = avatarData {
+                avatarUrl = try await PhotoService.shared.uploadUserAvatar(data: data)
+                avatarData = nil
+                avatarItem = nil
+            }
+
             let profile = UserProfile(
                 height: height,
                 photo: avatarUrl,
                 goal: goal,
                 lifestyle: lifestyle,
+                fitnessLevel: fitnessLevel,
                 currentWeight: Double(weight),
                 targetWeight: Double(targetWeight),
                 targetCaloriesDaily: targetCaloriesDaily,
@@ -123,9 +140,10 @@ final class ProfileViewModel: ObservableObject {
             
             try await service.updateProfile(profile)
             let basalMetabolicRate = await calculateBasalMetabolicRate()
-            
-            SharedWidgetStorage.shared.saveTargetCalories(Int(targetCaloriesDaily))
-            SharedWidgetStorage.shared.saveBasalMetabolicRate(Int(basalMetabolicRate))
+
+            UserStore.shared.setTargetCalories(targetCaloriesDaily)
+            UserStore.shared.setBasalMetabolicRate(Int(basalMetabolicRate))
+            UserStore.shared.setProfile(profile)
             
             isEditing = false
             screenState = .idle
@@ -133,6 +151,70 @@ final class ProfileViewModel: ObservableObject {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
             screenState = .error("Ошибка сохранения")
         }
+    }
+
+    func countSheetCalories() async {
+        await fetchHealthInfo()
+        guard height != 0, weight != 0 else { return }
+
+        let age = dateOfBirth != nil
+            ? Float(Calendar.current.dateComponents([.year], from: dateOfBirth!, to: Date()).year!)
+            : 30
+
+        sheetBasalMetabolicRate = (10 * weight) + (6.25 * Float(height)) - (5 * age)
+        switch gender {
+        case .female: sheetBasalMetabolicRate -= 161
+        default: sheetBasalMetabolicRate += 5
+        }
+
+        sheetDailyExpenditure = lifestyle.physicalActivityLevel * sheetBasalMetabolicRate
+        sheetTargetCalories = sheetDailyExpenditure
+        switch goal {
+        case .loseWeight: sheetTargetCalories *= 0.9
+        case .gainMuscle: sheetTargetCalories *= 1.1
+        default: break
+        }
+
+        sheetHealthIntegrationError = (dateOfBirth == nil || gender == nil)
+            ? "Данные о поле и возрасте не найдены в приложении Здоровье — используются средние значения"
+            : nil
+
+        caloriesFormState = .counting
+    }
+
+    func applySheetCalories() async {
+        targetCaloriesDaily = Int(sheetTargetCalories)
+        showCaloriesSheet = false
+        caloriesFormState = .preview
+
+        do {
+            let updatedProfile = UserProfile(
+                height: height,
+                photo: avatarUrl,
+                goal: goal,
+                lifestyle: lifestyle,
+                fitnessLevel: fitnessLevel,
+                currentWeight: Double(weight),
+                targetWeight: Double(targetWeight),
+                targetCaloriesDaily: Int(sheetTargetCalories),
+                targetWorkoutsWeekly: targetWorkoutsWeekly
+            )
+            try await service.updateProfile(updatedProfile)
+            UserStore.shared.setTargetCalories(Int(sheetTargetCalories))
+            UserStore.shared.setBasalMetabolicRate(Int(sheetBasalMetabolicRate))
+            UserStore.shared.setProfile(updatedProfile)
+        } catch {
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
+            screenState = .error("Ошибка сохранения")
+        }
+    }
+
+    func validateSheetCaloriesNorm() -> String {
+        validator.validateCaloriesNorm(sheetTargetCalories, dailyEnergyExpenditure: sheetDailyExpenditure)
+    }
+
+    func getSheetCaloriesNormHint() -> String {
+        validator.getCaloriesNormHint(sheetTargetCalories, basalMetabolicRate: sheetBasalMetabolicRate, goal: goal)
     }
 
     func logout() {

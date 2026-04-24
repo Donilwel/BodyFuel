@@ -44,7 +44,6 @@ final class NutritionService: NutritionServiceProtocol {
     }
 
     func fetchTodayBurnedCalories() async throws -> Int {
-        // Сожжённые калории приходят из HealthKit, не из nutrition API
         return sharedWidgetStorage.getTodayBurnedCalories() ?? 0
     }
 
@@ -104,33 +103,55 @@ final class NutritionService: NutritionServiceProtocol {
     }
 
     func analyzeMealFromPhoto(_ imageData: Data, mealType: MealType) async throws -> Meal {
-        // Step 1: upload photo → get public URL
-        let photoURL = try await uploadFoodPhoto(imageData)
-
-        // Step 2: analyze URL → get macros
-        guard let analyzeURL = URL(string: API.baseURLString + API.Nutrition.analyze) else {
+        guard let url = URL(string: API.baseURLString + API.Nutrition.uploadPhoto) else {
             throw NetworkError.invalidURL
         }
+        guard let currentUserId = userSessionManager.currentUserId,
+              let token = userSessionManager.authToken(for: currentUserId) else {
+            throw NetworkError.missingToken
+        }
 
-        let analysis: NutritionAnalysisResponseBody = try await networkClient.request(
-            url: analyzeURL,
-            method: .post,
-            requestBody: AnalyzePhotoRequestBody(imageURL: photoURL)
-        )
+        let boundary = UUID().uuidString
+        var body = Data()
 
-        print("[INFO] [NutritionService/analyzeMealFromPhoto]: Analyzed \(analysis.description)")
+        // photo
+        body.append("--\(boundary)\r\n")
+        body.append("Content-Disposition: form-data; name=\"photo\"; filename=\"photo.jpg\"\r\n")
+        body.append("Content-Type: image/jpeg\r\n\r\n")
+        body.append(imageData)
+        body.append("\r\n")
 
-        return Meal(
-            name: analysis.description,
-            mealType: mealType,
-            macros: MacroNutrients(
-                protein: analysis.protein,
-                fat: analysis.fat,
-                carbs: analysis.carbs
-            ),
-            time: Date(),
-            photoURL: photoURL
-        )
+        // meal_type
+        body.append("--\(boundary)\r\n")
+        body.append("Content-Disposition: form-data; name=\"meal_type\"\r\n\r\n")
+        body.append(mealType.rawValue)
+        body.append("\r\n")
+
+        // date
+        body.append("--\(boundary)\r\n")
+        body.append("Content-Disposition: form-data; name=\"date\"\r\n\r\n")
+        body.append(Self.dateFormatter.string(from: Date()))
+        body.append("\r\n")
+
+        body.append("--\(boundary)--\r\n")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = HTTPMethod.post.rawValue
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = body
+
+        let (responseData, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw NetworkError.requestFailed(statusCode: -1, message: "Photo analyze failed")
+        }
+
+        let entry = try JSONDecoder().decode(FoodEntryResponseBody.self, from: responseData)
+        print("[INFO] [NutritionService/analyzeMealFromPhoto]: Analyzed \(entry.description)")
+
+        return mapToMeal(entry)
     }
 
     func generateRecipes() async throws -> [Recipe] {
@@ -167,41 +188,6 @@ final class NutritionService: NutritionServiceProtocol {
         return diary
     }
 
-    private func uploadFoodPhoto(_ imageData: Data) async throws -> String {
-        guard let url = URL(string: API.baseURLString + API.Nutrition.uploadPhoto) else {
-            throw NetworkError.invalidURL
-        }
-        guard let currentUserId = userSessionManager.currentUserId,
-              let token = userSessionManager.authToken(for: currentUserId) else {
-            throw NetworkError.missingToken
-        }
-
-        let boundary = UUID().uuidString
-        var body = Data()
-        body.append("--\(boundary)\r\n")
-        body.append("Content-Disposition: form-data; name=\"photo\"; filename=\"photo.jpg\"\r\n")
-        body.append("Content-Type: image/jpeg\r\n\r\n")
-        body.append(imageData)
-        body.append("\r\n--\(boundary)--\r\n")
-
-        var request = URLRequest(url: url)
-        request.httpMethod = HTTPMethod.post.rawValue
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.httpBody = body
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              200..<300 ~= httpResponse.statusCode else {
-            throw NetworkError.requestFailed(statusCode: -1, message: "Photo upload failed")
-        }
-
-        let uploadResponse = try JSONDecoder().decode(UploadPhotoResponseBody.self, from: data)
-        print("[INFO] [NutritionService/uploadFoodPhoto]: Uploaded to \(uploadResponse.photoURL)")
-        return uploadResponse.photoURL
-    }
-
     // MARK: - Mapping
 
     private func mapToSummary(_ diary: NutritionDiaryResponseBody) -> NutritionDailySummary {
@@ -212,7 +198,6 @@ final class NutritionService: NutritionServiceProtocol {
         )
         let targetCalories = sharedWidgetStorage.getTargetCalories() ?? 2000
         let burned = sharedWidgetStorage.getTodayBurnedCalories() ?? 0
-        // Приближённое распределение цели: 30% Б / 30% Ж / 40% У
         let goal = MacroNutrients(
             protein: Double(targetCalories) * 0.30 / 4,
             fat:     Double(targetCalories) * 0.30 / 9,

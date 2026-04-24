@@ -3,7 +3,6 @@ import Foundation
 // MARK: - Search Response
 
 private struct OFFSearchResponse: Decodable {
-    let count: Int
     let products: [OFFSearchProduct]
 }
 
@@ -104,8 +103,17 @@ final class OpenFoodFactsService: OpenFoodFactsServiceProtocol {
             URLQueryItem(name: "search_terms",  value: query)
         ]
         guard let url = components?.url else { throw OpenFoodFactsError.invalidURL }
+        print("[INFO] [OpenFoodFactsService/searchProducts] search url: \(url.absoluteString)")
 
-        let (data, _) = try await URLSession.shared.data(for: makeRequest(url))
+        let (data, urlResponse) = try await URLSession.shared.data(for: makeRequest(url))
+        guard let http = urlResponse as? HTTPURLResponse, 200..<300 ~= http.statusCode else {
+            print("[WARN] [OpenFoodFactsService/searchProducts]: non-2xx response, returning empty")
+            return []
+        }
+        guard data.first != UInt8(ascii: "<") else {
+            print("[WARN] [OpenFoodFactsService/searchProducts]: HTML response received, returning empty")
+            return []
+        }
         let response = try JSONDecoder().decode(OFFSearchResponse.self, from: data)
 
         return response.products.compactMap { product in

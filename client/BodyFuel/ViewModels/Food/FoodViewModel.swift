@@ -3,12 +3,6 @@ import Combine
 
 @MainActor
 final class FoodViewModel: ObservableObject {
-    enum ScreenState {
-        case loading
-        case loaded
-        case error(String)
-    }
-
     @Published var screenState: ScreenState = .loading
     @Published var dailySummary: NutritionDailySummary?
     @Published var meals: [Meal] = []
@@ -35,14 +29,27 @@ final class FoodViewModel: ObservableObject {
     private let nutritionService: NutritionServiceProtocol = NutritionService.shared
     private let offService: OpenFoodFactsServiceProtocol = OpenFoodFactsService.shared
 
+    private var mealsCancellable: AnyCancellable?
+    private var summaryCancellable: AnyCancellable?
+
+    init() {
+        mealsCancellable = NutritionStore.shared.$meals
+            .receive(on: RunLoop.main)
+            .sink { [weak self] newMeals in
+                self?.meals = newMeals
+            }
+
+        summaryCancellable = NutritionStore.shared.$dailySummary
+            .receive(on: RunLoop.main)
+            .sink { [weak self] summary in
+                self?.dailySummary = summary
+            }
+    }
+
     func load() async {
         screenState = .loading
         do {
-            async let summary = nutritionService.fetchDailySummary()
-            async let meals = nutritionService.fetchMeals()
-
-            self.dailySummary = try await summary
-            self.meals = try await meals
+            try await NutritionStore.shared.load()
             screenState = .loaded
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
@@ -61,8 +68,7 @@ final class FoodViewModel: ObservableObject {
 
     func saveMeal(_ meal: Meal) async {
         do {
-            try await nutritionService.saveMeal(meal)
-            await load()
+            try await NutritionStore.shared.addMeal(meal)
             showAddMeal = false
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
@@ -72,8 +78,7 @@ final class FoodViewModel: ObservableObject {
 
     func confirmAndSaveAnalyzedMeal(_ meal: Meal) async {
         do {
-            try await nutritionService.saveMeal(meal)
-            await load()
+            try await NutritionStore.shared.addMeal(meal)
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
             addMealError = "Не удалось сохранить блюдо"
@@ -82,14 +87,7 @@ final class FoodViewModel: ObservableObject {
     }
 
     func deleteMeal(_ meal: Meal) async {
-        do {
-            try await nutritionService.deleteFoodEntry(id: meal.id.uuidString)
-            meals.removeAll { $0.id == meal.id }
-            await refreshSummary()
-        } catch {
-            if AppRouter.shared.handleIfUnauthorized(error) { return }
-            screenState = .error("Не удалось удалить блюдо")
-        }
+        await NutritionStore.shared.deleteMeal(meal)
     }
 
     func loadRecipes() async {
@@ -110,11 +108,5 @@ final class FoodViewModel: ObservableObject {
 
     func fetchProductByBarcode(_ barcode: String) async throws -> FoodProduct? {
         try await offService.fetchProductByBarcode(barcode)
-    }
-
-    private func refreshSummary() async {
-        if let summary = try? await nutritionService.fetchDailySummary() {
-            dailySummary = summary
-        }
     }
 }
