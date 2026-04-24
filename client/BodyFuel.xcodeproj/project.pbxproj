@@ -94,6 +94,11 @@
 			path = BodyFuelWidgets;
 			sourceTree = "<group>";
 		};
+		15F824142F98110A004D1E62 /* Helpers */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Helpers;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +157,7 @@
 		15A742842F608FBD003DC0B9 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				15F824142F98110A004D1E62 /* Helpers */,
 				156DAEC82F61D07B0087C2D1 /* Models */,
 				156DAEC42F61D0520087C2D1 /* Styles */,
 				156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */,
@@ -180,6 +186,7 @@
 				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
 				156DAEC42F61D0520087C2D1 /* Styles */,
 				156DAEC82F61D07B0087C2D1 /* Models */,
+				15F824142F98110A004D1E62 /* Helpers */,
 			);
 			name = BodyFuel;
 			packageProductDependencies = (
@@ -206,6 +213,7 @@
 				156DAEC42F61D0520087C2D1 /* Styles */,
 				156DAEC82F61D07B0087C2D1 /* Models */,
 				15A742462F608214003DC0B9 /* BodyFuelWidgets */,
+				15F824142F98110A004D1E62 /* Helpers */,
 			);
 			name = BodyFuelWidgetsExtension;
 			packageProductDependencies = (
