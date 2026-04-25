@@ -19,8 +19,10 @@ type WorkoutFilterSpecification struct {
 	TotalCalories      *int
 	PredictionCalories *int
 	Status             *entities.WorkoutsStatus
-	Duration           *time.Duration
+	Duration           *int64
 	CreatedAt          *time.Time
+	CreatedFrom        *time.Time
+	CreatedTo          *time.Time
 	UpdatedAt          *time.Time
 }
 
@@ -34,6 +36,8 @@ func NewWorkoutFilterSpecification(f dto.WorkoutsFilter) *WorkoutFilterSpecifica
 		Status:             f.Status,
 		Duration:           f.Duration,
 		CreatedAt:          f.CreatedAt,
+		CreatedFrom:        f.CreatedFrom,
+		CreatedTo:          f.CreatedTo,
 		UpdatedAt:          f.UpdatedAt,
 	}
 }
@@ -71,6 +75,14 @@ func (spec *WorkoutFilterSpecification) Predicates() []sq.Sqlizer {
 
 	if v := spec.CreatedAt; v != nil {
 		predicates = append(predicates, sq.Eq{"workout.created_at": v})
+	}
+
+	if v := spec.CreatedFrom; v != nil {
+		predicates = append(predicates, sq.GtOrEq{"workout.created_at": v})
+	}
+
+	if v := spec.CreatedTo; v != nil {
+		predicates = append(predicates, sq.LtOrEq{"workout.created_at": v})
 	}
 
 	if v := spec.UpdatedAt; v != nil {
@@ -117,6 +129,11 @@ func (a *WorkoutSelectBuilder) Limit(limit int) *WorkoutSelectBuilder {
 func (a *WorkoutSelectBuilder) Offset(offset int) *WorkoutSelectBuilder {
 	a.b = a.b.Offset(uint64(offset))
 
+	return a
+}
+
+func (a *WorkoutSelectBuilder) OrderByCreatedAtDesc() *WorkoutSelectBuilder {
+	a.b = a.b.OrderBy("workout.created_at DESC")
 	return a
 }
 

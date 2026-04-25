@@ -707,6 +707,15 @@ CREATE TABLE IF NOT EXISTS bodyfuel.user_recommendation (
 CREATE INDEX IF NOT EXISTS idx_user_recommendation_user_id ON bodyfuel.user_recommendation (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_recommendation_is_read ON bodyfuel.user_recommendation (user_id, is_read);
 
+-- === add_verified_at ===
+ALTER TABLE bodyfuel.user_info
+    ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ NULL,
+    ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ NULL;
+
+-- === add_exercise_sets ===
+ALTER TABLE bodyfuel.workouts_exercise
+    ADD COLUMN IF NOT EXISTS sets INT NOT NULL DEFAULT 1;
+
 -- +goose StatementEnd
 
 -- +goose Down

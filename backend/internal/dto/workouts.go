@@ -14,8 +14,10 @@ type WorkoutsFilter struct {
 	TotalCalories      *int
 	PredictionCalories *int
 	Status             *entities.WorkoutsStatus
-	Duration           *time.Duration
+	Duration           *int64
 	CreatedAt          *time.Time
+	CreatedFrom        *time.Time
+	CreatedTo          *time.Time
 	UpdatedAt          *time.Time
 }
 

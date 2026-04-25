@@ -21,15 +21,17 @@ const (
 	queryCreateWorkoutsExercise = `INSERT INTO bodyfuel.workouts_exercise (
 		"workout_id",
 		"exercise_id",
+		"sets",
 		"modify_reps",
 		"modify_relax_time",
 		"calories",
 		"status",
 		"updated_at",
 		"created_at"
-	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 	queryUpdateWorkoutsExercise = `UPDATE bodyfuel.workouts_exercise SET
+		"sets" = :sets,
 		"modify_reps" = :modify_reps,
 		"modify_relax_time" = :modify_relax_time,
 		"calories" = :calories,
@@ -103,6 +105,7 @@ func (r *WorkoutsExerciseRepo) Create(ctx context.Context, workoutsExercise *ent
 	_, err := r.getter.Get(ctx).ExecContext(ctx, queryCreateWorkoutsExercise,
 		row.WorkoutID,
 		row.ExerciseID,
+		row.Sets,
 		row.ModifyReps,
 		row.ModifyRelaxTime,
 		row.Calories,
@@ -130,7 +133,7 @@ func (r *WorkoutsExerciseRepo) CreateBulk(ctx context.Context, workoutExercises 
 		}
 	}
 
-	const numFields = 8
+	const numFields = 9
 
 	valueStrings := make([]string, 0, len(workoutExercises))
 	valueArgs := make([]interface{}, 0, len(workoutExercises)*numFields)
@@ -147,6 +150,7 @@ func (r *WorkoutsExerciseRepo) CreateBulk(ctx context.Context, workoutExercises 
 		valueArgs = append(valueArgs,
 			row.WorkoutID,
 			row.ExerciseID,
+			row.Sets,
 			row.ModifyReps,
 			row.ModifyRelaxTime,
 			row.Calories,
@@ -159,6 +163,7 @@ func (r *WorkoutsExerciseRepo) CreateBulk(ctx context.Context, workoutExercises 
 	query := fmt.Sprintf(`INSERT INTO bodyfuel.workouts_exercise (
 		"workout_id",
 		"exercise_id",
+		"sets",
 		"modify_reps",
 		"modify_relax_time",
 		"calories",
@@ -192,6 +197,7 @@ func (r *WorkoutsExerciseRepo) CreateBulkSimplified(ctx context.Context, workout
 		INSERT INTO bodyfuel.workouts_exercise (
 			workout_id,
 			exercise_id,
+			sets,
 			modify_reps,
 			modify_relax_time,
 			calories,
@@ -201,6 +207,7 @@ func (r *WorkoutsExerciseRepo) CreateBulkSimplified(ctx context.Context, workout
 		) VALUES (
 			:workout_id,
 			:exercise_id,
+			:sets,
 			:modify_reps,
 			:modify_relax_time,
 			:calories,
@@ -231,7 +238,7 @@ func (r *WorkoutsExerciseRepo) CreateBulkWithReturning(ctx context.Context, work
 		}
 	}
 
-	const numFields = 8
+	const numFields = 9
 
 	// Строим массовый INSERT запрос с RETURNING
 	valueStrings := make([]string, 0, len(workoutExercises))
@@ -249,6 +256,7 @@ func (r *WorkoutsExerciseRepo) CreateBulkWithReturning(ctx context.Context, work
 		valueArgs = append(valueArgs,
 			row.WorkoutID,
 			row.ExerciseID,
+			row.Sets,
 			row.ModifyReps,
 			row.ModifyRelaxTime,
 			row.Calories,
@@ -261,16 +269,18 @@ func (r *WorkoutsExerciseRepo) CreateBulkWithReturning(ctx context.Context, work
 	query := fmt.Sprintf(`INSERT INTO bodyfuel.workouts_exercise (
 		"workout_id",
 		"exercise_id",
+		"sets",
 		"modify_reps",
 		"modify_relax_time",
 		"calories",
 		"status",
 		"updated_at",
 		"created_at"
-	) VALUES %s 
-	RETURNING 
+	) VALUES %s
+	RETURNING
 		workout_id,
 		exercise_id,
+		sets,
 		modify_reps,
 		modify_relax_time,
 		calories,
