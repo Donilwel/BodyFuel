@@ -91,18 +91,28 @@ final class ProfileService: ProfileServiceProtocol {
 extension ProfileService {
     private func mapToProfileError(_ error: Error) -> ProfileError {
         guard let networkError = error as? NetworkError else {
-            return .invalidData(error.localizedDescription)
+            return .invalidData("Не удалось загрузить профиль")
         }
 
         switch networkError {
-        case .requestFailed(let statusCode, let message):
+        case .requestFailed(let statusCode, _):
             switch statusCode {
             case 400: return .validation
             case 401: return .unauthorized
-            default: return .invalidData(message)
+            default: return .invalidData("Ошибка сервера, попробуйте позже")
             }
-        default:
-            return .invalidData(error.localizedDescription)
+        case .decodingFailed, .encodingFailed:
+            return .invalidData("Ошибка обработки данных")
+        case .missingToken:
+            return .unauthorized
+        case .invalidURL:
+            return .invalidData("Сервер временно недоступен")
+        case .network(let underlying):
+            if let urlError = underlying as? URLError,
+               urlError.code == .notConnectedToInternet || urlError.code == .networkConnectionLost {
+                return .invalidData("Нет подключения к интернету")
+            }
+            return .invalidData("Сервер временно недоступен")
         }
     }
 }

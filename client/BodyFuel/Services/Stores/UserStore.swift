@@ -61,11 +61,11 @@ final class UserStore: ObservableObject {
             loadProfileFromDisk()
         }
 
-        if NetworkMonitor.shared.isOnline {
-            await fetchProfileFromServer()
-        }
-
         applyProfileFallbacks()
+
+        if NetworkMonitor.shared.isOnline {
+            Task { await fetchProfileFromServer() }
+        }
     }
 
     private func loadProfileFromDisk() {

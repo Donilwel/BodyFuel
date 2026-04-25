@@ -93,25 +93,31 @@ final class ProfileViewModel: ObservableObject {
 
     private let healthService: HealthKitServiceProtocol = HealthKitService.shared
     private let service: ProfileServiceProtocol = ProfileService.shared
+    private var storeObserver: AnyCancellable?
 
     func loadAvatar() async {
         avatarData = try? await avatarItem?.loadTransferable(type: Data.self)
     }
 
     func load() async {
-        do {
-            screenState = .loading
-            await UserStore.shared.load()
-            if let storedProfile = UserStore.shared.profile {
-                profile = storedProfile
-            } else {
-                profile = try await service.fetchProfile()
+        screenState = .loading
+
+        storeObserver = UserStore.shared.$profile
+            .compactMap { $0 }
+            .receive(on: RunLoop.main)
+            .sink { [weak self] updated in
+                guard let self else { return }
+                self.profile = updated
+                if self.screenState == .loading { self.screenState = .idle }
             }
+
+        await UserStore.shared.load()
+
+        if let cached = UserStore.shared.profile {
+            profile = cached
             screenState = .idle
-        } catch {
-            if AppRouter.shared.handleIfUnauthorized(error) { return }
-            let appError = ErrorMapper.map(error)
-            screenState = .error(appError.errorDescription ?? "Не удалось загрузить профиль")
+        } else if screenState == .loading {
+            screenState = .idle
         }
     }
 

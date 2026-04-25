@@ -117,11 +117,11 @@ final class AuthService: AuthServiceProtocol {
 extension AuthService {
     private func mapToAuthError(_ error: Error) -> AuthError {
         guard let networkError = error as? NetworkError else {
-            return .invalidData(error.localizedDescription)
+            return .invalidData("Произошла ошибка, попробуйте позже")
         }
 
         switch networkError {
-        case .requestFailed(let statusCode, let message):
+        case .requestFailed(let statusCode, _):
             switch statusCode {
             case 400:
                 return .validation
@@ -130,11 +130,20 @@ extension AuthService {
             case 409:
                 return .userExists
             default:
-                return .invalidData(message)
+                return .invalidData("Ошибка сервера, попробуйте позже")
             }
-
-        default:
-            return .invalidData(error.localizedDescription)
+        case .decodingFailed, .encodingFailed:
+            return .invalidData("Ошибка обработки данных")
+        case .missingToken:
+            return .invalidCredentials
+        case .invalidURL:
+            return .invalidData("Сервер временно недоступен")
+        case .network(let underlying):
+            if let urlError = underlying as? URLError,
+               urlError.code == .notConnectedToInternet || urlError.code == .networkConnectionLost {
+                return .invalidData("Нет подключения к интернету")
+            }
+            return .invalidData("Сервер временно недоступен")
         }
     }
 }
