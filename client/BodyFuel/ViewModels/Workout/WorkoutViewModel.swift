@@ -316,12 +316,12 @@ final class WorkoutViewModel: ObservableObject {
         }
         stopExerciseTimer()
         stopWorkoutTimer()
-        
+
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             liveActivityService.end()
         }
-        
+
         if currentExerciseIndex == 0 && currentSet == 1 && (phase == .waitingForStart || phase == .exercise) { // если не начал
             isWorkoutActive = false
             storedWorkoutID = nil
@@ -338,15 +338,9 @@ final class WorkoutViewModel: ObservableObject {
                 repCount: currentSetRepCount
             ))
             currentExerciseRepCount = ""
-            if let id = currentWorkoutID {
-                let durationNano = Int64(totalWorkoutElapsedTime) * 1_000_000_000
-                Task {
-                    try? await workoutService.updateWorkout(id: id, status: .failed, duration: durationNano)
-                }
-            }
-            finishWorkout()
+            finishWorkout(finalStatus: .failed)
         }
-        
+
         phase = .finished
         exerciseStats.forEach { stats in
             print("\(stats.exercise.name): \(stats.repCount.joined(separator: ", ")); \(totalWorkoutElapsedTime)")
@@ -507,24 +501,57 @@ final class WorkoutViewModel: ObservableObject {
         updateLiveActivity()
     }
     
-    private func finishWorkout() {
+    private func finishWorkout(finalStatus: WorkoutStatus = .completed) {
         stopWorkoutTimer()
-        
+
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.liveActivityService.end()
         }
-        
+
         phase = .finished
         isWorkoutActive = false
         showWorkoutSummary = true
-        
+
         Task {
             let (calories, _) = await healthKitService.endWorkout()
 
+            let durationSeconds = Int64(totalWorkoutElapsedTime)
+            let exerciseItems = makeExerciseUpdateItems(finalStatus: finalStatus)
+            let totalCals = Int(calories)
+
             if let id = currentWorkoutID {
-                let durationNano = Int64(totalWorkoutElapsedTime) * 1_000_000_000
-                try? await workoutService.updateWorkout(id: id, status: .completed, duration: durationNano)
+                do {
+                    try await workoutService.updateWorkout(
+                        id: id,
+                        status: finalStatus,
+                        duration: durationSeconds,
+                        totalCalories: totalCals,
+                        exercises: exerciseItems.isEmpty ? nil : exerciseItems
+                    )
+                    if finalStatus == .completed {
+                        await WorkoutHistoryStore.shared.refresh()
+                    }
+                } catch {
+                    if isTransportError(error) {
+                        let payload = UpdateWorkoutPayload(
+                            workoutID: id,
+                            status: finalStatus.rawValue,
+                            duration: durationSeconds,
+                            totalCalories: totalCals,
+                            exercises: exerciseItems.map {
+                                UpdateWorkoutExerciseItemPayload(
+                                    exerciseID: $0.exerciseID,
+                                    sets: $0.sets,
+                                    reps: $0.reps,
+                                    calories: $0.calories,
+                                    status: $0.status
+                                )
+                            }
+                        )
+                        MutationQueue.shared.enqueue(type: .updateWorkout, payload: payload)
+                    }
+                }
             }
 
             await MainActor.run {
@@ -541,6 +568,25 @@ final class WorkoutViewModel: ObservableObject {
             }
 
             await HealthKitService.shared.refreshDailyActivity()
+        }
+    }
+
+    private func makeExerciseUpdateItems(finalStatus: WorkoutStatus) -> [UpdateWorkoutExerciseItem] {
+        exerciseStats.map { stats in
+            let sets = stats.repCount.count
+            let repInts = stats.repCount.compactMap { Int($0) }
+            let avgReps: Int? = (stats.exercise.type != .cardio && !repInts.isEmpty)
+                ? repInts.reduce(0, +) / repInts.count
+                : nil
+            let allSkipped = stats.repCount.allSatisfy { $0 == "0" }
+            let exStatus = allSkipped ? "skipped" : (finalStatus == .completed ? "completed" : "in_progress")
+            return UpdateWorkoutExerciseItem(
+                exerciseID: stats.exercise.id.uuidString,
+                sets: sets > 0 ? sets : nil,
+                reps: avgReps,
+                calories: nil,
+                status: exStatus
+            )
         }
     }
     

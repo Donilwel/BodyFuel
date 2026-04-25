@@ -103,6 +103,23 @@ struct HomeView: View {
 
     private var workoutCard: some View {
         VStack(spacing: 6) {
+            if viewModel.hasTodayWorkout {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill").font(.caption)
+                    Text("Тренировка на сегодня выполнена!")
+                        .font(.caption)
+                }
+                .foregroundStyle(.white.opacity(0.8))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else if viewModel.hasWeeklyGoalMet {
+                HStack(spacing: 6) {
+                    Image(systemName: "trophy.fill").font(.caption)
+                    Text("Цель на неделю достигнута!")
+                        .font(.caption)
+                }
+                .foregroundStyle(.white.opacity(0.8))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
             if workoutViewModel.isWorkoutStale {
                 HStack(spacing: 6) {
                     Image(systemName: "clock.arrow.circlepath").font(.caption)

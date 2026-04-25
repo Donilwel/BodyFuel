@@ -7,6 +7,7 @@ struct StatsView: View {
     @State private var selectedDate: Date? = nil
     @State private var selectedPoint: ChartDataPoint? = nil
     @State private var isInitialLoad = true
+    @State private var showHistory = false
 
     var body: some View {
         ZStack {
@@ -28,6 +29,7 @@ struct StatsView: View {
                     }
                     headerBlock
                     chartBlock
+                    historyButtonBlock
                     recommendationsBlock
                     Spacer(minLength: 40)
                 }
@@ -44,6 +46,11 @@ struct StatsView: View {
         }
         .sheet(isPresented: $viewModel.showWeightInput) {
             WeightInputSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showHistory) {
+            NavigationStack {
+                WorkoutHistoryView()
+            }
         }
         .onChange(of: viewModel.selectedPeriod) { _ in
             Task { await viewModel.reloadChart() }
@@ -292,6 +299,25 @@ struct StatsView: View {
         case .week: return .dateTime.day().month(.abbreviated).locale(locale)
         case .month: return .dateTime.day().month(.abbreviated).locale(locale)
         case .year: return .dateTime.month(.abbreviated).locale(locale)
+        }
+    }
+
+    // MARK: - History Button
+
+    private var historyButtonBlock: some View {
+        InfoCard {
+            Button {
+                showHistory = true
+            } label: {
+                HStack {
+                    Label("История тренировок", systemImage: "figure.run")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+            }
         }
     }
 

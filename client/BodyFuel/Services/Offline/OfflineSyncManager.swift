@@ -9,6 +9,7 @@ final class OfflineSyncManager: ObservableObject {
 
     private let nutritionService: NutritionServiceProtocol = NutritionService.shared
     private let statsService: StatsServiceProtocol = StatsService.shared
+    private let workoutService: WorkoutServiceProtocol = WorkoutService.shared
     private let queue = MutationQueue.shared
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
@@ -53,6 +54,7 @@ final class OfflineSyncManager: ObservableObject {
 
         try? await NutritionStore.shared.load()
         await StatsStore.shared.loadWeightHistory(force: true)
+        await WorkoutHistoryStore.shared.refresh()
     }
 
     // MARK: - Execute
@@ -74,6 +76,19 @@ final class OfflineSyncManager: ObservableObject {
         case .markRecommendationRead:
             let p = try decoder.decode(MarkRecommendationReadPayload.self, from: mutation.payload)
             try await statsService.markRecommendationRead(id: p.id)
+
+        case .updateWorkout:
+            let p = try decoder.decode(UpdateWorkoutPayload.self, from: mutation.payload)
+            let exercises: [UpdateWorkoutExerciseItem]? = p.exercises.isEmpty ? nil : p.exercises.map {
+                UpdateWorkoutExerciseItem(exerciseID: $0.exerciseID, sets: $0.sets, reps: $0.reps, calories: $0.calories, status: $0.status)
+            }
+            try await workoutService.updateWorkout(
+                id: p.workoutID,
+                status: p.status.flatMap { WorkoutStatus(rawValue: $0) },
+                duration: p.duration,
+                totalCalories: p.totalCalories,
+                exercises: exercises
+            )
         }
     }
 }

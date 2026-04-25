@@ -8,6 +8,8 @@ final class HomeViewModel: ObservableObject {
     @Published var stats: DayStats?
     @Published var basalMetabolicRate: Int?
     @Published var meals: [MealPreview] = []
+    @Published var hasTodayWorkout: Bool = false
+    @Published var hasWeeklyGoalMet: Bool = false
 
     private let health: HealthKitServiceProtocol = HealthKitService.shared
 
@@ -16,6 +18,7 @@ final class HomeViewModel: ObservableObject {
     private var summaryCancellable: AnyCancellable?
     private var burnedCancellable: AnyCancellable?
     private var stepsCancellable: AnyCancellable?
+    private var historyCancellable: AnyCancellable?
 
     init() {
         nutritionCancellable = NutritionStore.shared.$mealPreviews
@@ -65,6 +68,18 @@ final class HomeViewModel: ObservableObject {
                     caloriesBurned: existing.caloriesBurned
                 )
             }
+
+        historyCancellable = WorkoutHistoryStore.shared.$workouts
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updateWorkoutGoalStatus()
+            }
+    }
+
+    private func updateWorkoutGoalStatus() {
+        hasTodayWorkout = WorkoutHistoryStore.shared.todayCompletedCount > 0
+        let target = UserStore.shared.profile?.targetWorkoutsWeekly ?? 0
+        hasWeeklyGoalMet = target > 0 && WorkoutHistoryStore.shared.thisWeekCompletedCount >= target
     }
 
     func load() async {
@@ -79,6 +94,8 @@ final class HomeViewModel: ObservableObject {
         }
 
         await UserStore.shared.load()
+        await WorkoutHistoryStore.shared.load()
+        updateWorkoutGoalStatus()
 
         await HealthKitService.shared.refreshDailyActivity()
 

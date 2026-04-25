@@ -5,6 +5,7 @@ protocol WorkoutServiceProtocol {
     func generateWorkout() async throws -> (workoutID: String, workout: Workout)
     func fetchWorkout(id: String) async throws -> (workoutID: String, workout: Workout)
     func fetchWorkoutHistory(limit: Int, offset: Int) async throws -> WorkoutHistoryResponseBody
+    func updateWorkout(id: String, status: WorkoutStatus?, duration: Int64?, totalCalories: Int?, exercises: [UpdateWorkoutExerciseItem]?) async throws
     func updateWorkout(id: String, status: WorkoutStatus?, duration: Int64?) async throws
     func deleteWorkout(id: String) async throws
 }
@@ -75,14 +76,8 @@ final class WorkoutService: WorkoutServiceProtocol {
         }
     }
 
-    func fetchWorkoutHistory(limit: Int = 20, offset: Int = 0) async throws -> WorkoutHistoryResponseBody {
-        var components = URLComponents(string: API.baseURLString + API.Workouts.history)
-        components?.queryItems = [
-            URLQueryItem(name: "limit", value: "\(limit)"),
-            URLQueryItem(name: "offset", value: "\(offset)")
-        ]
-
-        guard let url = components?.url else {
+    func fetchWorkoutHistory(limit: Int = 100, offset: Int = 0) async throws -> WorkoutHistoryResponseBody {
+        guard let url = URL(string: API.baseURLString + API.Workouts.history) else {
             print("[ERROR] [WorkoutService/fetchWorkoutHistory]: Invalid URL")
             throw NetworkError.invalidURL
         }
@@ -93,7 +88,7 @@ final class WorkoutService: WorkoutServiceProtocol {
                 method: .get
             )
 
-            print("[INFO] [WorkoutService/fetchWorkoutHistory]: Successfully fetched \(response.count) workouts")
+            print("[INFO] [WorkoutService/fetchWorkoutHistory]: Successfully fetched \(response.workouts.count) workouts")
             return response
         } catch {
             print("[ERROR] [WorkoutService/fetchWorkoutHistory]: \(error.localizedDescription)")
@@ -101,13 +96,18 @@ final class WorkoutService: WorkoutServiceProtocol {
         }
     }
 
-    func updateWorkout(id: String, status: WorkoutStatus?, duration: Int64?) async throws {
+    func updateWorkout(id: String, status: WorkoutStatus?, duration: Int64?, totalCalories: Int? = nil, exercises: [UpdateWorkoutExerciseItem]? = nil) async throws {
         guard let url = URL(string: API.baseURLString + API.Workouts.workout(id: id)) else {
             print("[ERROR] [WorkoutService/updateWorkout]: Invalid URL")
             throw NetworkError.invalidURL
         }
 
-        let requestBody = UpdateWorkoutRequestBody(status: status?.rawValue, duration: duration)
+        let requestBody = UpdateWorkoutRequestBody(
+            status: status?.rawValue,
+            duration: duration,
+            totalCalories: totalCalories,
+            exercises: exercises
+        )
 
         do {
             let _: DefaultDecodable = try await networkClient.request(
@@ -121,6 +121,10 @@ final class WorkoutService: WorkoutServiceProtocol {
             print("[ERROR] [WorkoutService/updateWorkout]: \(error.localizedDescription)")
             throw error
         }
+    }
+    
+    func updateWorkout(id: String, status: WorkoutStatus?, duration: Int64?) async throws {
+        try await updateWorkout(id: id, status: status, duration: duration, totalCalories: nil, exercises: nil)
     }
 
     func deleteWorkout(id: String) async throws {

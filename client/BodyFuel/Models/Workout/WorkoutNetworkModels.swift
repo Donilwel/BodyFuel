@@ -39,9 +39,29 @@ struct GenerateWorkoutRequestBody: Encodable {
     }
 }
 
+struct UpdateWorkoutExerciseItem: Encodable {
+    let exerciseID: String
+    let sets: Int?
+    let reps: Int?
+    let calories: Int?
+    let status: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case exerciseID = "exercise_id"
+        case sets, reps, calories, status
+    }
+}
+
 struct UpdateWorkoutRequestBody: Encodable {
     let status: String?
     let duration: Int64?
+    let totalCalories: Int?
+    let exercises: [UpdateWorkoutExerciseItem]?
+
+    private enum CodingKeys: String, CodingKey {
+        case status, duration, exercises
+        case totalCalories = "total_calories"
+    }
 }
 
 // MARK: - Response Bodies
@@ -106,26 +126,43 @@ struct WorkoutExerciseResponseBody: Decodable {
     }
 }
 
-typealias WorkoutHistoryResponseBody = [WorkoutSummaryResponseBody]
+struct WorkoutHistoryResponseBody: Decodable {
+    let workouts: [WorkoutSummaryResponseBody]
+    let total: Int
+    let limit: Int
+    let offset: Int
+}
 
 struct WorkoutSummaryResponseBody: Decodable {
     let id: String
     let level: String
     let totalCalories: Int
     let status: String
-    let duration: Int64?
-    let createdAt: String
+    let duration: Int64
+    let date: String
     let exercisesCount: Int
     let completedCount: Int
+    let exercises: [WorkoutExerciseSummaryBody]
 
     private enum CodingKeys: String, CodingKey {
-        case id
-        case level
+        case id, level, status, duration, exercises
         case totalCalories = "total_calories"
-        case status
-        case duration
-        case createdAt = "created_at"
+        case date
         case exercisesCount = "exercises_count"
         case completedCount = "completed_count"
+    }
+}
+
+struct WorkoutExerciseSummaryBody: Decodable {
+    let exerciseID: String
+    let name: String
+    let sets: Int
+    let reps: Int
+    let calories: Int
+    let status: String
+
+    private enum CodingKeys: String, CodingKey {
+        case exerciseID = "exercise_id"
+        case name, sets, reps, calories, status
     }
 }
