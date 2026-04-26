@@ -307,9 +307,3 @@ func (a *App) waitGracefulShutdown() {
 		log.Println("Http server stopped")
 	}
 }
-
-func initMetricServer(metricHandler http.Handler) *gin.Engine {
-	router := gin.New()
-	router.GET("/metrics", gin.WrapH(metricHandler))
-	return router
-}

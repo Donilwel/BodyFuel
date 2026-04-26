@@ -27,7 +27,7 @@ func initS3(cfg minio.Config) (*s3.Client, error) {
 	}
 
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.EndpointResolver = s3.EndpointResolverFromURL(cfg.Endpoint)
+		o.BaseEndpoint = aws.String(cfg.Endpoint)
 		o.UsePathStyle = true
 	})
 

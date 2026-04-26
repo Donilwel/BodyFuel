@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -173,7 +172,7 @@ func TestUploadFoodPhoto_ObjectKeyContainsUserAndFilename(t *testing.T) {
 	svc.publicURL = "https://cdn.example.com/bucket"
 	_, _ = svc.UploadFoodPhoto(ctx, "abc", "photo.png", "image/png", bytes.NewReader(nil))
 
-	assert.Equal(t, fmt.Sprintf("food-photos/abc/photo.png"), capturedKey)
+	assert.Equal(t, "food-photos/abc/photo.png", capturedKey)
 }
 
 // ── NewService wiring ──────────────────────────────────────────────────────

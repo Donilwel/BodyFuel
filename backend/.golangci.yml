@@ -2,12 +2,14 @@ run:
   timeout: 5m
 
 linters:
+  disable-all: true
   enable:
     - govet
     - errcheck
     - staticcheck
     - ineffassign
     - gosimple
+    - unused
 
 issues:
   exclude-dirs:
