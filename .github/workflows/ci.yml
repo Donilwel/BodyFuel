@@ -1,51 +1,13 @@
-name: Go Backend Tests
+name: CI
 
 on:
   push:
   pull_request:
 
 jobs:
+  # ── 1. Tests ───────────────────────────────────────────────────────────────$
   test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.22"
-
-      - name: Download dependencies
-        run: |
-          cd backend
-          go mod download
-          go mod tidy
-
-      - name: Run tests
-        run: |
-          cd backend
-          go test ./...
-
-      - name: Run service tests with coverage
-        run: |
-          cd backend
-          go test ./internal/service/ \
-            -coverpkg=./internal/service/ \
-            -coverprofile=coverage.out
-
-      - name: Check coverage >= 30%
-        run: |
-          cd backend
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          echo "Service coverage: $COVERAGE%"
-
-          REQUIRED=30.0
-          awk -v c="$COVERAGE" -v r="$REQUIRED" \
-            'BEGIN { if (c < r) { print "Coverage too low"; exit 1 } else { print "Coverage OK" } }'
-
-  lint:
-    needs: test
+    name: Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -54,17 +16,73 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
-      
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.58.0
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          go-version: "1.24"
+          cache-dependency-path: backend/go.sum
 
-      - name: Run golangci-lint
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests (race detector)
+        run: go test -race ./...
+
+      - name: Coverage check (all services ≥ 30%)
         run: |
-          go mod tidy
-          golangci-lint run --verbose --timeout 5m ./internal/service/...
+          go test \
+            -coverpkg=./internal/service/... \
+            -coverprofile=coverage.out \
+            ./internal/service/...
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Total service coverage: $COVERAGE%"
+          awk -v c="$COVERAGE" -v r="30.0" \
+            'BEGIN { if (c+0 < r+0) { print "Coverage too low: " c "%"; exit 1 } \
+                     else           { print "Coverage OK: "       c "%" } }'
+
+ # ── 2. Build ───────────────────────────────────────────────────────────────$
+  build:
+    name: Build
+    runs-on: ubuntu-latest  
+    needs: test
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with: 
+          go-version: "1.24"
+          cache-dependency-path: backend/go.sum
+            
+      - name: Download dependencies
+        run: go mod download
+          
+      - name: Build binary
+        run: go build -v -o /dev/null ./cmd/main.go
+                     
+      - name: Build Docker image
+        run: docker build -t bodyfuel-backend:ci .
+
+  # ── 3. Lint ───────────────────────────────────────────────────────────────$
+  lint:
+    name: Lint 
+    runs-on: ubuntu-latest
+    needs: test
+        
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: backend/go.sum
+          
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.8
+          working-directory: backend
+          args: --timeout=5m ./...
+                     
