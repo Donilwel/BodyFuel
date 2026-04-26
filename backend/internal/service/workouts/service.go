@@ -255,7 +255,7 @@ func (s *Service) handlePanic() {
 			workoutsModuleName, r, debug.Stack())
 
 		time.Sleep(5 * time.Second)
-		go s.Run()
+		go s.Run() //nolint:errcheck
 	}
 }
 
@@ -438,7 +438,7 @@ func (s *Service) processUserBatch(ctx context.Context, users []*entities.UserPa
 
 func (s *Service) processGenerateWorkout(ctx context.Context, up *entities.UserParams) error {
 	startTime := time.Now()
-	defer s.updateMetrics(time.Since(startTime), false)
+	defer func() { s.updateMetrics(time.Since(startTime), false) }()
 
 	now := time.Now().In(s.location)
 	userID := up.UserID()
@@ -1188,7 +1188,7 @@ func (s *Service) createNotificationTask(ctx context.Context, workoutID, userID 
 
 func (s *Service) GenerateCustomWorkout(ctx context.Context, params *dto.GenerateWorkoutParams) (*entities.Workout, error) {
 	startTime := time.Now()
-	defer s.updateMetrics(time.Since(startTime), true)
+	defer func() { s.updateMetrics(time.Since(startTime), true) }()
 
 	finalCoef := s.applyLevelMultiplier(params.Level)
 
@@ -1335,7 +1335,7 @@ func (s *Service) getExercisesByParams(ctx context.Context, level entities.Level
 }
 
 func (s *Service) selectCustomExercises(exercises []*entities.Exercise, params *dto.GenerateWorkoutParams) []*entities.Exercise {
-	exerciseCount := s.minExercisesPerWorkout
+	var exerciseCount int
 	if params.ExercisesCount != nil {
 		exerciseCount = *params.ExercisesCount
 		if exerciseCount > s.maxExercisesPerWorkout {

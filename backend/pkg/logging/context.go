@@ -2,7 +2,9 @@ package logging
 
 import "context"
 
-const loggerKey = "logger"
+type contextKey string
+
+const loggerKey contextKey = "logger"
 
 func CtxWithLogger(ctx context.Context, logger Entry) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)

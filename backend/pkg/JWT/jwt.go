@@ -32,9 +32,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if strings.HasPrefix(tokenString, "Bearer ") {
-			tokenString = tokenString[len("Bearer "):]
-		}
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
