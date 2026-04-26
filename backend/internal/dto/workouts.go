@@ -22,11 +22,12 @@ type WorkoutsFilter struct {
 }
 
 type GenerateWorkoutParams struct {
-	UserID         uuid.UUID
-	UserParams     *entities.UserParams
-	UserInfo       *entities.UserInfo
-	PlaceExercise  *entities.PlaceExercise
-	TypeExercise   *entities.ExerciseType
-	Level          *entities.WorkoutsLevel
-	ExercisesCount *int
+	UserID                uuid.UUID
+	UserParams            *entities.UserParams
+	UserInfo              *entities.UserInfo
+	PlaceExercise         *entities.PlaceExercise
+	TypeExercise          *entities.ExerciseType
+	Level                 *entities.WorkoutsLevel
+	ExercisesCount        *int
+	TargetDurationMinutes *int
 }

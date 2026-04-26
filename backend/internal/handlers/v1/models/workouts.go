@@ -174,10 +174,11 @@ func NewWorkoutExercisesFullResponse(list []*entities.WorkoutsExercise) []Workou
 }
 
 type GenerateWorkoutRequest struct {
-	PlaceExercise  *entities.PlaceExercise `json:"place_exercise" binding:"omitempty,oneof=home gym street"`
-	TypeExercise   *entities.ExerciseType  `json:"type_exercise" binding:"omitempty,oneof=upper_body lower_body full_body cardio flexibility"`
-	Level          *entities.WorkoutsLevel `json:"level" binding:"omitempty,oneof=workout_light workout_middle workout_hard"`
-	ExercisesCount *int                    `json:"exercises_count" binding:"omitempty,min=4,max=20"`
+	PlaceExercise        *entities.PlaceExercise `json:"place_exercise"         binding:"omitempty,oneof=home gym street"`
+	TypeExercise         *entities.ExerciseType  `json:"type_exercise"          binding:"omitempty,oneof=upper_body lower_body full_body cardio flexibility"`
+	Level                *entities.WorkoutsLevel `json:"level"                  binding:"omitempty,oneof=workout_light workout_middle workout_hard"`
+	ExercisesCount       *int                    `json:"exercises_count"        binding:"omitempty,min=4,max=20"`
+	TargetDurationMinutes *int                   `json:"target_duration_minutes" binding:"omitempty,min=10,max=120"`
 }
 
 func (r *GenerateWorkoutRequest) Validate() error {

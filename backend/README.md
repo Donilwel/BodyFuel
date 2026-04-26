@@ -376,8 +376,7 @@ pkg/
 ## База данных
 
 Все таблицы находятся в схеме `bodyfuel`. Миграции применяются автоматически через goose при старте:
-- `migrations/00001_init_schema.sql` — основная схема
-- `migrations/00002_add_verified_at.sql` — добавляет `email_verified_at` и `phone_verified_at` в `user_info`
+- `migrations/00001_init_schema.sql` — полная схема БД (все таблицы, индексы, справочник упражнений)
 
 ### `user_info` — аккаунты пользователей
 
@@ -427,8 +426,8 @@ pkg/
 | `level_preparation` | ENUM | `beginner`, `medium`, `sportsman` |
 | `type_exercise` | ENUM | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
 | `place_exercise` | ENUM | `home`, `gym`, `street` |
-| `base_count_reps` | INT | Базовое число повторений |
-| `steps` | INT | Количество подходов |
+| `base_count_reps` | INT | Базовое число повторений (для кардио-тренажёров — время в секундах) |
+| `steps` | INT | Количество подходов (для flexibility — всегда 1) |
 | `avg_calories_per` | DECIMAL | Калорий за одно повторение |
 | `base_relax_time` | INT | Отдых между подходами (сек) |
 | `link_gif` | TEXT | Ссылка на анимацию |
@@ -443,7 +442,7 @@ pkg/
 | `status` | ENUM | `workout_created`, `workout_in_active`, `workout_done`, `workout_failed` |
 | `prediction_calories` | INT | Прогноз калорий |
 | `total_calories` | INT | Фактически сожжено |
-| `duration` | INT | Длительность (нс) |
+| `duration` | INT | Длительность в секундах |
 | `created_at` | TIMESTAMPTZ | Дата создания |
 | `updated_at` | TIMESTAMPTZ | Последнее обновление |
 
@@ -453,9 +452,10 @@ pkg/
 |---------|-----|----------|
 | `workout_id` | UUID FK | → `workout.id` |
 | `exercise_id` | UUID FK | → `exercise.id` |
-| `modify_reps` | INT | Скорректированные повторения |
+| `modify_reps` | INT | Скорректированные повторения (для кардио — время в секундах) |
 | `modify_relax_time` | INT | Скорректированное время отдыха (сек) |
 | `calories` | INT | Калории за это упражнение |
+| `sets` | INT | Фактически выполненных подходов (заполняется при завершении) |
 | `status` | ENUM | `pending`, `in_progress`, `completed`, `skipped` |
 | `created_at` | TIMESTAMPTZ | Дата создания |
 | `updated_at` | TIMESTAMPTZ | Последнее обновление |
@@ -779,21 +779,26 @@ Authorization: Bearer <access_token>
   "place_exercise": "gym",
   "type_exercise": "upper_body",
   "level": "medium",
-  "exercises_count": 6
+  "exercises_count": 6,
+  "target_duration_minutes": 45
 }
 ```
 
-Система подбирает упражнения из справочника с учётом параметров пользователя (`user_params`) и заданных фильтров. Тренировка сохраняется и возвращается со списком упражнений.
+Все поля опциональные. `target_duration_minutes` (10–120) — если задан, упражнения обрезаются с конца (сначала кардио) пока тренировка не вписывается в указанное время. Сохраняется минимум `minExercisesPerWorkout` упражнений.
 
 **Обновление** `PATCH /workouts/:uuid`
 ```json
 {
   "status": "workout_done",
-  "duration": "1h15m"
+  "duration": 4500,
+  "total_calories": 320,
+  "exercises": [
+    { "exercise_id": "uuid", "sets": 3, "reps": 12, "status": "completed" }
+  ]
 }
 ```
 
-Статусы тренировки: `workout_created`, `workout_in_active`, `workout_done`, `workout_failed`
+`duration` — длительность в **секундах** (int64). Статусы: `workout_created`, `workout_in_active`, `workout_done`, `workout_failed`
 
 ---
 
@@ -1650,6 +1655,397 @@ export APNS_SANDBOX="true"
 - Push-уведомления отправляться не будут
 
 Минимальный рабочий конфиг — только PostgreSQL и MinIO, всё остальное опционально.
+
+---
+
+## Требования к входным данным
+
+Ниже приведены требования к входным данным для каждого эндпоинта.
+
+---
+
+### 1. Сервис аутентификации (`/auth`)
+
+**1.1. `POST /auth/register`** — регистрация
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `username` | string | ✓ | 3–32 символа, уникальный |
+| `name` | string | ✓ | 2–50 символов |
+| `surname` | string | ✓ | 2–50 символов |
+| `email` | string | ✓ | корректный email |
+| `phone` | string | ✓ | номер телефона |
+| `password` | string | ✓ | минимум 6 символов |
+
+**1.2. `POST /auth/login`** — вход
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `username` | string | ✓ | — |
+| `password` | string | ✓ | — |
+
+**1.3. `POST /auth/refresh`** — обновление токенов
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `refresh_token` | string | ✓ | действующий refresh-токен |
+
+**1.4. `POST /auth/send-verification`** — отправка кода подтверждения
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `code_type` | string | ✓ | `email` или `phone` |
+
+**1.5. `POST /auth/verify-email` / `POST /auth/verify-phone`** — подтверждение
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `code` | string | ✓ | ровно 6 символов |
+| `code_type` | string | ✓ | `email` или `phone` |
+
+**1.6. `POST /auth/recover`** — запрос сброса пароля
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `email` | string | ✓ | корректный email |
+
+**1.7. `POST /auth/reset-password`** — сброс пароля
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `email` | string | ✓ | корректный email |
+| `code` | string | ✓ | ровно 6 символов |
+| `new_password` | string | ✓ | минимум 6 символов |
+
+---
+
+### 2. Профиль пользователя (`/user/info`)
+
+**2.1. `PATCH /user/info`** — обновление профиля
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `name` | string | ✓ | 2–50 символов |
+| `surname` | string | ✓ | 2–50 символов |
+| `email` | string | ✓ | корректный email |
+| `phone` | string | ✓ | формат `+7XXXXXXXXXX` (10–15 цифр) |
+
+> Все поля обязательны при обновлении — передавайте полный набор.
+
+---
+
+### 3. Параметры пользователя (`/user/params`)
+
+**3.1. `POST /user/params`** — создание параметров
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `height` | int | ✓ | 100–250 (см) |
+| `wants` | string | ✓ | `lose_weight`, `build_muscle`, `stay_fit` |
+| `lifestyle` | string | ✓ | `not_active`, `active`, `sportive` |
+| `targetCaloriesDaily` | int | ✓ | 0–10 000 (ккал) |
+| `targetWorkoutsWeeks` | int | ✓ | 0–7 (тренировок в неделю) |
+| `targetWeight` | float | ✓ | 40–300 (кг) |
+| `photo` | string | — | ключ объекта MinIO |
+
+**3.2. `PATCH /user/params`** — обновление параметров (все поля опциональные)
+
+| Поле | Тип | Ограничения |
+|------|-----|-------------|
+| `height` | int | 100–250 |
+| `wants` | string | `lose_weight`, `build_muscle`, `stay_fit` |
+| `lifestyle` | string | `not_active`, `active`, `sportive` |
+| `targetCaloriesDaily` | int | 0–10 000 |
+| `targetWorkoutsWeeks` | int | 0–7 |
+| `targetWeight` | float | 40–300 |
+| `photo` | string | ключ объекта MinIO |
+
+---
+
+### 4. Вес пользователя (`/user/weight`)
+
+**4.1. `POST /user/weight`** — добавление измерения
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `weight` | float | ✓ | 10–300 (кг) |
+
+---
+
+### 5. Калории пользователя (`/user/calories`)
+
+**5.1. `POST /user/calories`** — создание записи
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `calories` | int | ✓ | 0–10 000 |
+| `date` | string (RFC3339) | ✓ | дата записи |
+| `description` | string | — | максимум 255 символов |
+
+**5.2. `PATCH /user/calories/:uuid`** — обновление записи (все поля опциональные)
+
+| Поле | Тип | Ограничения |
+|------|-----|-------------|
+| `calories` | int | 0–10 000 |
+| `date` | string (RFC3339) | — |
+| `description` | string | максимум 255 символов |
+
+**5.3. `GET /user/calories/history`** — история сожжённых калорий
+
+| Query-параметр | Тип | Ограничения |
+|----------------|-----|-------------|
+| `start_date` | string (RFC3339) | опциональный |
+| `end_date` | string (RFC3339) | опциональный |
+
+---
+
+### 6. Устройства (`/user/devices`)
+
+**6.1. `POST /user/devices`** — регистрация устройства
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `device_token` | string | ✓ | APNs/FCM device token |
+| `platform` | string | ✓ | `ios` или `android` |
+
+---
+
+### 7. Упражнения (`/exercises`)
+
+**7.1. `POST /exercises`** — создание упражнения
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `level_preparation` | string | ✓ | `beginner`, `medium`, `sportsman` |
+| `name` | string | ✓ | 1–100 символов |
+| `type_exercise` | string | ✓ | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
+| `place_exercise` | string | ✓ | `home`, `gym`, `street` |
+| `base_count_reps` | int | ✓ | 1–1000 (для кардио-тренажёров — секунды) |
+| `steps` | int | ✓ | 1–100 (для flexibility всегда 1) |
+| `avg_calories_per` | float | ✓ | 0–1000 (ккал на 1 повторение) |
+| `base_relax_time` | int | ✓ | 0–3600 (сек) |
+| `description` | string | — | максимум 1000 символов |
+| `link_gif` | string | — | валидный URL |
+
+**7.2. `PATCH /exercises/:uuid`** — обновление (все поля опциональные)
+
+| Поле | Тип | Ограничения |
+|------|-----|-------------|
+| `level_preparation` | string | `beginner`, `medium`, `sportsman` |
+| `name` | string | 1–100 символов |
+| `description` | string | максимум 1000 символов |
+| `base_count_reps` | int | 1–1000 |
+| `steps` | int | 1–100 |
+| `avg_calories_per` | float | 0–1000 |
+| `base_relax_time` | int | 0–3600 |
+| `link_gif` | string | валидный URL |
+
+**7.3. `GET /exercises`** — фильтрация (все query-параметры опциональные)
+
+| Query-параметр | Значения |
+|----------------|----------|
+| `level_preparation` | `beginner`, `medium`, `sportsman` |
+| `type_exercise` | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
+| `place_exercise` | `home`, `gym`, `street` |
+
+---
+
+### 8. Тренировки (`/workouts`)
+
+**8.1. `POST /workouts`** — генерация тренировки (все поля опциональные)
+
+| Поле | Тип | Ограничения |
+|------|-----|-------------|
+| `place_exercise` | string | `home`, `gym`, `street` |
+| `type_exercise` | string | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
+| `level` | string | `workout_light`, `workout_middle`, `workout_hard` |
+| `exercises_count` | int | 4–20 |
+| `target_duration_minutes` | int | 10–120 — обрезает кол-во упражнений чтобы вписаться во время |
+
+**8.2. `PATCH /workouts/:uuid`** — обновление тренировки (все поля опциональные)
+
+| Поле | Тип | Ограничения |
+|------|-----|-------------|
+| `status` | string | `workout_created`, `workout_in_active`, `workout_done`, `workout_failed` |
+| `duration` | int64 | ≥ 1 (секунды) |
+| `total_calories` | int | ≥ 0 |
+| `exercises` | array | массив выполненных упражнений (см. ниже) |
+
+Каждый элемент `exercises`:
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `exercise_id` | UUID | ✓ | ID упражнения |
+| `sets` | int | — | ≥ 1 (фактически выполненных подходов) |
+| `reps` | int | — | ≥ 1 (среднее повторений за подход) |
+| `calories` | int | — | ≥ 0 |
+| `status` | string | — | `pending`, `in_progress`, `completed`, `skipped` |
+
+**8.3. `GET /workouts/history`** — история тренировок (query-параметры опциональные)
+
+| Query-параметр | Тип | Описание |
+|----------------|-----|----------|
+| `limit` | int | кол-во записей (по умолчанию 100) |
+| `offset` | int | смещение (по умолчанию 0) |
+| `from` | string (RFC3339) | начало периода |
+| `to` | string (RFC3339) | конец периода |
+
+---
+
+### 9. Упражнения тренировки (`/workouts/:id/exercises`)
+
+**9.1. `POST /workouts/:workoutId/exercises`** — добавление упражнения
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `exercise_id` | UUID | ✓ | — |
+| `modify_reps` | int | — | 1–1000 |
+| `modify_relax_time` | int | — | 0–3600 (сек) |
+
+**9.2. `PATCH /workouts/exercises/:uuid`** — обновление упражнения (все опциональные)
+
+| Поле | Тип | Ограничения |
+|------|-----|-------------|
+| `status` | string | `pending`, `in_progress`, `completed`, `skipped` |
+| `modify_reps` | int | 1–1000 |
+| `modify_relax_time` | int | 0–3600 |
+| `calories` | int | ≥ 0 |
+
+---
+
+### 10. Питание (`/nutrition`)
+
+**10.1. `POST /nutrition/analyze/upload`** — анализ фото (multipart/form-data)
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `photo` | file | ✓ | JPEG, PNG, WebP (не HEIC) |
+| `meal_type` | string | ✓ | `breakfast`, `lunch`, `dinner`, `snack` |
+| `date` | string | — | формат `YYYY-MM-DD` (по умолчанию сегодня) |
+
+**10.2. `POST /nutrition/entries`** — добавление записи вручную
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `description` | string | ✓ | максимум 500 символов |
+| `calories` | int | ✓ | 0–10 000 |
+| `meal_type` | string | ✓ | `breakfast`, `lunch`, `dinner`, `snack` |
+| `protein` | float | — | 0–500 (г) |
+| `carbs` | float | — | 0–500 (г) |
+| `fat` | float | — | 0–500 (г) |
+| `photo_url` | string | — | валидный URL |
+| `date` | string (RFC3339) | — | дата приёма пищи |
+
+**10.3. `PATCH /nutrition/entries/:uuid`** — обновление записи (все поля опциональные)
+
+| Поле | Тип | Ограничения |
+|------|-----|-------------|
+| `description` | string | максимум 500 символов |
+| `calories` | int | 0–10 000 |
+| `meal_type` | string | `breakfast`, `lunch`, `dinner`, `snack` |
+| `protein` | float | 0–500 |
+| `carbs` | float | 0–500 |
+| `fat` | float | 0–500 |
+| `photo_url` | string | валидный URL |
+| `date` | string (RFC3339) | — |
+
+**10.4. `GET /nutrition/diary`** — дневник за день
+
+| Query-параметр | Тип | Описание |
+|----------------|-----|----------|
+| `date` | string (`YYYY-MM-DD`) | опциональный, по умолчанию сегодня |
+
+**10.5. `GET /nutrition/report`** — отчёт за период
+
+| Query-параметр | Тип | Обязательный |
+|----------------|-----|:---:|
+| `from` | string (`YYYY-MM-DD`) | ✓ |
+| `to` | string (`YYYY-MM-DD`) | ✓ |
+
+**10.6. `GET /nutrition/recipes`** — AI-рекомендации рецептов
+
+| Query-параметр | Тип | Описание |
+|----------------|-----|----------|
+| `date` | string (`YYYY-MM-DD`) | опциональный, по умолчанию сегодня |
+
+---
+
+### 11. Рекомендации (`/recommendations`)
+
+**11.1. `GET /recommendations`**
+
+| Query-параметр | Тип | Описание |
+|----------------|-----|----------|
+| `page` | int | номер страницы (по умолчанию 1) |
+| `limit` | int | кол-во записей (по умолчанию 10) |
+
+**11.2. `POST /recommendations/refresh`** — тело запроса не требуется
+
+**11.3. `PATCH /recommendations/:uuid/read`** — тело запроса не требуется
+
+---
+
+### 12. Аватары (`/avatars`)
+
+**12.1. `POST /avatars`** — получение presigned URL для загрузки
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `content_type` | string | ✓ | MIME-тип (`image/jpeg`, `image/png`, `image/webp`) |
+
+После получения URL — загружать файл напрямую через `PUT <upload_url>` с заголовком `Content-Type: <content_type>`. Бэкенд в передаче данных не участвует.
+
+---
+
+### Требования к организации выходных данных
+
+Система обеспечивает унифицированный и структурированный обмен данными между клиентом и сервером.
+
+**Аутентификация** (`POST /auth/login`, `POST /auth/refresh`): возвращает пару `access_token` (JWT, TTL 24 ч) и `refresh_token` (hex 128 символов, TTL 30 дней). При `POST /auth/register` — аналогичная пара сразу после регистрации.
+
+**Профиль и параметры** (`GET /user/info`, `GET /user/params`): нормализованный JSON с текущими данными пользователя, вычисленными показателями (`currentWeight`, `targetWeight`) и статусами верификации (`email_verified_at`, `phone_verified_at` — `null` если не верифицировано).
+
+**Тренировки** (`POST /workouts`, `GET /workouts/:uuid`): иерархическая структура:
+```json
+{
+  "id": "uuid",
+  "level": "workout_middle",
+  "status": "workout_created",
+  "prediction_calories": 320,
+  "total_calories": 0,
+  "duration": 0,
+  "exercises": [
+    {
+      "exercise_id": "uuid",
+      "name": "Приседания",
+      "type_exercise": "lower_body",
+      "place_exercise": "gym",
+      "level_preparation": "medium",
+      "modify_reps": 12,
+      "modify_relax_time": 90,
+      "steps": 4,
+      "calories": 48,
+      "status": "pending",
+      "link_gif": "/exercises/squat.gif"
+    }
+  ]
+}
+```
+
+**История тренировок** (`GET /workouts/history`): пагинированный список с агрегированными данными по каждой тренировке (количество упражнений, выполненных, общие калории) и детальным списком упражнений с фактическими `sets`, `reps`, `status`.
+
+**Питание** (`GET /nutrition/diary`): дневник за день с суммарными макросами (calories, protein, carbs, fat) и списком записей.
+
+**Ошибки**: все ошибки возвращаются в единообразном формате:
+```json
+{ "error": "описание ошибки" }
+```
+Или с деталями валидации:
+```json
+{ "error": "validation failed", "details": "field: ..." }
+```
+
+Коды ответов: `200 OK`, `201 Created`, `204 No Content`, `400 Bad Request`, `401 Unauthorized`, `404 Not Found`, `500 Internal Server Error`.
 
 ---
 

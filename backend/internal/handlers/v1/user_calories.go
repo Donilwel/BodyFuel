@@ -21,7 +21,7 @@ func (a *API) registerUserCaloriesHandlers(router *gin.RouterGroup) {
 
 // getUserCaloriesHistory возвращает историю калорий пользователя
 // @Summary История записей о калориях
-// @Description Возвращает список записей о потреблённых/затраченных калориях за период
+// @Description Возвращает список записей о сожжённых калориях за период
 // @Tags User Calories
 // @Security BearerAuth
 // @Produce json

@@ -1226,6 +1226,11 @@ func (s *Service) GenerateCustomWorkout(ctx context.Context, params *dto.Generat
 	// Sort exercises by phase: Flexibility → Strength → Cardio.
 	selectedExercises = sortExercisesByPhase(selectedExercises)
 
+	// Trim to target duration if requested.
+	if params.TargetDurationMinutes != nil {
+		selectedExercises = s.trimExercisesToTargetDuration(selectedExercises, *params.TargetDurationMinutes, finalCoef)
+	}
+
 	totalCalories, totalDuration := s.calculateWorkoutParamsWithCoef(selectedExercises, finalCoef)
 
 	workoutLevel := s.determineWorkoutDisplayLevel(selectedExercises, params.Level)
@@ -1354,6 +1359,20 @@ func (s *Service) selectCustomExercises(exercises []*entities.Exercise, params *
 
 	// Иначе пытаемся сбалансировать по типам
 	return s.selectBalancedExercisesByType(exercises, exerciseCount)
+}
+
+// trimExercisesToTargetDuration trims exercises from the end until the workout fits
+// within targetMinutes. Keeps at least minExercisesPerWorkout exercises.
+func (s *Service) trimExercisesToTargetDuration(exercises []*entities.Exercise, targetMinutes int, coef float64) []*entities.Exercise {
+	targetSeconds := targetMinutes * 60
+	for len(exercises) > s.minExercisesPerWorkout {
+		_, dur := s.calculateWorkoutParamsWithCoef(exercises, coef)
+		if dur <= targetSeconds {
+			break
+		}
+		exercises = exercises[:len(exercises)-1]
+	}
+	return exercises
 }
 
 func (s *Service) buildSkipMap(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]dto.SkippedExerciseInfo, error) {

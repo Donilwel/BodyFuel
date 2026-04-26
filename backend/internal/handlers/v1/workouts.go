@@ -546,13 +546,14 @@ func (a *API) generateWorkout(ctx *gin.Context) {
 	}
 
 	generateParams := &dto.GenerateWorkoutParams{
-		UserID:         userID,
-		UserParams:     userParams,
-		UserInfo:       userInfo,
-		PlaceExercise:  req.PlaceExercise,
-		TypeExercise:   req.TypeExercise,
-		Level:          req.Level,
-		ExercisesCount: req.ExercisesCount,
+		UserID:                userID,
+		UserParams:            userParams,
+		UserInfo:              userInfo,
+		PlaceExercise:         req.PlaceExercise,
+		TypeExercise:          req.TypeExercise,
+		Level:                 req.Level,
+		ExercisesCount:        req.ExercisesCount,
+		TargetDurationMinutes: req.TargetDurationMinutes,
 	}
 
 	workout, err := a.WorkoutService.GenerateCustomWorkout(ctx, generateParams)

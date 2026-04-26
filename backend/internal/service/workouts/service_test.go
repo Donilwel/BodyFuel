@@ -1579,3 +1579,331 @@ func TestGetUserWorkoutStats_InfoError(t *testing.T) {
 	_, err := svc.GetUserWorkoutStats(ctx, userID)
 	assert.Error(t, err)
 }
+
+// ── helpers ────────────────────────────────────────────────────────────────
+
+func newExerciseWithSteps(t entities.ExerciseType, steps, reps, relaxTime int) *entities.Exercise {
+	return entities.NewExercise(entities.WithExerciseInitSpec(entities.ExerciseInitSpec{
+		ID:               uuid.New(),
+		TypeExercise:     t,
+		LevelPreparation: entities.Medium,
+		PlaceExercise:    entities.Gym,
+		BaseCountReps:    reps,
+		Steps:            steps,
+		BaseRelaxTime:    relaxTime,
+		AvgCaloriesPer:   5.0,
+	}))
+}
+
+// ── trimExercisesToTargetDuration ─────────────────────────────────────────
+
+// Each exercise: steps=1, reps=10, relaxTime=60 → CalculateDuration(1.0)=60*10*1=600s (10 min).
+// restBetweenExercises is 60s per gap.
+// 4 exercises: 4×600 + 3×60 = 2400+180 = 2580s = 43 min.
+// 3 exercises: 3×600 + 2×60 = 1800+120 = 1920s = 32 min.
+
+func TestTrimExercisesToTargetDuration_FitsAlready(t *testing.T) {
+	svc := newService()
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+	// 4 exercises = 4×600 + 3×60 = 2580s = 43 min, target = 60 min → no trimming
+	result := svc.trimExercisesToTargetDuration(exercises, 60, 1.0)
+	assert.Len(t, result, 4)
+}
+
+func TestTrimExercisesToTargetDuration_Trims(t *testing.T) {
+	svc := newService()
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+	// 5 exercises = 5×600 + 4×60 = 3240s = 54 min.
+	// 4 exercises = 4×600 + 3×60 = 2580s = 43 min → fits in 44 min.
+	result := svc.trimExercisesToTargetDuration(exercises, 44, 1.0)
+	assert.Len(t, result, 4)
+}
+
+func TestTrimExercisesToTargetDuration_KeepsMinimum(t *testing.T) {
+	svc := newService() // minExercisesPerWorkout = 4
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+	// target=1 min — impossibly short; must keep at least minExercisesPerWorkout (4)
+	result := svc.trimExercisesToTargetDuration(exercises, 1, 1.0)
+	assert.Len(t, result, svc.minExercisesPerWorkout)
+}
+
+func TestTrimExercisesToTargetDuration_ExactFit(t *testing.T) {
+	svc := newService()
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+	// 4 exercises = 2580s = 43 min; target=43 min → exact fit, no trimming
+	result := svc.trimExercisesToTargetDuration(exercises, 43, 1.0)
+	assert.Len(t, result, 4)
+}
+
+func TestTrimExercisesToTargetDuration_CoefScalesUp(t *testing.T) {
+	svc := newService()
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+	// With coef=2.0: each exercise = int(60*2)*10*1 = 1200s = 20 min.
+	// 5 exercises: 5×1200 + 4×60 = 6240s = 104 min → exceeds 45 min → trim.
+	// Stops at minExercisesPerWorkout=4.
+	result := svc.trimExercisesToTargetDuration(exercises, 45, 2.0)
+	assert.GreaterOrEqual(t, len(result), svc.minExercisesPerWorkout)
+	assert.Less(t, len(result), 5) // must have trimmed at least one
+}
+
+// ── GenerateCustomWorkout with TargetDurationMinutes ───────────────────────
+
+func TestGenerateCustomWorkout_WithTargetDuration_Trims(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	params := newUserParams(userID)
+
+	// 6 exercises each ≈ 10 min → 6×600 + 5×90 = 4050s ≈ 67.5 min
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+
+	exerciseRepo := &mockExerciseRepo{}
+	exerciseRepo.On("List", mock.Anything, mock.Anything, false).Return(exercises, nil)
+
+	weRepo := &mockWorkoutExerciseRepo{}
+	weRepo.On("ListSkippedExercises", mock.Anything, userID, mock.Anything).Return([]dto.SkippedExerciseInfo{}, nil)
+	weRepo.On("ListExerciseProgress", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+	weRepo.On("CreateBulk", mock.Anything, mock.Anything).Return(nil)
+
+	workoutsRepo := &mockWorkoutsRepo{}
+	workoutsRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+
+	svc := newFullService(exerciseRepo, workoutsRepo, weRepo)
+
+	target := 45 // 45 min → should trim some exercises
+	workout, err := svc.GenerateCustomWorkout(ctx, &dto.GenerateWorkoutParams{
+		UserID:                userID,
+		UserParams:            params,
+		TargetDurationMinutes: &target,
+	})
+
+	assert.NoError(t, err)
+	assert.NotNil(t, workout)
+	// duration should be ≤ target (45*60=2700s)
+	assert.LessOrEqual(t, workout.Duration(), int64(target*60))
+}
+
+func TestGenerateCustomWorkout_WithTargetDuration_NoTrimNeeded(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	params := newUserParams(userID)
+
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+
+	exerciseRepo := &mockExerciseRepo{}
+	exerciseRepo.On("List", mock.Anything, mock.Anything, false).Return(exercises, nil)
+
+	weRepo := &mockWorkoutExerciseRepo{}
+	weRepo.On("ListSkippedExercises", mock.Anything, userID, mock.Anything).Return([]dto.SkippedExerciseInfo{}, nil)
+	weRepo.On("ListExerciseProgress", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+	weRepo.On("CreateBulk", mock.Anything, mock.Anything).Return(nil)
+
+	workoutsRepo := &mockWorkoutsRepo{}
+	workoutsRepo.On("Create", mock.Anything, mock.Anything).Return(nil)
+
+	svc := newFullService(exerciseRepo, workoutsRepo, weRepo)
+
+	target := 120 // very long target → no trimming
+	workout, err := svc.GenerateCustomWorkout(ctx, &dto.GenerateWorkoutParams{
+		UserID:                userID,
+		UserParams:            params,
+		TargetDurationMinutes: &target,
+	})
+
+	assert.NoError(t, err)
+	assert.NotNil(t, workout)
+}
+
+// ── selectCustomExercises with TargetDurationMinutes (no trim here) ────────
+
+func TestSelectCustomExercises_WithTargetDuration_IgnoredHere(t *testing.T) {
+	// TargetDurationMinutes is applied after selectCustomExercises in the pipeline.
+	// selectCustomExercises itself only respects ExercisesCount.
+	svc := newService()
+	exercises := make([]*entities.Exercise, 10)
+	for i := range exercises {
+		exercises[i] = newExerciseWithSteps(entities.UpperBody, 1, 10, 60)
+	}
+	count := 6
+	target := 10
+	params := &dto.GenerateWorkoutParams{
+		ExercisesCount:        &count,
+		TargetDurationMinutes: &target,
+	}
+	result := svc.selectCustomExercises(exercises, params)
+	assert.Len(t, result, 6) // trimming happens later in GenerateCustomWorkout
+}
+
+// ── applyLevelMultiplier ──────────────────────────────────────────────────
+
+func TestApplyLevelMultiplier_AllLevels(t *testing.T) {
+	svc := newService()
+
+	light := entities.WorkoutLight
+	middle := entities.WorkoutMiddle
+	hard := entities.WorkoutHard
+
+	assert.Equal(t, 1.0, svc.applyLevelMultiplier(&light))
+	assert.Equal(t, 1.5, svc.applyLevelMultiplier(&middle))
+	assert.Equal(t, 2.0, svc.applyLevelMultiplier(&hard))
+	assert.Equal(t, 1.0, svc.applyLevelMultiplier(nil))
+}
+
+// ── calculateWorkoutParamsWithCoef ─────────────────────────────────────────
+
+func TestCalculateWorkoutParamsWithCoef_Coef2(t *testing.T) {
+	svc := newService()
+	// steps=1, reps=10, relaxTime=60 → CalculateDuration(2.0) = int(60*2)*10*1 = 1200
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+	_, dur := svc.calculateWorkoutParamsWithCoef(exercises, 2.0)
+	// 2×1200 + 1×60 (restBetweenExercises) = 2460
+	assert.Equal(t, 2460, dur)
+}
+
+func TestCalculateWorkoutParamsWithCoef_SingleExercise_NoRest(t *testing.T) {
+	svc := newService()
+	exercises := []*entities.Exercise{
+		newExerciseWithSteps(entities.UpperBody, 1, 10, 60),
+	}
+	_, dur := svc.calculateWorkoutParamsWithCoef(exercises, 1.0)
+	// 1×600, no rest gaps
+	assert.Equal(t, 600, dur)
+}
+
+func TestCalculateWorkoutParamsWithCoef_Empty(t *testing.T) {
+	svc := newService()
+	cal, dur := svc.calculateWorkoutParamsWithCoef([]*entities.Exercise{}, 1.0)
+	assert.Equal(t, 0, cal)
+	assert.Equal(t, 0, dur)
+}
+
+// ── sortExercisesByPhase ───────────────────────────────────────────────────
+
+func TestSortExercisesByPhase_Order(t *testing.T) {
+	exercises := []*entities.Exercise{
+		newExercise(entities.Cardio),
+		newExercise(entities.UpperBody),
+		newExercise(entities.Flexibility),
+		newExercise(entities.LowerBody),
+	}
+	sorted := sortExercisesByPhase(exercises)
+	assert.Len(t, sorted, 4)
+	// flexibility first
+	assert.Equal(t, entities.Flexibility, sorted[0].TypeExercise())
+	// cardio last
+	assert.Equal(t, entities.Cardio, sorted[len(sorted)-1].TypeExercise())
+}
+
+func TestSortExercisesByPhase_NoFlexibility_CardioLast(t *testing.T) {
+	exercises := []*entities.Exercise{
+		newExercise(entities.Cardio),
+		newExercise(entities.UpperBody),
+		newExercise(entities.LowerBody),
+	}
+	sorted := sortExercisesByPhase(exercises)
+	assert.Equal(t, entities.Cardio, sorted[len(sorted)-1].TypeExercise())
+}
+
+func TestSortExercisesByPhase_NoCardio_FlexFirst(t *testing.T) {
+	exercises := []*entities.Exercise{
+		newExercise(entities.UpperBody),
+		newExercise(entities.Flexibility),
+		newExercise(entities.LowerBody),
+	}
+	sorted := sortExercisesByPhase(exercises)
+	assert.Equal(t, entities.Flexibility, sorted[0].TypeExercise())
+}
+
+// ── filterSkippedExercises ────────────────────────────────────────────────
+
+func TestFilterSkippedExercises_EmptySkipMap(t *testing.T) {
+	svc := newService()
+	exercises := []*entities.Exercise{
+		newExercise(entities.UpperBody),
+		newExercise(entities.UpperBody),
+	}
+	result := svc.filterSkippedExercises(exercises, nil)
+	assert.Len(t, result, 2)
+}
+
+func TestFilterSkippedExercises_BlocksFrequentSkips(t *testing.T) {
+	svc := newService()
+	ex := newExercise(entities.UpperBody)
+	skipMap := map[uuid.UUID]dto.SkippedExerciseInfo{
+		ex.ID(): {
+			ExerciseID:    ex.ID(),
+			SkipCount:     3,
+			LastSkippedAt: time.Now().Add(-1 * time.Hour), // recent
+		},
+	}
+	result := svc.filterSkippedExercises([]*entities.Exercise{ex}, skipMap)
+	assert.Len(t, result, 0) // blocked
+}
+
+func TestFilterSkippedExercises_AllowsAfterWeek(t *testing.T) {
+	svc := newService()
+	ex := newExercise(entities.UpperBody)
+	skipMap := map[uuid.UUID]dto.SkippedExerciseInfo{
+		ex.ID(): {
+			ExerciseID:    ex.ID(),
+			SkipCount:     3,
+			LastSkippedAt: time.Now().Add(-8 * 24 * time.Hour), // >7 days ago
+		},
+	}
+	result := svc.filterSkippedExercises([]*entities.Exercise{ex}, skipMap)
+	assert.Len(t, result, 1) // unblocked after 7 days
+}
+
+func TestFilterSkippedExercises_AllowsOnce(t *testing.T) {
+	svc := newService()
+	ex := newExercise(entities.UpperBody)
+	skipMap := map[uuid.UUID]dto.SkippedExerciseInfo{
+		ex.ID(): {
+			ExerciseID:    ex.ID(),
+			SkipCount:     1,
+			LastSkippedAt: time.Now().Add(-1 * time.Hour),
+		},
+	}
+	result := svc.filterSkippedExercises([]*entities.Exercise{ex}, skipMap)
+	assert.Len(t, result, 1) // skipped only once → still included
+}
