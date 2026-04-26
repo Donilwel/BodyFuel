@@ -1660,13 +1660,15 @@ export APNS_SANDBOX="true"
 
 ## Требования к входным данным
 
-Ниже приведены требования к входным данным для каждого эндпоинта.
+Ниже описаны требования к входным данным для **каждого** эндпоинта. Если параметры отсутствуют — указано явно.
 
 ---
 
-### 1. Сервис аутентификации (`/auth`)
+### 1. Аутентификация (`/auth`)
 
 **1.1. `POST /auth/register`** — регистрация
+
+1.1.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
@@ -1674,69 +1676,104 @@ export APNS_SANDBOX="true"
 | `name` | string | ✓ | 2–50 символов |
 | `surname` | string | ✓ | 2–50 символов |
 | `email` | string | ✓ | корректный email |
-| `phone` | string | ✓ | номер телефона |
+| `phone` | string | ✓ | формат E.164, например `+79001234567` |
 | `password` | string | ✓ | минимум 6 символов |
 
 **1.2. `POST /auth/login`** — вход
+
+1.2.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
 | `username` | string | ✓ | — |
 | `password` | string | ✓ | — |
 
-**1.3. `POST /auth/refresh`** — обновление токенов
+**1.3. `POST /auth/refresh`** — обновление пары токенов
+
+1.3.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
-| `refresh_token` | string | ✓ | действующий refresh-токен |
+| `refresh_token` | string | ✓ | действующий refresh-токен (hex 128 символов) |
 
 **1.4. `POST /auth/send-verification`** — отправка кода подтверждения
 
+1.4.1. Тело запроса (JSON)
+
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
 | `code_type` | string | ✓ | `email` или `phone` |
 
-**1.5. `POST /auth/verify-email` / `POST /auth/verify-phone`** — подтверждение
+**1.5. `POST /auth/verify-email`** — подтверждение email
+
+1.5.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
-| `code` | string | ✓ | ровно 6 символов |
-| `code_type` | string | ✓ | `email` или `phone` |
+| `code` | string | ✓ | ровно 6 цифр |
+| `code_type` | string | ✓ | `email` |
 
-**1.6. `POST /auth/recover`** — запрос сброса пароля
+**1.6. `POST /auth/verify-phone`** — подтверждение телефона
+
+1.6.1. Тело запроса (JSON)
+
+| Поле | Тип | Обязательный | Ограничения |
+|------|-----|:---:|-------------|
+| `code` | string | ✓ | ровно 6 цифр |
+| `code_type` | string | ✓ | `phone` |
+
+**1.7. `POST /auth/recover`** — запрос сброса пароля
+
+1.7.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
 | `email` | string | ✓ | корректный email |
 
-**1.7. `POST /auth/reset-password`** — сброс пароля
+**1.8. `POST /auth/reset-password`** — сброс пароля по коду
+
+1.8.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
 | `email` | string | ✓ | корректный email |
-| `code` | string | ✓ | ровно 6 символов |
+| `code` | string | ✓ | ровно 6 цифр |
 | `new_password` | string | ✓ | минимум 6 символов |
 
 ---
 
 ### 2. Профиль пользователя (`/user/info`)
 
-**2.1. `PATCH /user/info`** — обновление профиля
+**2.1. `GET /user/info`** — получение профиля
+
+2.1.1. Параметры: отсутствуют
+
+**2.2. `PATCH /user/info`** — обновление профиля
+
+2.2.1. Тело запроса (JSON) — все поля обязательны при обновлении
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
 | `name` | string | ✓ | 2–50 символов |
 | `surname` | string | ✓ | 2–50 символов |
 | `email` | string | ✓ | корректный email |
-| `phone` | string | ✓ | формат `+7XXXXXXXXXX` (10–15 цифр) |
+| `phone` | string | ✓ | формат E.164, например `+79001234567` |
 
-> Все поля обязательны при обновлении — передавайте полный набор.
+**2.3. `DELETE /user/info`** — удаление аккаунта
+
+2.3.1. Параметры: отсутствуют
 
 ---
 
 ### 3. Параметры пользователя (`/user/params`)
 
-**3.1. `POST /user/params`** — создание параметров
+**3.1. `GET /user/params`** — получение параметров
+
+3.1.1. Параметры: отсутствуют
+
+**3.2. `POST /user/params`** — создание параметров
+
+3.2.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
@@ -1746,35 +1783,68 @@ export APNS_SANDBOX="true"
 | `targetCaloriesDaily` | int | ✓ | 0–10 000 (ккал) |
 | `targetWorkoutsWeeks` | int | ✓ | 0–7 (тренировок в неделю) |
 | `targetWeight` | float | ✓ | 40–300 (кг) |
-| `photo` | string | — | ключ объекта MinIO |
+| `photo` | string | — | ключ объекта MinIO (из `POST /avatars`) |
 
-**3.2. `PATCH /user/params`** — обновление параметров (все поля опциональные)
+**3.3. `PATCH /user/params`** — обновление параметров (все поля опциональные)
+
+3.3.1. Тело запроса (JSON)
 
 | Поле | Тип | Ограничения |
 |------|-----|-------------|
-| `height` | int | 100–250 |
+| `height` | int | 100–250 (см) |
 | `wants` | string | `lose_weight`, `build_muscle`, `stay_fit` |
 | `lifestyle` | string | `not_active`, `active`, `sportive` |
-| `targetCaloriesDaily` | int | 0–10 000 |
+| `targetCaloriesDaily` | int | 0–10 000 (ккал) |
 | `targetWorkoutsWeeks` | int | 0–7 |
-| `targetWeight` | float | 40–300 |
+| `targetWeight` | float | 40–300 (кг) |
 | `photo` | string | ключ объекта MinIO |
+
+**3.4. `DELETE /user/params`** — удаление параметров
+
+3.4.1. Параметры: отсутствуют
 
 ---
 
 ### 4. Вес пользователя (`/user/weight`)
 
-**4.1. `POST /user/weight`** — добавление измерения
+**4.1. `GET /user/weight`** — последнее измерение
+
+4.1.1. Параметры: отсутствуют
+
+**4.2. `GET /user/weight/history`** — вся история измерений
+
+4.2.1. Параметры: отсутствуют
+
+**4.3. `POST /user/weight`** — добавление измерения
+
+4.3.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
 | `weight` | float | ✓ | 10–300 (кг) |
 
+**4.4. `DELETE /user/weight/:uuid`** — удаление записи о весе
+
+4.4.1. Path-параметр: `uuid` — идентификатор записи (UUID)
+
+4.4.2. Тело запроса: отсутствует
+
 ---
 
 ### 5. Калории пользователя (`/user/calories`)
 
-**5.1. `POST /user/calories`** — создание записи
+**5.1. `GET /user/calories/history`** — история записей о сожжённых калориях
+
+5.1.1. Query-параметры (все опциональные)
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `start_date` | string (RFC3339) | начало периода |
+| `end_date` | string (RFC3339) | конец периода |
+
+**5.2. `POST /user/calories`** — создание записи
+
+5.2.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
@@ -1782,7 +1852,11 @@ export APNS_SANDBOX="true"
 | `date` | string (RFC3339) | ✓ | дата записи |
 | `description` | string | — | максимум 255 символов |
 
-**5.2. `PATCH /user/calories/:uuid`** — обновление записи (все поля опциональные)
+**5.3. `PATCH /user/calories/:uuid`** — обновление записи
+
+5.3.1. Path-параметр: `uuid` — идентификатор записи (UUID)
+
+5.3.2. Тело запроса (JSON) — все поля опциональные
 
 | Поле | Тип | Ограничения |
 |------|-----|-------------|
@@ -1790,34 +1864,63 @@ export APNS_SANDBOX="true"
 | `date` | string (RFC3339) | — |
 | `description` | string | максимум 255 символов |
 
-**5.3. `GET /user/calories/history`** — история сожжённых калорий
+**5.4. `DELETE /user/calories/:uuid`** — удаление записи
 
-| Query-параметр | Тип | Ограничения |
-|----------------|-----|-------------|
-| `start_date` | string (RFC3339) | опциональный |
-| `end_date` | string (RFC3339) | опциональный |
+5.4.1. Path-параметр: `uuid` — идентификатор записи (UUID)
+
+5.4.2. Тело запроса: отсутствует
 
 ---
 
 ### 6. Устройства (`/user/devices`)
 
-**6.1. `POST /user/devices`** — регистрация устройства
+**6.1. `GET /user/devices`** — список устройств пользователя
+
+6.1.1. Параметры: отсутствуют
+
+**6.2. `POST /user/devices`** — регистрация устройства
+
+6.2.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
-| `device_token` | string | ✓ | APNs/FCM device token |
+| `device_token` | string | ✓ | APNs device token |
 | `platform` | string | ✓ | `ios` или `android` |
+
+**6.3. `DELETE /user/devices/:uuid`** — удаление устройства
+
+6.3.1. Path-параметр: `uuid` — идентификатор устройства (UUID)
+
+6.3.2. Тело запроса: отсутствует
 
 ---
 
 ### 7. Упражнения (`/exercises`)
 
-**7.1. `POST /exercises`** — создание упражнения
+**7.1. `GET /exercises`** — список упражнений
+
+7.1.1. Query-параметры (все опциональные)
+
+| Параметр | Допустимые значения |
+|----------|---------------------|
+| `level_preparation` | `beginner`, `medium`, `sportsman` |
+| `type_exercise` | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
+| `place_exercise` | `home`, `gym`, `street` |
+
+**7.2. `GET /exercises/:uuid`** — упражнение по ID
+
+7.2.1. Path-параметр: `uuid` — идентификатор упражнения (UUID)
+
+7.2.2. Тело запроса: отсутствует
+
+**7.3. `POST /exercises`** — создание упражнения
+
+7.3.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
-| `level_preparation` | string | ✓ | `beginner`, `medium`, `sportsman` |
 | `name` | string | ✓ | 1–100 символов |
+| `level_preparation` | string | ✓ | `beginner`, `medium`, `sportsman` |
 | `type_exercise` | string | ✓ | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
 | `place_exercise` | string | ✓ | `home`, `gym`, `street` |
 | `base_count_reps` | int | ✓ | 1–1000 (для кардио-тренажёров — секунды) |
@@ -1827,32 +1930,53 @@ export APNS_SANDBOX="true"
 | `description` | string | — | максимум 1000 символов |
 | `link_gif` | string | — | валидный URL |
 
-**7.2. `PATCH /exercises/:uuid`** — обновление (все поля опциональные)
+**7.4. `PATCH /exercises/:uuid`** — обновление упражнения
+
+7.4.1. Path-параметр: `uuid` — идентификатор упражнения (UUID)
+
+7.4.2. Тело запроса (JSON) — все поля опциональные
 
 | Поле | Тип | Ограничения |
 |------|-----|-------------|
-| `level_preparation` | string | `beginner`, `medium`, `sportsman` |
 | `name` | string | 1–100 символов |
+| `level_preparation` | string | `beginner`, `medium`, `sportsman` |
 | `description` | string | максимум 1000 символов |
 | `base_count_reps` | int | 1–1000 |
 | `steps` | int | 1–100 |
 | `avg_calories_per` | float | 0–1000 |
-| `base_relax_time` | int | 0–3600 |
+| `base_relax_time` | int | 0–3600 (сек) |
 | `link_gif` | string | валидный URL |
 
-**7.3. `GET /exercises`** — фильтрация (все query-параметры опциональные)
+**7.5. `DELETE /exercises/:uuid`** — удаление упражнения
 
-| Query-параметр | Значения |
-|----------------|----------|
-| `level_preparation` | `beginner`, `medium`, `sportsman` |
-| `type_exercise` | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
-| `place_exercise` | `home`, `gym`, `street` |
+7.5.1. Path-параметр: `uuid` — идентификатор упражнения (UUID)
+
+7.5.2. Тело запроса: отсутствует
 
 ---
 
 ### 8. Тренировки (`/workouts`)
 
-**8.1. `POST /workouts`** — генерация тренировки (все поля опциональные)
+**8.1. `GET /workouts/history`** — история тренировок
+
+8.1.1. Query-параметры (все опциональные)
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| `limit` | int | кол-во записей (по умолчанию 100) |
+| `offset` | int | смещение (по умолчанию 0) |
+| `from` | string (RFC3339) | начало периода |
+| `to` | string (RFC3339) | конец периода |
+
+**8.2. `GET /workouts/:uuid`** — детали тренировки с упражнениями
+
+8.2.1. Path-параметр: `uuid` — идентификатор тренировки (UUID)
+
+8.2.2. Тело запроса: отсутствует
+
+**8.3. `POST /workouts`** — генерация тренировки
+
+8.3.1. Тело запроса (JSON) — все поля опциональные
 
 | Поле | Тип | Ограничения |
 |------|-----|-------------|
@@ -1860,70 +1984,95 @@ export APNS_SANDBOX="true"
 | `type_exercise` | string | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
 | `level` | string | `workout_light`, `workout_middle`, `workout_hard` |
 | `exercises_count` | int | 4–20 |
-| `target_duration_minutes` | int | 10–120 — обрезает кол-во упражнений чтобы вписаться во время |
+| `target_duration_minutes` | int | 10–120 (обрезает список до нужного времени, минимум `minExercisesPerWorkout`) |
 
-**8.2. `PATCH /workouts/:uuid`** — обновление тренировки (все поля опциональные)
+**8.4. `PATCH /workouts/:uuid`** — обновление тренировки (завершение)
+
+8.4.1. Path-параметр: `uuid` — идентификатор тренировки (UUID)
+
+8.4.2. Тело запроса (JSON) — все поля опциональные
 
 | Поле | Тип | Ограничения |
 |------|-----|-------------|
 | `status` | string | `workout_created`, `workout_in_active`, `workout_done`, `workout_failed` |
 | `duration` | int64 | ≥ 1 (секунды) |
 | `total_calories` | int | ≥ 0 |
-| `exercises` | array | массив выполненных упражнений (см. ниже) |
+| `exercises` | array | массив выполненных упражнений |
 
-Каждый элемент `exercises`:
+8.4.3. Поля каждого элемента `exercises`
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
-| `exercise_id` | UUID | ✓ | ID упражнения |
+| `exercise_id` | UUID | ✓ | ID упражнения из тренировки |
 | `sets` | int | — | ≥ 1 (фактически выполненных подходов) |
 | `reps` | int | — | ≥ 1 (среднее повторений за подход) |
 | `calories` | int | — | ≥ 0 |
 | `status` | string | — | `pending`, `in_progress`, `completed`, `skipped` |
 
-**8.3. `GET /workouts/history`** — история тренировок (query-параметры опциональные)
+**8.5. `DELETE /workouts/:uuid`** — удаление тренировки
 
-| Query-параметр | Тип | Описание |
-|----------------|-----|----------|
-| `limit` | int | кол-во записей (по умолчанию 100) |
-| `offset` | int | смещение (по умолчанию 0) |
-| `from` | string (RFC3339) | начало периода |
-| `to` | string (RFC3339) | конец периода |
+8.5.1. Path-параметр: `uuid` — идентификатор тренировки (UUID)
+
+8.5.2. Тело запроса: отсутствует
 
 ---
 
-### 9. Упражнения тренировки (`/workouts/:id/exercises`)
+### 9. Упражнения внутри тренировки (`/workouts/.../exercises`)
 
-**9.1. `POST /workouts/:workoutId/exercises`** — добавление упражнения
+**9.1. `GET /workouts/:workoutId/exercises`** — список упражнений тренировки
+
+9.1.1. Path-параметр: `workoutId` — идентификатор тренировки (UUID)
+
+9.1.2. Тело запроса: отсутствует
+
+**9.2. `POST /workouts/:workoutId/exercises`** — добавление упражнения
+
+9.2.1. Path-параметр: `workoutId` — идентификатор тренировки (UUID)
+
+9.2.2. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
-| `exercise_id` | UUID | ✓ | — |
-| `modify_reps` | int | — | 1–1000 |
+| `exercise_id` | UUID | ✓ | ID упражнения из справочника |
+| `modify_reps` | int | — | 1–1000 (для кардио — секунды) |
 | `modify_relax_time` | int | — | 0–3600 (сек) |
 
-**9.2. `PATCH /workouts/exercises/:uuid`** — обновление упражнения (все опциональные)
+**9.3. `PATCH /workouts/exercises/:uuid`** — обновление упражнения тренировки
+
+9.3.1. Path-параметр: `uuid` — идентификатор записи в `workouts_exercise` (UUID)
+
+9.3.2. Тело запроса (JSON) — все поля опциональные
 
 | Поле | Тип | Ограничения |
 |------|-----|-------------|
 | `status` | string | `pending`, `in_progress`, `completed`, `skipped` |
 | `modify_reps` | int | 1–1000 |
-| `modify_relax_time` | int | 0–3600 |
+| `modify_relax_time` | int | 0–3600 (сек) |
 | `calories` | int | ≥ 0 |
+
+**9.4. `DELETE /workouts/exercises/:uuid`** — удаление упражнения из тренировки
+
+9.4.1. Path-параметр: `uuid` — идентификатор записи (UUID)
+
+9.4.2. Тело запроса: отсутствует
 
 ---
 
 ### 10. Питание (`/nutrition`)
 
-**10.1. `POST /nutrition/analyze/upload`** — анализ фото (multipart/form-data)
+**10.1. `POST /nutrition/analyze/upload`** — анализ фото еды (multipart/form-data)
+
+10.1.1. Тело запроса (multipart/form-data)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
-| `photo` | file | ✓ | JPEG, PNG, WebP (не HEIC) |
+| `photo` | file | ✓ | JPEG, PNG, WebP (HEIC не поддерживается) |
 | `meal_type` | string | ✓ | `breakfast`, `lunch`, `dinner`, `snack` |
 | `date` | string | — | формат `YYYY-MM-DD` (по умолчанию сегодня) |
 
 **10.2. `POST /nutrition/entries`** — добавление записи вручную
+
+10.2.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
@@ -1936,116 +2085,883 @@ export APNS_SANDBOX="true"
 | `photo_url` | string | — | валидный URL |
 | `date` | string (RFC3339) | — | дата приёма пищи |
 
-**10.3. `PATCH /nutrition/entries/:uuid`** — обновление записи (все поля опциональные)
+**10.3. `PATCH /nutrition/entries/:uuid`** — обновление записи
+
+10.3.1. Path-параметр: `uuid` — идентификатор записи (UUID)
+
+10.3.2. Тело запроса (JSON) — все поля опциональные
 
 | Поле | Тип | Ограничения |
 |------|-----|-------------|
 | `description` | string | максимум 500 символов |
 | `calories` | int | 0–10 000 |
 | `meal_type` | string | `breakfast`, `lunch`, `dinner`, `snack` |
-| `protein` | float | 0–500 |
-| `carbs` | float | 0–500 |
-| `fat` | float | 0–500 |
+| `protein` | float | 0–500 (г) |
+| `carbs` | float | 0–500 (г) |
+| `fat` | float | 0–500 (г) |
 | `photo_url` | string | валидный URL |
 | `date` | string (RFC3339) | — |
 
-**10.4. `GET /nutrition/diary`** — дневник за день
+**10.4. `DELETE /nutrition/entries/:uuid`** — удаление записи
 
-| Query-параметр | Тип | Описание |
-|----------------|-----|----------|
+10.4.1. Path-параметр: `uuid` — идентификатор записи (UUID)
+
+10.4.2. Тело запроса: отсутствует
+
+**10.5. `GET /nutrition/diary`** — дневник за день
+
+10.5.1. Query-параметры
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
 | `date` | string (`YYYY-MM-DD`) | опциональный, по умолчанию сегодня |
 
-**10.5. `GET /nutrition/report`** — отчёт за период
+**10.6. `GET /nutrition/report`** — отчёт за период
 
-| Query-параметр | Тип | Обязательный |
-|----------------|-----|:---:|
+10.6.1. Query-параметры (оба обязательные)
+
+| Параметр | Тип | Обязательный |
+|----------|-----|:---:|
 | `from` | string (`YYYY-MM-DD`) | ✓ |
 | `to` | string (`YYYY-MM-DD`) | ✓ |
 
-**10.6. `GET /nutrition/recipes`** — AI-рекомендации рецептов
+**10.7. `GET /nutrition/recipes`** — AI-рекомендации рецептов
 
-| Query-параметр | Тип | Описание |
-|----------------|-----|----------|
+10.7.1. Query-параметры
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
 | `date` | string (`YYYY-MM-DD`) | опциональный, по умолчанию сегодня |
 
 ---
 
 ### 11. Рекомендации (`/recommendations`)
 
-**11.1. `GET /recommendations`**
+**11.1. `GET /recommendations`** — список рекомендаций
 
-| Query-параметр | Тип | Описание |
-|----------------|-----|----------|
+11.1.1. Query-параметры (все опциональные)
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
 | `page` | int | номер страницы (по умолчанию 1) |
 | `limit` | int | кол-во записей (по умолчанию 10) |
 
-**11.2. `POST /recommendations/refresh`** — тело запроса не требуется
+**11.2. `POST /recommendations/refresh`** — генерация новых рекомендаций через AI
 
-**11.3. `PATCH /recommendations/:uuid/read`** — тело запроса не требуется
+11.2.1. Тело запроса: отсутствует
+
+**11.3. `PATCH /recommendations/:uuid/read`** — отметить рекомендацию прочитанной
+
+11.3.1. Path-параметр: `uuid` — идентификатор рекомендации (UUID)
+
+11.3.2. Тело запроса: отсутствует
 
 ---
 
-### 12. Аватары (`/avatars`)
+### 12. Задачи (`/tasks`)
 
-**12.1. `POST /avatars`** — получение presigned URL для загрузки
+**12.1. `GET /tasks`** — список фоновых задач
+
+12.1.1. Параметры: отсутствуют
+
+**12.2. `GET /tasks/:uuid`** — задача по ID
+
+12.2.1. Path-параметр: `uuid` — идентификатор задачи (UUID)
+
+12.2.2. Тело запроса: отсутствует
+
+**12.3. `POST /tasks/:uuid/restart`** — перезапустить упавшую задачу
+
+12.3.1. Path-параметр: `uuid` — идентификатор задачи (UUID)
+
+12.3.2. Тело запроса: отсутствует
+
+**12.4. `DELETE /tasks/:uuid`** — удаление задачи
+
+12.4.1. Path-параметр: `uuid` — идентификатор задачи (UUID)
+
+12.4.2. Тело запроса: отсутствует
+
+---
+
+### 13. Аватары (`/avatars`)
+
+**13.1. `POST /avatars`** — получение presigned PUT URL для загрузки аватара
+
+13.1.1. Тело запроса (JSON)
 
 | Поле | Тип | Обязательный | Ограничения |
 |------|-----|:---:|-------------|
-| `content_type` | string | ✓ | MIME-тип (`image/jpeg`, `image/png`, `image/webp`) |
+| `content_type` | string | ✓ | `image/jpeg`, `image/png`, `image/webp` |
 
-После получения URL — загружать файл напрямую через `PUT <upload_url>` с заголовком `Content-Type: <content_type>`. Бэкенд в передаче данных не участвует.
+13.1.2. После получения URL — загружать файл напрямую через `PUT <upload_url>` с заголовком `Content-Type: <content_type>`. Бэкенд в передаче данных не участвует.
 
 ---
 
-### Требования к организации выходных данных
+## Требования к выходным данным
 
-Система обеспечивает унифицированный и структурированный обмен данными между клиентом и сервером.
+Ниже описана структура ответа для **каждого** эндпоинта. Все ответы — JSON, кодировка UTF-8. Если тело ответа отсутствует — указано явно.
 
-**Аутентификация** (`POST /auth/login`, `POST /auth/refresh`): возвращает пару `access_token` (JWT, TTL 24 ч) и `refresh_token` (hex 128 символов, TTL 30 дней). При `POST /auth/register` — аналогичная пара сразу после регистрации.
+### Общий формат ошибок
 
-**Профиль и параметры** (`GET /user/info`, `GET /user/params`): нормализованный JSON с текущими данными пользователя, вычисленными показателями (`currentWeight`, `targetWeight`) и статусами верификации (`email_verified_at`, `phone_verified_at` — `null` если не верифицировано).
+Все эндпоинты при ошибке возвращают:
+```json
+{ "error": "описание ошибки" }
+```
+При ошибке валидации:
+```json
+{ "error": "validation failed", "details": "field: ..." }
+```
 
-**Тренировки** (`POST /workouts`, `GET /workouts/:uuid`): иерархическая структура:
+Коды: `400` Bad Request · `401` Unauthorized · `404` Not Found · `409` Conflict · `500` Internal Server Error
+
+---
+
+### 1. Аутентификация (`/auth`)
+
+**1.1. `POST /auth/register`** — `201 Created`
+
+1.1.1. Тело ответа
+
+```json
+{ "message": "Successfully registers" }
+```
+
+**1.2. `POST /auth/login`** — `200 OK`
+
+1.2.1. Тело ответа
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `access_token` | string | JWT (TTL 24 ч) |
+| `refresh_token` | string | hex 128 символов (TTL 30 дней) |
+
+```json
+{ "access_token": "eyJ...", "refresh_token": "a3f9..." }
+```
+
+**1.3. `POST /auth/refresh`** — `200 OK`
+
+1.3.1. Тело ответа — та же структура что и у login
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `access_token` | string | Новый JWT |
+| `refresh_token` | string | Новый refresh-токен (старый инвалидирован) |
+
+**1.4. `POST /auth/send-verification`** — `200 OK`
+
+1.4.1. Тело ответа
+
+```json
+{ "message": "Verification code sent" }
+```
+
+**1.5. `POST /auth/verify-email`** — `200 OK`
+
+1.5.1. Тело ответа
+
+```json
+{ "message": "Email verified" }
+```
+
+**1.6. `POST /auth/verify-phone`** — `200 OK`
+
+1.6.1. Тело ответа
+
+```json
+{ "message": "Phone verified" }
+```
+
+**1.7. `POST /auth/recover`** — `200 OK`
+
+1.7.1. Тело ответа — всегда 200, независимо от того, существует ли email (защита от перебора)
+
+```json
+{ "message": "If the email exists, a recovery code has been sent" }
+```
+
+**1.8. `POST /auth/reset-password`** — `200 OK`
+
+1.8.1. Тело ответа
+
+```json
+{ "message": "Password reset successfully" }
+```
+
+---
+
+### 2. Профиль пользователя (`/user/info`)
+
+**2.1. `GET /user/info`** — `200 OK`
+
+2.1.1. Тело ответа
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `username` | string | Никнейм |
+| `name` | string | Имя |
+| `surname` | string | Фамилия |
+| `email` | string | Email |
+| `phone` | string | Телефон |
+| `created_at` | string (RFC3339) | Дата регистрации |
+| `email_verified_at` | string \| null | Время верификации email (`null` — не верифицирован) |
+| `phone_verified_at` | string \| null | Время верификации телефона (`null` — не верифицирован) |
+
+```json
+{
+  "username": "john_doe",
+  "name": "John",
+  "surname": "Doe",
+  "email": "john@example.com",
+  "phone": "+79001234567",
+  "created_at": "2025-04-01T10:00:00Z",
+  "email_verified_at": "2025-04-01T10:05:00Z",
+  "phone_verified_at": null
+}
+```
+
+**2.2. `PATCH /user/info`** — `200 OK`
+
+2.2.1. Тело ответа
+
+```json
+{ "message": "Successfully updated" }
+```
+
+**2.3. `DELETE /user/info`** — `200 OK`
+
+2.3.1. Тело ответа
+
+```json
+{ "message": "Successfully deleted" }
+```
+
+---
+
+### 3. Параметры пользователя (`/user/params`)
+
+**3.1. `GET /user/params`** — `200 OK`
+
+3.1.1. Тело ответа
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `height` | int | Рост (см) |
+| `photo` | string | Ключ объекта аватара в MinIO |
+| `wants` | string | Цель: `lose_weight`, `build_muscle`, `stay_fit` |
+| `lifestyle` | string | Активность: `not_active`, `active`, `sportive` |
+| `currentWeight` | float | Текущий вес (кг) |
+| `targetWeight` | float | Целевой вес (кг) |
+| `targetCaloriesDaily` | int | Норма калорий в день |
+| `targetWorkoutsWeeks` | int | Тренировок в неделю (цель) |
+
+```json
+{
+  "height": 180,
+  "photo": "users/uuid/avatar.jpg",
+  "wants": "lose_weight",
+  "lifestyle": "active",
+  "currentWeight": 85.0,
+  "targetWeight": 75.0,
+  "targetCaloriesDaily": 2000,
+  "targetWorkoutsWeeks": 4
+}
+```
+
+**3.2. `POST /user/params`** — `200 OK`
+
+3.2.1. Тело ответа
+
+```json
+{ "message": "Successfully created" }
+```
+
+**3.3. `PATCH /user/params`** — `200 OK`
+
+3.3.1. Тело ответа
+
+```json
+{ "message": "Successfully updated" }
+```
+
+**3.4. `DELETE /user/params`** — `200 OK`
+
+3.4.1. Тело ответа
+
+```json
+{ "message": "Successfully deleted" }
+```
+
+---
+
+### 4. Вес пользователя (`/user/weight`)
+
+**4.1. `GET /user/weight`** — `200 OK`
+
+4.1.1. Тело ответа — последнее измерение
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Идентификатор записи |
+| `weight` | float | Вес (кг) |
+| `date` | string (RFC3339) | Дата измерения |
+
+```json
+{ "id": "uuid", "weight": 82.5, "date": "2025-04-12T10:00:00Z" }
+```
+
+**4.2. `GET /user/weight/history`** — `200 OK`
+
+4.2.1. Тело ответа — массив записей, каждая той же структуры что и 4.1
+
+```json
+[
+  { "id": "uuid", "weight": 82.5, "date": "2025-04-12T10:00:00Z" },
+  { "id": "uuid", "weight": 83.0, "date": "2025-04-10T10:00:00Z" }
+]
+```
+
+**4.3. `POST /user/weight`** — `200 OK`
+
+4.3.1. Тело ответа — созданная запись (та же структура что и 4.1)
+
+```json
+{ "id": "uuid", "weight": 82.5, "date": "2025-04-12T10:00:00Z" }
+```
+
+**4.4. `DELETE /user/weight/:uuid`** — `200 OK`
+
+4.4.1. Тело ответа
+
+```json
+{ "message": "Successfully deleted" }
+```
+
+---
+
+### 5. Калории пользователя (`/user/calories`)
+
+**5.1. `GET /user/calories/history`** — `200 OK`
+
+5.1.1. Тело ответа — массив записей
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Идентификатор |
+| `user_id` | UUID | Идентификатор пользователя |
+| `calories` | int | Количество калорий |
+| `description` | string | Комментарий (может быть пустым) |
+| `date` | string (RFC3339) | Дата записи |
+| `created_at` | string (RFC3339) | Время создания |
+| `updated_at` | string (RFC3339) | Время обновления |
+
+```json
+[
+  {
+    "id": "uuid",
+    "user_id": "uuid",
+    "calories": 450,
+    "description": "Обед",
+    "date": "2025-04-12T13:00:00Z",
+    "created_at": "2025-04-12T13:01:00Z",
+    "updated_at": "2025-04-12T13:01:00Z"
+  }
+]
+```
+
+**5.2. `POST /user/calories`** — `200 OK`
+
+5.2.1. Тело ответа — созданная запись (та же структура что и элемент 5.1)
+
+**5.3. `PATCH /user/calories/:uuid`** — `200 OK`
+
+5.3.1. Тело ответа
+
+```json
+{ "message": "Successfully updated" }
+```
+
+**5.4. `DELETE /user/calories/:uuid`** — `200 OK`
+
+5.4.1. Тело ответа
+
+```json
+{ "message": "Successfully deleted" }
+```
+
+---
+
+### 6. Устройства (`/user/devices`)
+
+**6.1. `GET /user/devices`** — `200 OK`
+
+6.1.1. Тело ответа — массив устройств
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Идентификатор |
+| `device_token` | string | APNs device token |
+| `platform` | string | `ios` или `android` |
+| `created_at` | string (RFC3339) | Дата регистрации |
+
+```json
+[
+  {
+    "id": "uuid",
+    "device_token": "abc123...",
+    "platform": "ios",
+    "created_at": "2025-04-01T10:00:00Z"
+  }
+]
+```
+
+**6.2. `POST /user/devices`** — `200 OK`
+
+6.2.1. Тело ответа — созданная запись (та же структура что и элемент 6.1)
+
+**6.3. `DELETE /user/devices/:uuid`** — `200 OK`
+
+6.3.1. Тело ответа
+
+```json
+{ "message": "Successfully deleted" }
+```
+
+---
+
+### 7. Упражнения (`/exercises`)
+
+**7.1. `GET /exercises`** — `200 OK`
+
+7.1.1. Тело ответа — массив упражнений
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Идентификатор |
+| `name` | string | Название |
+| `description` | string | Описание техники |
+| `level_preparation` | string | `beginner`, `medium`, `sportsman` |
+| `type_exercise` | string | `cardio`, `upper_body`, `lower_body`, `full_body`, `flexibility` |
+| `place_exercise` | string | `home`, `gym`, `street` |
+| `base_count_reps` | int | Базовые повторения (для кардио-тренажёров — секунды) |
+| `steps` | int | Количество подходов |
+| `avg_calories_per` | float | Калорий за одно повторение |
+| `base_relax_time` | int | Отдых между подходами (сек) |
+| `link_gif` | string | URL анимации |
+
+**7.2. `GET /exercises/:uuid`** — `200 OK`
+
+7.2.1. Тело ответа — одно упражнение (та же структура что и элемент 7.1)
+
+**7.3. `POST /exercises`** — `200 OK`
+
+7.3.1. Тело ответа — созданное упражнение (та же структура что и элемент 7.1)
+
+**7.4. `PATCH /exercises/:uuid`** — `200 OK`
+
+7.4.1. Тело ответа
+
+```json
+{ "message": "Successfully updated" }
+```
+
+**7.5. `DELETE /exercises/:uuid`** — `200 OK`
+
+7.5.1. Тело ответа
+
+```json
+{ "message": "Successfully deleted" }
+```
+
+---
+
+### 8. Тренировки (`/workouts`)
+
+**8.1. `GET /workouts/history`** — `200 OK`
+
+8.1.1. Тело ответа
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `workouts` | array | Список тренировок |
+| `total` | int | Всего записей |
+| `limit` | int | Лимит (0 = без лимита) |
+| `offset` | int | Смещение |
+
+8.1.2. Каждый элемент `workouts`
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Идентификатор тренировки |
+| `level` | string | `workout_light`, `workout_middle`, `workout_hard` |
+| `status` | string | `workout_created`, `workout_in_active`, `workout_done`, `workout_failed` |
+| `total_calories` | int | Фактически сожжено |
+| `duration` | int64 | Длительность в секундах |
+| `date` | string (RFC3339) | Дата тренировки |
+| `exercises_count` | int | Всего упражнений |
+| `completed_count` | int | Выполнено упражнений |
+| `exercises` | array | Список упражнений (см. ниже) |
+
+8.1.3. Каждый элемент `exercises` в истории
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `exercise_id` | UUID | Идентификатор упражнения |
+| `name` | string | Название упражнения |
+| `sets` | int | Фактически выполненных подходов |
+| `reps` | int | Повторений за подход |
+| `calories` | int | Калорий за упражнение |
+| `status` | string | `pending`, `in_progress`, `completed`, `skipped` |
+
+**8.2. `GET /workouts/:uuid`** — `200 OK`
+
+8.2.1. Тело ответа
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Идентификатор |
+| `user_id` | UUID | Идентификатор пользователя |
+| `level` | string | Уровень тренировки |
+| `status` | string | Статус тренировки |
+| `prediction_calories` | int | Прогноз калорий |
+| `total_calories` | int | Фактически сожжено |
+| `duration` | int64 | Длительность в секундах |
+| `created_at` | string (RFC3339) | Дата создания |
+| `updated_at` | string (RFC3339) | Дата обновления |
+| `exercises` | array | Упражнения тренировки |
+
+8.2.2. Каждый элемент `exercises` в детальном ответе
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `exercise_id` | UUID | Идентификатор упражнения |
+| `name` | string | Название |
+| `description` | string | Описание техники |
+| `type_exercise` | string | Тип упражнения |
+| `place_exercise` | string | Место выполнения |
+| `level_preparation` | string | Уровень сложности |
+| `link_gif` | string | URL анимации |
+| `modify_reps` | int | Скорректированные повторения |
+| `modify_relax_time` | int | Скорректированный отдых (сек) |
+| `steps` | int | Количество подходов |
+| `avg_calories_per` | float | Калорий за повторение |
+| `status` | string | `pending`, `in_progress`, `completed`, `skipped` |
+| `completed_at` | string \| null | Время завершения (только если `completed`) |
+
 ```json
 {
   "id": "uuid",
+  "user_id": "uuid",
   "level": "workout_middle",
   "status": "workout_created",
   "prediction_calories": 320,
   "total_calories": 0,
   "duration": 0,
+  "created_at": "2025-04-12T10:00:00Z",
+  "updated_at": "2025-04-12T10:00:00Z",
   "exercises": [
     {
       "exercise_id": "uuid",
       "name": "Приседания",
+      "description": "Классические приседания",
       "type_exercise": "lower_body",
       "place_exercise": "gym",
       "level_preparation": "medium",
+      "link_gif": "https://example.com/squat.gif",
       "modify_reps": 12,
       "modify_relax_time": 90,
       "steps": 4,
-      "calories": 48,
+      "avg_calories_per": 0.5,
       "status": "pending",
-      "link_gif": "/exercises/squat.gif"
+      "completed_at": null
     }
   ]
 }
 ```
 
-**История тренировок** (`GET /workouts/history`): пагинированный список с агрегированными данными по каждой тренировке (количество упражнений, выполненных, общие калории) и детальным списком упражнений с фактическими `sets`, `reps`, `status`.
+**8.3. `POST /workouts`** — `201 Created`
 
-**Питание** (`GET /nutrition/diary`): дневник за день с суммарными макросами (calories, protein, carbs, fat) и списком записей.
+8.3.1. Тело ответа — та же структура что и `GET /workouts/:uuid` (8.2)
 
-**Ошибки**: все ошибки возвращаются в единообразном формате:
+**8.4. `PATCH /workouts/:uuid`** — `200 OK`
+
+8.4.1. Тело ответа
+
 ```json
-{ "error": "описание ошибки" }
-```
-Или с деталями валидации:
-```json
-{ "error": "validation failed", "details": "field: ..." }
+{ "message": "Successfully updated" }
 ```
 
-Коды ответов: `200 OK`, `201 Created`, `204 No Content`, `400 Bad Request`, `401 Unauthorized`, `404 Not Found`, `500 Internal Server Error`.
+**8.5. `DELETE /workouts/:uuid`** — `200 OK`
+
+8.5.1. Тело ответа
+
+```json
+{ "message": "Successfully deleted" }
+```
+
+---
+
+### 9. Упражнения внутри тренировки (`/workouts/.../exercises`)
+
+**9.1. `GET /workouts/:workoutId/exercises`** — `200 OK`
+
+9.1.1. Тело ответа — массив записей
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `exercise_id` | UUID | Идентификатор упражнения |
+| `workout_id` | UUID | Идентификатор тренировки |
+| `modify_reps` | int | Скорректированные повторения |
+| `modify_relax_time` | int | Скорректированный отдых (сек) |
+| `calories` | int | Калории за упражнение |
+| `status` | string | `pending`, `in_progress`, `completed`, `skipped` |
+| `order_index` | int | Порядковый номер в тренировке |
+| `created_at` | string (RFC3339) | Создано |
+| `updated_at` | string (RFC3339) | Обновлено |
+
+**9.2. `POST /workouts/:workoutId/exercises`** — `201 Created`
+
+9.2.1. Тело ответа — созданная запись (та же структура что и элемент 9.1)
+
+**9.3. `PATCH /workouts/exercises/:uuid`** — `200 OK`
+
+9.3.1. Тело ответа
+
+```json
+{ "message": "Successfully updated" }
+```
+
+**9.4. `DELETE /workouts/exercises/:uuid`** — `204 No Content`
+
+9.4.1. Тело ответа: отсутствует
+
+---
+
+### 10. Питание (`/nutrition`)
+
+**10.1. `POST /nutrition/analyze/upload`** — `201 Created`
+
+10.1.1. Тело ответа — созданная запись в дневнике питания
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Идентификатор записи |
+| `description` | string | Описание блюда (от AI, на русском) |
+| `calories` | int | Калории (оценка AI) |
+| `protein` | float | Белки (г) |
+| `carbs` | float | Углеводы (г) |
+| `fat` | float | Жиры (г) |
+| `meal_type` | string | Тип приёма пищи |
+| `photo_url` | string | URL фото в MinIO |
+| `date` | string (RFC3339) | Дата |
+| `created_at` | string (RFC3339) | Время создания |
+
+**10.2. `POST /nutrition/entries`** — `201 Created`
+
+10.2.1. Тело ответа — созданная запись (та же структура что и 10.1)
+
+**10.3. `PATCH /nutrition/entries/:uuid`** — `200 OK`
+
+10.3.1. Тело ответа
+
+```json
+{ "message": "Successfully updated" }
+```
+
+**10.4. `DELETE /nutrition/entries/:uuid`** — `200 OK`
+
+10.4.1. Тело ответа
+
+```json
+{ "message": "Successfully deleted" }
+```
+
+**10.5. `GET /nutrition/diary`** — `200 OK`
+
+10.5.1. Тело ответа
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `date` | string (`YYYY-MM-DD`) | Дата дневника |
+| `entries` | array | Записи за день (структура как в 10.1) |
+| `total_calories` | int | Суммарные калории |
+| `total_protein` | float | Суммарные белки (г) |
+| `total_carbs` | float | Суммарные углеводы (г) |
+| `total_fat` | float | Суммарные жиры (г) |
+
+```json
+{
+  "date": "2025-04-12",
+  "entries": [...],
+  "total_calories": 1850,
+  "total_protein": 142.5,
+  "total_carbs": 195.0,
+  "total_fat": 48.3
+}
+```
+
+**10.6. `GET /nutrition/report`** — `200 OK`
+
+10.6.1. Тело ответа
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `from` | string (`YYYY-MM-DD`) | Начало периода |
+| `to` | string (`YYYY-MM-DD`) | Конец периода |
+| `days` | int | Количество дней |
+| `entries` | array | Все записи за период |
+| `total_calories` | int | Суммарные калории |
+| `total_protein` | float | Суммарные белки (г) |
+| `total_carbs` | float | Суммарные углеводы (г) |
+| `total_fat` | float | Суммарные жиры (г) |
+| `avg_calories_per_day` | float | Среднесуточные калории |
+
+**10.7. `GET /nutrition/recipes`** — `200 OK`
+
+10.7.1. Тело ответа — массив рецептов от AI
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Сгенерированный идентификатор |
+| `name` | string | Название блюда |
+| `description` | string | Краткое описание вкуса |
+| `ingredients` | array | Ингредиенты |
+| `macros` | object | КБЖУ: `protein`, `fat`, `carbs` (г) |
+| `preparation_time` | int | Время приготовления (мин) |
+
+10.7.2. Каждый элемент `ingredients`
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `name` | string | Название ингредиента |
+| `grams` | float | Количество (г) |
+
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Тунец с авокадо",
+    "description": "Нежный, сытный, с лёгкой кислинкой.",
+    "ingredients": [
+      { "name": "Тунец консервированный", "grams": 150 },
+      { "name": "Авокадо", "grams": 100 }
+    ],
+    "macros": { "protein": 32, "fat": 14, "carbs": 4 },
+    "preparation_time": 5
+  }
+]
+```
+
+> Ответ кэшируется в Redis на 2 часа. Кэш инвалидируется при любом изменении дневника за эту дату.
+
+---
+
+### 11. Рекомендации (`/recommendations`)
+
+**11.1. `GET /recommendations`** — `200 OK`
+
+11.1.1. Тело ответа — массив рекомендаций
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `id` | UUID | Идентификатор |
+| `type` | string | `workout`, `nutrition`, `rest`, `general` |
+| `description` | string | Текст рекомендации |
+| `priority` | int | `1` — высокий, `2` — средний, `3` — низкий |
+| `is_read` | bool | Прочитана ли |
+| `generated_at` | string (RFC3339) | Время генерации |
+
+```json
+[
+  {
+    "id": "uuid",
+    "type": "nutrition",
+    "description": "Увеличьте потребление белка до 2г на кг веса",
+    "priority": 1,
+    "is_read": false,
+    "generated_at": "2025-04-12T10:00:00Z"
+  }
+]
+```
+
+**11.2. `POST /recommendations/refresh`** — `200 OK`
+
+11.2.1. Тело ответа — массив новых рекомендаций (та же структура что и 11.1)
+
+> Если кулдаун не истёк (6 часов с последней генерации) — возвращаются существующие рекомендации без вызова AI.
+
+**11.3. `PATCH /recommendations/:uuid/read`** — `200 OK`
+
+11.3.1. Тело ответа
+
+```json
+{ "message": "Successfully updated" }
+```
+
+---
+
+### 12. Задачи (`/tasks`)
+
+**12.1. `GET /tasks`** — `200 OK`
+
+12.1.1. Тело ответа — массив задач
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `uuid` | UUID | Идентификатор задачи |
+| `type_nm` | string | Тип: `send_code_email_task`, `send_code_phone_task`, `send_notification_email_task`, `send_notification_phone_task`, `send_push_notification_task` |
+| `state` | string | `running`, `failed` |
+| `max_attempts` | int | Максимум попыток |
+| `attempts` | int | Текущее число попыток |
+| `retry_at` | string (RFC3339) | Время следующей попытки |
+| `created_at` | string (RFC3339) | Создана |
+| `updated_at` | string (RFC3339) | Обновлена |
+| `attribute` | object | Полезная нагрузка (email / phone / device_token / subject / body / code) |
+
+**12.2. `GET /tasks/:uuid`** — `200 OK`
+
+12.2.1. Тело ответа — одна задача (та же структура что и элемент 12.1)
+
+**12.3. `POST /tasks/:uuid/restart`** — `200 OK`
+
+12.3.1. Тело ответа
+
+```json
+{ "message": "Task restarted" }
+```
+
+**12.4. `DELETE /tasks/:uuid`** — `200 OK`
+
+12.4.1. Тело ответа
+
+```json
+{ "message": "Task deleted" }
+```
+
+---
+
+### 13. Аватары (`/avatars`)
+
+**13.1. `POST /avatars`** — `200 OK`
+
+13.1.1. Тело ответа
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `upload_url` | string | Presigned PUT URL для загрузки (TTL 5 мин) |
+| `object_key` | string | Ключ объекта в MinIO (`users/<uuid>/avatar.jpg`) |
+| `avatar_url` | string | Публичный URL аватара после загрузки |
+
+```json
+{
+  "upload_url": "http://minio:9000/avatars/users/uuid/avatar.jpg?X-Amz-Signature=...",
+  "object_key": "users/uuid/avatar.jpg",
+  "avatar_url": "http://localhost:9000/avatars/users/uuid/avatar.jpg"
+}
+```
+
+> После получения URL загружать файл напрямую через `PUT <upload_url>` с заголовком `Content-Type: <content_type>`. Бэкенд в передаче данных не участвует. Значение `object_key` сохранять как поле `photo` в параметрах пользователя (`PATCH /user/params`).
 
 ---
 
