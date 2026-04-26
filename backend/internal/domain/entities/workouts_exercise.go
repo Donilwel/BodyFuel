@@ -39,6 +39,7 @@ func ToExerciseStatus(s string) (ExerciseStatus, error) {
 type WorkoutsExercise struct {
 	workoutID       uuid.UUID
 	exerciseID      uuid.UUID
+	sets            int
 	modifyReps      int
 	modifyRelaxTime int
 	calories        int
@@ -54,6 +55,10 @@ func (we *WorkoutsExercise) WorkoutID() uuid.UUID {
 
 func (we *WorkoutsExercise) ExerciseID() uuid.UUID {
 	return we.exerciseID
+}
+
+func (we *WorkoutsExercise) Sets() int {
+	return we.sets
 }
 
 func (we *WorkoutsExercise) ModifyReps() int {
@@ -95,6 +100,7 @@ func NewWorkoutsExercise(opt WorkoutsExerciseOption) *WorkoutsExercise {
 type WorkoutsExerciseInitSpec struct {
 	WorkoutID       uuid.UUID
 	ExerciseID      uuid.UUID
+	Sets            int
 	ModifyReps      int
 	ModifyRelaxTime int
 	Calories        int
@@ -107,6 +113,7 @@ type WorkoutsExerciseInitSpec struct {
 type WorkoutsExerciseRestoreSpec struct {
 	WorkoutID       uuid.UUID
 	ExerciseID      uuid.UUID
+	Sets            int
 	ModifyReps      int
 	ModifyRelaxTime int
 	Calories        int
@@ -120,6 +127,7 @@ func WithWorkoutsExerciseInitSpec(s WorkoutsExerciseInitSpec) WorkoutsExerciseOp
 	return func(we *WorkoutsExercise) {
 		we.workoutID = s.WorkoutID
 		we.exerciseID = s.ExerciseID
+		we.sets = s.Sets
 		we.modifyReps = s.ModifyReps
 		we.modifyRelaxTime = s.ModifyRelaxTime
 		we.calories = s.Calories
@@ -134,6 +142,7 @@ func WithWorkoutsExerciseRestoreSpec(s WorkoutsExerciseRestoreSpec) WorkoutsExer
 	return func(we *WorkoutsExercise) {
 		we.workoutID = s.WorkoutID
 		we.exerciseID = s.ExerciseID
+		we.sets = s.Sets
 		we.modifyReps = s.ModifyReps
 		we.modifyRelaxTime = s.ModifyRelaxTime
 		we.calories = s.Calories
@@ -145,6 +154,7 @@ func WithWorkoutsExerciseRestoreSpec(s WorkoutsExerciseRestoreSpec) WorkoutsExer
 }
 
 type WorkoutsExerciseUpdateParams struct {
+	Sets            *int
 	ModifyReps      *int
 	ModifyRelaxTime *int
 	Calories        *int
@@ -154,6 +164,9 @@ type WorkoutsExerciseUpdateParams struct {
 }
 
 func (we *WorkoutsExercise) Update(p WorkoutsExerciseUpdateParams) {
+	if p.Sets != nil {
+		we.sets = *p.Sets
+	}
 	if p.ModifyReps != nil {
 		we.modifyReps = *p.ModifyReps
 	}

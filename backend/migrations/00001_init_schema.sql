@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS bodyfuel.user_info (
     password TEXT NOT NULL,
     email TEXT UNIQUE,
     phone TEXT,
+    email_verified_at TIMESTAMPTZ NULL,
+    phone_verified_at TIMESTAMPTZ NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
@@ -220,6 +222,7 @@ CREATE TABLE IF NOT EXISTS bodyfuel.workouts_exercise (
                                                           modify_reps INT NOT NULL,
                                                           modify_relax_time INT NOT NULL,
                                                           calories INT NOT NULL,
+                                                          sets INT NOT NULL DEFAULT 1,
                                                           status bodyfuel.exercise_status NOT NULL DEFAULT 'pending',
                                                           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
                                                           updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -706,6 +709,30 @@ CREATE TABLE IF NOT EXISTS bodyfuel.user_recommendation (
 
 CREATE INDEX IF NOT EXISTS idx_user_recommendation_user_id ON bodyfuel.user_recommendation (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_recommendation_is_read ON bodyfuel.user_recommendation (user_id, is_read);
+
+-- === fix_flexibility_steps ===
+-- Растяжка выполняется за 1 подход — несколько подходов бессмысленны
+UPDATE bodyfuel.exercise SET steps = 1 WHERE type_exercise = 'flexibility';
+
+-- === fix_cardio_machine_reps ===
+-- Для кардио-тренажёров base_count_reps — время в секундах (не количество)
+UPDATE bodyfuel.exercise SET base_count_reps = 30
+WHERE type_exercise = 'cardio' AND base_count_reps = 1
+  AND name IN (
+    'Ходьба на беговой дорожке', 'Велотренажер', 'Эллиптический тренажер', 'Степпер',
+    'Интервальный бег на дорожке', 'Сайклинг', 'Спринт на дорожке', 'Сайклинг спринт',
+    'Табата на велосипеде', 'Подъем по лестнице', 'Спринт в горку', 'Лестничный спринт',
+    'Интервальный комплекс'
+  );
+
+UPDATE bodyfuel.exercise SET base_count_reps = 60
+WHERE type_exercise = 'cardio' AND base_count_reps = 1
+  AND name IN (
+    'Гребной тренажер', 'Гребля', 'Гребля спринт', 'Эргометр',
+    'Бег трусцой', 'Скандинавская ходьба',
+    'Интервальный бег', 'Бег по лестнице', 'Фартлек',
+    'Фартлек сложный', 'Бег по лестнице'
+  );
 
 -- +goose StatementEnd
 

@@ -1,11 +1,12 @@
 import SwiftUI
 
 struct AuthView: View {
-    @EnvironmentObject var router: AppRouter
     @StateObject private var viewModel = AuthViewModel()
     
     @FocusState private var loginFocused: LoginField?
     @FocusState private var registerFocused: RegisterField?
+    
+    @ObservedObject private var router = AppRouter.shared
     
     private enum LoginField: Hashable {
         case login
@@ -59,9 +60,7 @@ struct AuthView: View {
                 text: $viewModel.surname
             )
             ValidatedField(error: viewModel.phoneError) {
-                CustomTextField(
-                    title: "Телефон",
-                    keyboardType: .phonePad,
+                PhoneTextField(
                     field: RegisterField.phone,
                     focusedField: $registerFocused,
                     text: $viewModel.phone.onChange {
@@ -149,17 +148,13 @@ struct AuthView: View {
         NavigationStack() {
             ZStack(alignment: .center) {
                 AnimatedBackground()
+                    .ignoresSafeArea()
 
                 ScrollView {
-//                    Image("emblema")
-//                        .clipShape(.rect(cornerRadius: 12))
-//                    
-//                    Spacer()
-                    
                     formContent
                 }
             }
-            .alert("Что-то пошло не так", isPresented: .constant(isError)) {
+            .alert("Ошибка", isPresented: .constant(isError)) {
                 Button("OK") { viewModel.screenState = .idle }
             } message: {
                 if case let .error(message) = viewModel.screenState {
@@ -169,9 +164,9 @@ struct AuthView: View {
             .onChange(of: viewModel.event) { event in
                 switch event {
                 case .loginSuccess:
-                    router.currentFlow = .main
+                    router.updateRoute()
                 case .registrationSuccess:
-                    router.currentFlow = .onboarding
+                    router.rootRoute = .parametersSetup
                 default:
                     break
                 }

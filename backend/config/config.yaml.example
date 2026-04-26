@@ -1,0 +1,64 @@
+app:
+  http_server:
+    host: "0.0.0.0"
+    port: 8080
+    api_host: "localhost:8080"
+    metric_port: 8081
+    read_timeout: "15s"
+    write_timeout: "30s"
+    idle_timeout: "60s"
+  graceful_timeout: "5s"
+  tasks_tracking_duration: "13s"
+  workouts_config:
+    workout_pull_user_interval: "30s"
+    limit_generate_workouts: 3
+
+sage:
+  level: "info"
+  app_id: 1
+  deployment_environment: production
+  system: bodyfuel
+  stand_type: prod
+  pod_name: bodyfuel-0
+
+postgres:
+  host: "localhost"
+  port: 5432
+  database: "backend_db"
+  user: "danila"
+  password: "postgres"
+  max_open_conn: 25
+  max_idle_conn: 10
+  conn_max_idle_time: "5m"
+  conn_max_lifetime: "30m"
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+
+minio:
+  endpoint: "http://localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  bucket: "avatars"
+  region: "us-east-1"
+  public_url: "http://localhost:9000/avatars"
+  presign_ttl: "5m"
+
+sendgrid:
+  api_key: ""
+  from_email: ""
+  from_name: "BodyFuel"
+
+twilio:
+  account_sid: ""
+  auth_token: ""
+  from_phone: ""
+
+apns:
+  key_path: ""
+  key_id: ""
+  team_id: ""
+  bundle_id: ""
+  sandbox: true

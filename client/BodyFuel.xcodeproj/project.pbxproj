@@ -7,11 +7,47 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		150A3F332F2C574400E52218 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 150A3F322F2C574400E52218 /* Kingfisher */; };
 		151AD6252F1E8DEC002AB6B6 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */; };
+		156DAEC02F61BA7E0087C2D1 /* SharedWidgetStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */; };
+		156DAEC12F61BA7E0087C2D1 /* SharedWidgetStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */; };
+		15A742442F608214003DC0B9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1510CF032F5F104E004CAE54 /* WidgetKit.framework */; };
+		15A742452F608214003DC0B9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1510CF052F5F104E004CAE54 /* SwiftUI.framework */; };
+		15A742562F608215003DC0B9 /* BodyFuelWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		15A742542F608215003DC0B9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 151AD4CC2F1E7C77002AB6B6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 15A742422F608214003DC0B9;
+			remoteInfo = BodyFuelWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		15A741FA2F60818A003DC0B9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				15A742562F608215003DC0B9 /* BodyFuelWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		1510CF032F5F104E004CAE54 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		1510CF052F5F104E004CAE54 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyFuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		153D0B462F5F7E8400A1C7BF /* BodyFuelWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BodyFuelWidgetsExtension.entitlements; sourceTree = "<group>"; };
+		156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedWidgetStorage.swift; sourceTree = "<group>"; };
+		15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BodyFuelWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		15C6BA632F5F808E00DF35E7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -21,6 +57,13 @@
 				Info.plist,
 			);
 			target = 151AD4D32F1E7C77002AB6B6 /* BodyFuel */;
+		};
+		15A7425A2F608215003DC0B9 /* Exceptions for "BodyFuelWidgets" folder in "BodyFuelWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -33,6 +76,29 @@
 			path = BodyFuel;
 			sourceTree = "<group>";
 		};
+		156DAEC42F61D0520087C2D1 /* Styles */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Styles;
+			sourceTree = "<group>";
+		};
+		156DAEC82F61D07B0087C2D1 /* Models */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Models;
+			sourceTree = "<group>";
+		};
+		15A742462F608214003DC0B9 /* BodyFuelWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				15A7425A2F608215003DC0B9 /* Exceptions for "BodyFuelWidgets" folder in "BodyFuelWidgetsExtension" target */,
+			);
+			path = BodyFuelWidgets;
+			sourceTree = "<group>";
+		};
+		15F824142F98110A004D1E62 /* Helpers */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Helpers;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -40,17 +106,41 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				150A3F332F2C574400E52218 /* Kingfisher in Frameworks */,
 				151AD6252F1E8DEC002AB6B6 /* SwiftKeychainWrapper in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		15A742402F608214003DC0B9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				15A742452F608214003DC0B9 /* SwiftUI.framework in Frameworks */,
+				15A742442F608214003DC0B9 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1510CF022F5F104E004CAE54 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				15C6BA632F5F808E00DF35E7 /* Foundation.framework */,
+				1510CF032F5F104E004CAE54 /* WidgetKit.framework */,
+				1510CF052F5F104E004CAE54 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		151AD4CB2F1E7C77002AB6B6 = {
 			isa = PBXGroup;
 			children = (
+				15A742842F608FBD003DC0B9 /* Shared */,
+				153D0B462F5F7E8400A1C7BF /* BodyFuelWidgetsExtension.entitlements */,
 				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
+				15A742462F608214003DC0B9 /* BodyFuelWidgets */,
+				1510CF022F5F104E004CAE54 /* Frameworks */,
 				151AD4D52F1E7C77002AB6B6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,8 +149,20 @@
 			isa = PBXGroup;
 			children = (
 				151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */,
+				15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		15A742842F608FBD003DC0B9 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				15F824142F98110A004D1E62 /* Helpers */,
+				156DAEC82F61D07B0087C2D1 /* Models */,
+				156DAEC42F61D0520087C2D1 /* Styles */,
+				156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -73,21 +175,52 @@
 				151AD4D02F1E7C77002AB6B6 /* Sources */,
 				151AD4D12F1E7C77002AB6B6 /* Frameworks */,
 				151AD4D22F1E7C77002AB6B6 /* Resources */,
+				15A741FA2F60818A003DC0B9 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				15A742552F608215003DC0B9 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
+				156DAEC42F61D0520087C2D1 /* Styles */,
+				156DAEC82F61D07B0087C2D1 /* Models */,
+				15F824142F98110A004D1E62 /* Helpers */,
+			);
+			name = BodyFuel;
+			packageProductDependencies = (
+				151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */,
+				150A3F322F2C574400E52218 /* Kingfisher */,
+			);
+			productName = BodyFuel;
+			productReference = 151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */;
+			productType = "com.apple.product-type.application";
+		};
+		15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 15A742572F608215003DC0B9 /* Build configuration list for PBXNativeTarget "BodyFuelWidgetsExtension" */;
+			buildPhases = (
+				15A7423F2F608214003DC0B9 /* Sources */,
+				15A742402F608214003DC0B9 /* Frameworks */,
+				15A742412F608214003DC0B9 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
+				156DAEC42F61D0520087C2D1 /* Styles */,
+				156DAEC82F61D07B0087C2D1 /* Models */,
+				15A742462F608214003DC0B9 /* BodyFuelWidgets */,
+				15F824142F98110A004D1E62 /* Helpers */,
 			);
-			name = BodyFuel;
+			name = BodyFuelWidgetsExtension;
 			packageProductDependencies = (
-				151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */,
 			);
-			productName = BodyFuel;
-			productReference = 151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */;
-			productType = "com.apple.product-type.application";
+			productName = BodyFuelWidgetsExtension;
+			productReference = 15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -96,11 +229,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
+				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					151AD4D32F1E7C77002AB6B6 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					15A742422F608214003DC0B9 = {
+						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -115,6 +251,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				151AD6232F1E8DEC002AB6B6 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+				150A3F312F2C574400E52218 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 151AD4D52F1E7C77002AB6B6 /* Products */;
@@ -122,12 +259,20 @@
 			projectRoot = "";
 			targets = (
 				151AD4D32F1E7C77002AB6B6 /* BodyFuel */,
+				15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		151AD4D22F1E7C77002AB6B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		15A742412F608214003DC0B9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -141,10 +286,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				156DAEC02F61BA7E0087C2D1 /* SharedWidgetStorage.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		15A7423F2F608214003DC0B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				156DAEC12F61BA7E0087C2D1 /* SharedWidgetStorage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		15A742552F608215003DC0B9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */;
+			targetProxy = 15A742542F608215003DC0B9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		151AD4DD2F1E7C78002AB6B6 /* Debug */ = {
@@ -280,8 +442,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BodyFuel/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Приложение использует камеру для сканирования штрихкода продукта и добавления приема пищи по фото";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложение использует данные здоровья для персонализации плана";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложение записывает данные о тренировках";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -316,8 +480,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BodyFuel/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Приложение использует камеру для сканирования штрихкода продукта и добавления приема пищи по фото";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложение использует данные здоровья для персонализации плана";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложение записывает данные о тренировках";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -333,6 +499,70 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		15A742582F608215003DC0B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = BodyFuelWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GWV92276SN;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BodyFuelWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BodyFuelWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.lordofmops.BodyFuel.BodyFuelWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		15A742592F608215003DC0B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = BodyFuelWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GWV92276SN;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BodyFuelWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BodyFuelWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.lordofmops.BodyFuel.BodyFuelWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -361,9 +591,26 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		15A742572F608215003DC0B9 /* Build configuration list for PBXNativeTarget "BodyFuelWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				15A742582F608215003DC0B9 /* Debug */,
+				15A742592F608215003DC0B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		150A3F312F2C574400E52218 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
 		151AD6232F1E8DEC002AB6B6 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
@@ -375,6 +622,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		150A3F322F2C574400E52218 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 150A3F312F2C574400E52218 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
 		151AD6242F1E8DEC002AB6B6 /* SwiftKeychainWrapper */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 151AD6232F1E8DEC002AB6B6 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;

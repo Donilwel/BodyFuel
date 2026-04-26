@@ -1,7 +1,7 @@
-enum Lifestyle: String, CaseIterable, Identifiable {
-    case sedentary
-    case active
-    case sporty
+enum Lifestyle: String, CaseIterable, Identifiable, Codable {
+    case sedentary = "not_active"
+    case active = "active"
+    case sporty = "sportive"
 
     var id: String { rawValue }
 
@@ -26,14 +26,6 @@ enum Lifestyle: String, CaseIterable, Identifiable {
         case .sedentary: return 1.2
         case .active: return 1.55
         case .sporty: return 1.9
-        }
-    }
-    
-    var backendValue: String {
-        switch self {
-        case .sedentary: return "not_active"
-        case .active: return "active"
-        case .sporty: return "sportive"
         }
     }
 }

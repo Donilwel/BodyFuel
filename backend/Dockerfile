@@ -10,6 +10,9 @@ RUN go mod download
 
 COPY . .
 
+# Use real config if present (local build), otherwise fall back to example (CI)
+RUN if [ ! -f config/config.yaml ]; then cp config/config.yaml.example config/config.yaml; fi
+
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main ./cmd/main.go
 
 # Stage 2: Run

@@ -5,7 +5,6 @@ import (
 	"backend/internal/dto"
 	"backend/internal/handlers/v1/models"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -177,60 +176,116 @@ func (a *API) getUserWorkout(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-// getUserWorkouts получает историю тренировок пользователя
+// getUserWorkouts получает историю тренировок пользователя за период
 // @Summary Получение истории тренировок пользователя
-// @Description Получает список всех тренировок пользователя (без детализации упражнений)
+// @Description Получает список тренировок за период с деталями упражнений. Параметры from/to — RFC3339.
 // @Tags Workouts
 // @Security BearerAuth
 // @Produce json
-// @Success 200 {array} models.UserWorkoutResponse "История тренировок пользователя"
-// @Failure 400 {object} models.ErrorResponse "Неверный формат ID"
+// @Param from query string false "Начало периода (RFC3339)"
+// @Param to   query string false "Конец периода (RFC3339)"
+// @Success 200 {object} models.WorkoutHistoryResponse "История тренировок"
+// @Failure 400 {object} models.ErrorResponse "Неверный формат параметров"
 // @Failure 401 {object} models.ErrorResponse "Отсутствует авторизация"
 // @Failure 500 {object} models.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /workouts/history [get]
 func (a *API) getUserWorkouts(ctx *gin.Context) {
 	userIDRaw, ok := ctx.Get("user_id")
 	if !ok {
-		a.log.Errorf("user params error: get user params: missing user_id in context")
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error": "missing user_id in context",
-		})
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing user_id in context"})
 		return
 	}
-
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
-		a.log.Errorf("user params error: get user params: invalid user_id type in context")
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error": "invalid user_id type in context",
-		})
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user_id type in context"})
 		return
 	}
-
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		a.log.Errorf("crud error: get user params: invalid user_id format: %s", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid user_id format",
-			"details": err.Error(),
-		})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid user_id format", "details": err.Error()})
 		return
 	}
 
-	workoutFilter := dto.WorkoutsFilter{
-		UserID: &userID,
+	workoutFilter := dto.WorkoutsFilter{UserID: &userID}
+
+	if fromStr := ctx.Query("from"); fromStr != "" {
+		t, err := time.Parse(time.RFC3339, fromStr)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' format, use RFC3339"})
+			return
+		}
+		workoutFilter.CreatedFrom = &t
+	}
+	if toStr := ctx.Query("to"); toStr != "" {
+		t, err := time.Parse(time.RFC3339, toStr)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid 'to' format, use RFC3339"})
+			return
+		}
+		workoutFilter.CreatedTo = &t
 	}
 
 	workouts, err := a.CRUDService.ListWorkouts(ctx, workoutFilter, false)
 	if err != nil {
-		a.log.Errorf("list workouts error: failed to get workouts: %v", err)
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to get workout",
-		})
+		a.log.Errorf("list workouts error: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to get workouts"})
 		return
 	}
-	fmt.Println(workouts)
-	ctx.JSON(http.StatusOK, models.NewUserWorkoutsResponse(workouts))
+
+	// Загружаем все упражнения пользователя одним запросом для построения map по ID
+	allExercises, err := a.CRUDService.ListExercise(ctx, userID, dto.ExerciseFilter{}, false)
+	if err != nil {
+		a.log.Warnf("getUserWorkouts: failed to load exercises: %v", err)
+	}
+	exerciseNameMap := make(map[uuid.UUID]string, len(allExercises))
+	for _, e := range allExercises {
+		exerciseNameMap[e.ID()] = e.Name()
+	}
+
+	summaries := make([]models.WorkoutSummaryResponse, 0, len(workouts))
+	for _, w := range workouts {
+		wID := w.ID()
+		weList, err := a.CRUDService.ListWorkoutsExercise(ctx, dto.WorkoutsExerciseFilter{WorkoutID: &wID})
+		if err != nil {
+			a.log.Warnf("getUserWorkouts: failed to load exercises for workout %s: %v", wID, err)
+			weList = nil
+		}
+
+		exerciseSummaries := make([]models.WorkoutExerciseSummary, 0, len(weList))
+		completedCount := 0
+		for _, we := range weList {
+			if we.Status() == entities.ExerciseStatusCompleted {
+				completedCount++
+			}
+			exerciseSummaries = append(exerciseSummaries, models.WorkoutExerciseSummary{
+				ExerciseID: we.ExerciseID(),
+				Name:       exerciseNameMap[we.ExerciseID()],
+				Sets:       we.Sets(),
+				Reps:       we.ModifyReps(),
+				Calories:   we.Calories(),
+				Status:     we.Status(),
+			})
+		}
+
+		summaries = append(summaries, models.WorkoutSummaryResponse{
+			ID:             w.ID(),
+			Level:          w.Level(),
+			Status:         w.Status(),
+			TotalCalories:  w.TotalCalories(),
+			Duration:       w.Duration(),
+			Date:           w.CreatedAt(),
+			ExercisesCount: len(weList),
+			CompletedCount: completedCount,
+			Exercises:      exerciseSummaries,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, models.WorkoutHistoryResponse{
+		Workouts: summaries,
+		Total:    len(summaries),
+		Limit:    0,
+		Offset:   0,
+	})
 }
 
 // updateUserWorkout обновляет тренировку пользователя
@@ -286,11 +341,10 @@ func (a *API) updateUserWorkout(ctx *gin.Context) {
 
 	now := time.Now()
 	params := entities.WorkoutUpdateParams{
-		Status:    req.Status,
-		UpdatedAt: &now,
-	}
-	if req.Duration != nil {
-		params.Duration = req.Duration
+		Status:        req.Status,
+		Duration:      req.Duration,
+		TotalCalories: req.TotalCalories,
+		UpdatedAt:     &now,
 	}
 
 	f := dto.WorkoutsFilter{
@@ -302,6 +356,38 @@ func (a *API) updateUserWorkout(ctx *gin.Context) {
 		a.log.Errorf("update workout error: internal error: %s", err.Error())
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to update workout", "details": err.Error()})
 		return
+	}
+
+	// Обновляем упражнения, если они переданы
+	for _, item := range req.Exercises {
+		exID := item.ExerciseID
+		exParams := entities.WorkoutsExerciseUpdateParams{
+			UpdatedAt: &now,
+		}
+		if item.Sets != nil {
+			exParams.Sets = item.Sets
+		}
+		if item.Reps != nil {
+			exParams.ModifyReps = item.Reps
+		}
+		if item.Calories != nil {
+			exParams.Calories = item.Calories
+		}
+		if item.Status != nil {
+			s, err := entities.ToExerciseStatus(*item.Status)
+			if err != nil {
+				a.log.Warnf("update workout exercise: invalid status %s, skipping", *item.Status)
+				continue
+			}
+			exParams.Status = &s
+		}
+		exFilter := dto.WorkoutsExerciseFilter{
+			WorkoutID:  &workoutID,
+			ExerciseID: &exID,
+		}
+		if err := a.CRUDService.UpdateWorkoutExerciseByFilter(ctx, exFilter, exParams); err != nil {
+			a.log.Warnf("update workout exercise %s: %s", exID, err.Error())
+		}
 	}
 
 	a.log.Infof("update workout %s: success", workoutID)
@@ -460,13 +546,14 @@ func (a *API) generateWorkout(ctx *gin.Context) {
 	}
 
 	generateParams := &dto.GenerateWorkoutParams{
-		UserID:         userID,
-		UserParams:     userParams,
-		UserInfo:       userInfo,
-		PlaceExercise:  req.PlaceExercise,
-		TypeExercise:   req.TypeExercise,
-		Level:          req.Level,
-		ExercisesCount: req.ExercisesCount,
+		UserID:                userID,
+		UserParams:            userParams,
+		UserInfo:              userInfo,
+		PlaceExercise:         req.PlaceExercise,
+		TypeExercise:          req.TypeExercise,
+		Level:                 req.Level,
+		ExercisesCount:        req.ExercisesCount,
+		TargetDurationMinutes: req.TargetDurationMinutes,
 	}
 
 	workout, err := a.WorkoutService.GenerateCustomWorkout(ctx, generateParams)

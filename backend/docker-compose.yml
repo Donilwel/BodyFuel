@@ -30,6 +30,7 @@ services:
     container_name: bodyfuel-minio
     command: server /data --console-address ":9001"
     environment:
+      MINIO_SERVER_URL: http://192.168.1.15:9000
       MINIO_ROOT_USER:     minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
@@ -97,7 +98,7 @@ services:
       POSTGRES_DATABASE: backend_db
 
       # ── MinIO ─────────────────────────────────────────────────────────────
-      MINIO_ENDPOINT:   http://minio:9000
+      MINIO_ENDPOINT:   http://192.168.1.15:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET:     avatars

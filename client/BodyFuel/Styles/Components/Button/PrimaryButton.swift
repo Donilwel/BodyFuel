@@ -1,0 +1,30 @@
+import SwiftUI
+
+struct PrimaryButton: View {
+    let title: String
+    var isLoading: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            if isLoading {
+                ProgressView()
+                    .foregroundColor(.white)
+            } else {
+                Text(title)
+                    .multilineTextAlignment(.center)
+                    .fontWeight(.semibold)
+            }
+        }
+        .padding(.horizontal)
+        .frame(height: 20)
+        .foregroundColor(.white)
+        .padding()
+        .glassEffect(.regular.tint(AppColors.primary).interactive(), in: .rect(cornerRadius: 12))
+        .disabled(isLoading)
+    }
+}
+
+#Preview {
+    HomeView()
+}

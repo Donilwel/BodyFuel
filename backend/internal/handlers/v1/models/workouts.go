@@ -8,11 +8,22 @@ import (
 	"github.com/google/uuid"
 )
 
+// WorkoutExerciseUpdateItem описывает завершённое упражнение при обновлении тренировки.
+type WorkoutExerciseUpdateItem struct {
+	ExerciseID uuid.UUID `json:"exercise_id" binding:"required"`
+	Sets       *int      `json:"sets"        binding:"omitempty,min=1"`
+	Reps       *int      `json:"reps"        binding:"omitempty,min=1"`
+	Calories   *int      `json:"calories"    binding:"omitempty,min=0"`
+	Status     *string   `json:"status"      binding:"omitempty,oneof=pending in_progress completed skipped"`
+}
+
 // UpdateWorkoutRequest содержит поля для обновления тренировки.
-// Duration задаётся в наносекундах (int64).
+// Duration задаётся в секундах (int64).
 type UpdateWorkoutRequest struct {
-	Status   *entities.WorkoutsStatus `json:"status"   binding:"omitempty,oneof=pending in_progress completed cancelled"`
-	Duration *int64                   `json:"duration" binding:"omitempty,min=60000000000"`
+	Status        *entities.WorkoutsStatus    `json:"status"         binding:"omitempty,oneof=workout_created workout_done workout_in_active workout_failed"`
+	Duration      *int64                      `json:"duration"       binding:"omitempty,min=1"`
+	TotalCalories *int                        `json:"total_calories" binding:"omitempty,min=0"`
+	Exercises     []WorkoutExerciseUpdateItem `json:"exercises"      binding:"omitempty"`
 }
 
 type WorkoutResponse struct {
@@ -51,15 +62,25 @@ type WorkoutHistoryResponse struct {
 	Offset   int                      `json:"offset"`
 }
 
+type WorkoutExerciseSummary struct {
+	ExerciseID uuid.UUID               `json:"exercise_id"`
+	Name       string                  `json:"name"`
+	Sets       int                     `json:"sets"`
+	Reps       int                     `json:"reps"`
+	Calories   int                     `json:"calories"`
+	Status     entities.ExerciseStatus `json:"status"`
+}
+
 type WorkoutSummaryResponse struct {
-	ID             uuid.UUID               `json:"id"`
-	Level          entities.WorkoutsLevel  `json:"level"`
-	TotalCalories  int                     `json:"total_calories"`
-	Status         entities.WorkoutsStatus `json:"status"`
-	Duration       *time.Duration          `json:"duration,omitempty"`
-	CreatedAt      time.Time               `json:"created_at"`
-	ExercisesCount int                     `json:"exercises_count"`
-	CompletedCount int                     `json:"completed_count"`
+	ID             uuid.UUID                `json:"id"`
+	Level          entities.WorkoutsLevel   `json:"level"`
+	TotalCalories  int                      `json:"total_calories"`
+	Status         entities.WorkoutsStatus  `json:"status"`
+	Duration       int64                    `json:"duration"`
+	Date           time.Time                `json:"date"`
+	ExercisesCount int                      `json:"exercises_count"`
+	CompletedCount int                      `json:"completed_count"`
+	Exercises      []WorkoutExerciseSummary `json:"exercises"`
 }
 
 type WorkoutExercisesResponse struct {
@@ -153,10 +174,11 @@ func NewWorkoutExercisesFullResponse(list []*entities.WorkoutsExercise) []Workou
 }
 
 type GenerateWorkoutRequest struct {
-	PlaceExercise  *entities.PlaceExercise `json:"place_exercise" binding:"omitempty,oneof=home gym street"`
-	TypeExercise   *entities.ExerciseType  `json:"type_exercise" binding:"omitempty,oneof=upper_body lower_body full_body cardio flexibility"`
-	Level          *entities.WorkoutsLevel `json:"level" binding:"omitempty,oneof=workout_light workout_middle workout_hard"`
-	ExercisesCount *int                    `json:"exercises_count" binding:"omitempty,min=4,max=20"`
+	PlaceExercise        *entities.PlaceExercise `json:"place_exercise"         binding:"omitempty,oneof=home gym street"`
+	TypeExercise         *entities.ExerciseType  `json:"type_exercise"          binding:"omitempty,oneof=upper_body lower_body full_body cardio flexibility"`
+	Level                *entities.WorkoutsLevel `json:"level"                  binding:"omitempty,oneof=workout_light workout_middle workout_hard"`
+	ExercisesCount       *int                    `json:"exercises_count"        binding:"omitempty,min=4,max=20"`
+	TargetDurationMinutes *int                   `json:"target_duration_minutes" binding:"omitempty,min=10,max=120"`
 }
 
 func (r *GenerateWorkoutRequest) Validate() error {

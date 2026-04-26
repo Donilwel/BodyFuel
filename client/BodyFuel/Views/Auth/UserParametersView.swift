@@ -1,15 +1,17 @@
 import SwiftUI
 import PhotosUI
+import HealthKit
 
 struct UserParametersView: View {
-    @EnvironmentObject var router: AppRouter
+    @ObservedObject var router = AppRouter.shared
+
     @StateObject private var viewModel = UserParametersViewModel()
-    
-    @State private var isLifestylePickerPresented = false
-    @State private var isGoalPickerPresented = false
-    
+
     @FocusState private var parametersFocused: ParametersField?
-    
+    @State private var showLogoutAlert = false
+
+    private var noHealthKitAccess: Bool { !HealthKitService.shared.hasGrantedPermission }
+
     private enum ParametersField: Hashable {
         case height
         case weight
@@ -23,7 +25,7 @@ struct UserParametersView: View {
             .onChange(of: viewModel.avatarItem) { _ in
                 Task { await viewModel.loadAvatar() }
             }
-            
+
             ValidatedField(error: viewModel.heightError) {
                 CustomTextField(
                     title: "Рост",
@@ -35,54 +37,90 @@ struct UserParametersView: View {
                     }
                 )
             }
-            
+
             ValidatedField(error: viewModel.weightError) {
                 CustomTextField(
                     title: "Вес",
                     keyboardType: .numberPad,
                     field: ParametersField.weight,
                     focusedField: $parametersFocused,
-                    text: $viewModel.weightString
+                    text: $viewModel.weightString.onChange {
+                        viewModel.validateLive()
+                    }
                 )
             }
-            
+
+            if noHealthKitAccess {
+                manualHealthFields
+            }
+
             CustomPickerField(
                 title: "Образ жизни",
-                value: viewModel.lifestyle?.title ?? ""
-            ) {
-                isLifestylePickerPresented = true
-            }
-            .confirmationDialog(
-                "Образ жизни",
-                isPresented: $isLifestylePickerPresented,
-                titleVisibility: .hidden
-            ) {
-                ForEach(Lifestyle.allCases) { lifestyle in
-                    Button(lifestyle.title) {
-                        viewModel.lifestyle = lifestyle
-                    }
+                options: Lifestyle.allCases,
+                optionTitle: \.title,
+                selection: $viewModel.lifestyle
+            )
+
+            CustomPickerField(
+                title: "Спортивная подготовка",
+                options: FitnessLevel.allCases,
+                optionTitle: \.title,
+                selection: $viewModel.fitnessLevel
+            )
+        }
+    }
+
+    private var manualHealthFields: some View {
+        VStack(spacing: 16) {
+            ValidatedField(error: viewModel.manualDateOfBirthError) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Дата рождения")
+                        .font(.headline.bold())
+                        .foregroundColor(.white)
+                    DatePicker(
+                        "",
+                        selection: $viewModel.manualDateOfBirth,
+                        in: ...Calendar.current.date(byAdding: .year, value: -10, to: Date())!,
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .colorScheme(.dark)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .glassEffect(in: .rect(cornerRadius: 12.0))
                 }
+                .padding(.vertical, 4)
             }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Пол")
+                    .font(.headline.bold())
+                    .foregroundColor(.white)
+                Picker("", selection: $viewModel.manualGender) {
+                    Text("Мужской").tag(HKBiologicalSex.male)
+                    Text("Женский").tag(HKBiologicalSex.female)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .glassEffect(in: .rect(cornerRadius: 12.0))
+            }
+            .padding(.vertical, 4)
         }
     }
     
     private var goalsFields: some View {
         VStack(spacing: 16) {
-            CustomPickerField(
-                title: "Цель",
-                value: viewModel.goal?.title ?? ""
-            ) {
-                isGoalPickerPresented = true
-            }
-            .confirmationDialog(
-                "Цель",
-                isPresented: $isGoalPickerPresented,
-                titleVisibility: .visible
-            ) {
-                ForEach(MainGoal.allCases) { goal in
-                    Button(goal.title) {
-                        viewModel.goal = goal
-                    }
+            ValidatedField(error: viewModel.goalError) {
+                CustomPickerField(
+                    title: "Цель",
+                    options: MainGoal.allCases,
+                    optionTitle: \.title,
+                    selection: $viewModel.goal
+                )
+                .onChange(of: viewModel.goal) { _ in
+                    viewModel.validateLive()
                 }
             }
             
@@ -185,15 +223,32 @@ struct UserParametersView: View {
                     .font(.title3.bold())
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("\(Int(viewModel.targetCaloriesDaily)) ккал/день.")
+                Text("\(Int(viewModel.dailyEnergyExpenditure)) ккал/день.")
                     .foregroundColor((.white))
                     .font(.title2.bold())
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("Рассчитано на основе роста, веса, возраста, активности и цели")
+                Text("Для этого тебе ежедневно необходимо тратить примерно \(Int(viewModel.dailyEnergyExpenditure - viewModel.basalMetabolicRate)) калорий")
                     .foregroundColor(.white)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
+                
+                Text(noHealthKitAccess
+                     ? "Рассчитано на основе роста, веса, возраста, активности и введённых вами данных о поле и дате рождения"
+                     : "Рассчитано на основе роста, веса, возраста, активности, цели и данных о поле и дате рождения из приложения Здоровье"
+                )
+                    .foregroundColor(.white)
+                    .font(.footnote)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
+
+                if let hint = viewModel.healthIntegrationError {
+                    Label(hint, systemImage: "exclamationmark.triangle")
+                        .font(.footnote)
+                        .foregroundColor(.yellow.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
+                }
             }
             
             Spacer()
@@ -206,14 +261,21 @@ struct UserParametersView: View {
                 submit()
             }
             
-            Button("Изменить норму") {
-                viewModel.caloriesFormState = .editing
+            VStack(spacing: 4) {
+                SecondaryButton(
+                    title: "Изменить норму"
+                ) {
+                    viewModel.caloriesFormState = .editing
+                }
+                
+                SecondaryButton(
+                    title: "Рассчитать заново"
+                ) {
+                    Task {
+                        await viewModel.countRecommendedCalories()
+                    }
+                }
             }
-            .padding(.horizontal)
-            .frame(height: 20)
-            .foregroundColor(.white.opacity(0.75))
-            .fontWeight(.semibold)
-            .padding()
         }
     }
     
@@ -233,16 +295,33 @@ struct UserParametersView: View {
                     .foregroundColor(.white)
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text("Твое тело тратит в среднем \(Int(viewModel.dailyEnergyExpenditure)) калорий в день. Слишком сильное отклонение от этого значения может повлиять на твое здоровье.")
+                Text(viewModel.getCaloriesNormHint())
                     .font(.headline.bold())
                     .foregroundColor(.white)
+                
+                Text("Слишком сильный дефицит или профицит калорий может повлиять на твое здоровье")
+                    .foregroundColor(.white)
+                    .font(.footnote)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
             }
             
-            PrimaryButton(
-                title: "Отправить",
-                isLoading: viewModel.screenState == .loading
-            ) {
-                submit()
+            VStack(spacing: 4) {
+                PrimaryButton(
+                    title: "Отправить",
+                    isLoading: viewModel.screenState == .loading
+                ) {
+                    submit()
+                }
+                
+                SecondaryButton(
+                    title: "Рассчитать заново"
+                ) {
+                    Task {
+                        await viewModel.countRecommendedCalories()
+                        viewModel.caloriesFormState = .counting
+                    }
+                }
             }
         }
     }
@@ -271,14 +350,31 @@ struct UserParametersView: View {
         NavigationStack {
             ZStack {
                 AnimatedBackground()
-                
+                    .ignoresSafeArea()
+
                 CustomCarousel(totalPages: 3) {
                     parametersFormContent
                     goalsFormContent
                     caloriesFormContent
                 }
             }
-            .alert("Что-то пошло не так", isPresented: .constant(isError)) {
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showLogoutAlert = true
+                    } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+            }
+            .alert("Выйти из аккаунта?", isPresented: $showLogoutAlert) {
+                Button("Выйти", role: .destructive) { router.logout() }
+                Button("Отмена", role: .cancel) {}
+            } message: {
+                Text("Ваши данные сохранятся — вы сможете войти снова")
+            }
+            .alert("Ошибка", isPresented: .constant(isError)) {
                 Button("OK") { viewModel.screenState = .idle }
             } message: {
                 if case let .error(message) = viewModel.screenState {
@@ -291,18 +387,18 @@ struct UserParametersView: View {
         }
     }
     
+    private var isError: Bool {
+        if case .error = viewModel.screenState { return true }
+        return false
+    }
+    
     private func submit() {
         Task {
             await viewModel.submit()
             if viewModel.screenState == .idle {
-                router.currentFlow = .main
+                router.rootRoute = .main
             }
         }
-    }
-
-    private var isError: Bool {
-        if case .error = viewModel.screenState { return true }
-        return false
     }
 }
 

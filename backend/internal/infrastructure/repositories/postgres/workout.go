@@ -73,7 +73,7 @@ func (r *WorkoutRepository) Get(ctx context.Context, f dto.WorkoutsFilter, withB
 func (r *WorkoutRepository) TopListWithLimit(ctx context.Context, f dto.WorkoutsFilter, limit int, withBlock bool) ([]*entities.Workout, error) {
 	var rows []*models.WorkoutRow
 
-	selectBuilder := builders.NewWorkoutSelectBuilder()
+	selectBuilder := builders.NewWorkoutSelectBuilder().OrderByCreatedAtDesc()
 	if withBlock {
 		selectBuilder = selectBuilder.WithBlock()
 	}

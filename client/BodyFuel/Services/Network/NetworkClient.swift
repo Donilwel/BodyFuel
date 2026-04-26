@@ -34,10 +34,31 @@ enum HTTPMethod: String {
     case patch = "PATCH"
 }
 
+private actor TokenRefreshCoordinator {
+    private var task: Task<String, Error>?
+
+    func refresh(using perform: @escaping () async throws -> String) async throws -> String {
+        if let existing = task {
+            return try await existing.value
+        }
+        let newTask = Task { try await perform() }
+        task = newTask
+        defer { task = nil }
+        return try await newTask.value
+    }
+}
+
 final class NetworkClient {
     static let shared = NetworkClient()
 
-    private let session = URLSession(configuration: .default)
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 10
+        config.timeoutIntervalForResource = 30
+        return URLSession(configuration: config)
+    }()
+    private let userSessionManager = UserSessionManager.shared
+    private let refreshCoordinator = TokenRefreshCoordinator()
 
     private init() {}
 
@@ -48,15 +69,15 @@ final class NetworkClient {
         requestBody: U? = Optional<DefaultEncodable>.none
     ) async throws -> T {
         var request = URLRequest(url: url)
-        
+
         if requiresAuthorization {
-            guard let token = TokenStorage.shared.token else {
+            guard let currentUserId = userSessionManager.currentUserId,
+                  let token = userSessionManager.authToken(for: currentUserId) else {
                 throw NetworkError.missingToken
             }
-            
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        
+
         request.httpMethod = method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -78,31 +99,88 @@ final class NetworkClient {
                 throw NetworkError.requestFailed(statusCode: -1, message: errorMessage)
             }
 
+            if httpResponse.statusCode == 401 && requiresAuthorization {
+                let newToken = try await refreshAccessToken()
+                request.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+
+                let (retryData, retryResponse) = try await session.data(for: request)
+                guard let retryHTTP = retryResponse as? HTTPURLResponse else {
+                    throw NetworkError.requestFailed(statusCode: -1, message: "Retry failed")
+                }
+                guard 200..<300 ~= retryHTTP.statusCode else {
+                    if retryHTTP.statusCode == 401 { throw NetworkError.missingToken }
+                    let errorMessage = extractErrorMessage(from: retryData)
+                    throw NetworkError.requestFailed(statusCode: retryHTTP.statusCode, message: errorMessage)
+                }
+                return try decodeResponse(T.self, from: retryData)
+            }
+
             guard 200..<300 ~= httpResponse.statusCode else {
                 let errorMessage = extractErrorMessage(from: data)
                 throw NetworkError.requestFailed(statusCode: httpResponse.statusCode, message: errorMessage)
             }
 
-            if data.isEmpty {
-                if T.self == DefaultDecodable.self {
-                    guard let emptyResponse = DefaultDecodable() as? T else {
-                        throw NetworkError.decodingFailed
-                    }
-                    return emptyResponse
-                } else {
-                    throw NetworkError.decodingFailed
-                }
-            }
-
-            do {
-                let jsonDecoder = JSONDecoder()
-
-                return try await jsonDecoder.decodeAsync(T.self, from: data)
-            } catch {
-                throw NetworkError.decodingFailed
-            }
+            return try decodeResponse(T.self, from: data)
+        } catch let error as NetworkError {
+            throw error
         } catch {
             throw NetworkError.network(error)
+        }
+    }
+
+    private func refreshAccessToken() async throws -> String {
+        try await refreshCoordinator.refresh { [weak self] in
+            guard let self else { throw NetworkError.missingToken }
+            return try await self.performTokenRefresh()
+        }
+    }
+
+    private func performTokenRefresh() async throws -> String {
+        guard let userId = userSessionManager.currentUserId,
+              let storedRefreshToken = userSessionManager.refreshToken(for: userId) else {
+            throw NetworkError.missingToken
+        }
+
+        guard let url = URL(string: API.baseURLString + API.Auth.refresh) else {
+            throw NetworkError.invalidURL
+        }
+
+        var refreshRequest = URLRequest(url: url)
+        refreshRequest.httpMethod = HTTPMethod.post.rawValue
+        refreshRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        refreshRequest.httpBody = try? JSONEncoder().encode(["refresh_token": storedRefreshToken])
+
+        let (data, response) = try await session.data(for: refreshRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw NetworkError.missingToken
+        }
+
+        let tokens = try JSONDecoder().decode(LoginResponseBody.self, from: data)
+        userSessionManager.login(userId: userId, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken)
+
+        print("[INFO] [NetworkClient/refreshAccessToken]: Token refreshed for user \(userId)")
+        return tokens.accessToken
+    }
+
+    private func decodeResponse<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        if data.isEmpty {
+            if T.self == DefaultDecodable.self {
+                guard let emptyResponse = DefaultDecodable() as? T else {
+                    throw NetworkError.decodingFailed
+                }
+                return emptyResponse
+            } else {
+                throw NetworkError.decodingFailed
+            }
+        }
+
+        do {
+            let jsonDecoder = JSONDecoder()
+            return try jsonDecoder.decode(T.self, from: data)
+        } catch {
+            throw NetworkError.decodingFailed
         }
     }
     
@@ -123,6 +201,8 @@ final class NetworkClient {
                 let errorMessage = extractErrorMessage(from: data)
                 throw NetworkError.requestFailed(statusCode: httpResponse.statusCode, message: errorMessage)
             }
+        } catch let error as NetworkError {
+            throw error
         } catch {
             throw NetworkError.network(error)
         }

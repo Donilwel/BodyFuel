@@ -73,11 +73,13 @@ func NewWorkoutsExerciseSelectBuilder() *WorkoutsExerciseSelectBuilder {
 	selectBuilder := newQueryBuilder().Select(
 		"workouts_exercise.workout_id",
 		"workouts_exercise.exercise_id",
+		"workouts_exercise.sets",
 		"workouts_exercise.modify_reps",
 		"workouts_exercise.modify_relax_time",
 		"workouts_exercise.calories",
 		"workouts_exercise.status",
-		"workouts_exercise.updated_at").From(workoutsExerciseTable)
+		"workouts_exercise.updated_at",
+		"workouts_exercise.created_at").From(workoutsExerciseTable)
 	return &WorkoutsExerciseSelectBuilder{b: selectBuilder}
 }
 

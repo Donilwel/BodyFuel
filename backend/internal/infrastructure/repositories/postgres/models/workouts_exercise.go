@@ -10,6 +10,7 @@ import (
 type WorkoutsExerciseRow struct {
 	WorkoutID       uuid.UUID               `db:"workout_id"`
 	ExerciseID      uuid.UUID               `db:"exercise_id"`
+	Sets            int                     `db:"sets"`
 	ModifyReps      int                     `db:"modify_reps"`
 	ModifyRelaxTime int                     `db:"modify_relax_time"`
 	Calories        int                     `db:"calories"`
@@ -22,6 +23,7 @@ func NewWorkoutsExerciseRow(workoutsExercise *entities.WorkoutsExercise) *Workou
 	return &WorkoutsExerciseRow{
 		WorkoutID:       workoutsExercise.WorkoutID(),
 		ExerciseID:      workoutsExercise.ExerciseID(),
+		Sets:            workoutsExercise.Sets(),
 		ModifyReps:      workoutsExercise.ModifyReps(),
 		ModifyRelaxTime: workoutsExercise.ModifyRelaxTime(),
 		Calories:        workoutsExercise.Calories(),
@@ -36,6 +38,7 @@ func (w *WorkoutsExerciseRow) ToEntity() *entities.WorkoutsExercise {
 		entities.WithWorkoutsExerciseRestoreSpec(entities.WorkoutsExerciseRestoreSpec{
 			WorkoutID:       w.WorkoutID,
 			ExerciseID:      w.ExerciseID,
+			Sets:            w.Sets,
 			ModifyReps:      w.ModifyReps,
 			ModifyRelaxTime: w.ModifyRelaxTime,
 			Calories:        w.Calories,
