@@ -180,6 +180,7 @@ final class NetworkClient {
             let jsonDecoder = JSONDecoder()
             return try jsonDecoder.decode(T.self, from: data)
         } catch {
+            print("[ERROR] [NetworkClient/decodeResponse] \(T.self): \(error)")
             throw NetworkError.decodingFailed
         }
     }

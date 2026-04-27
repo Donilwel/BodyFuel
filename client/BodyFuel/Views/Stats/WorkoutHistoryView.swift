@@ -6,13 +6,14 @@ struct WorkoutHistoryView: View {
 
     private var completedWorkouts: [WorkoutHistoryItem] {
         store.workouts
-            .filter { $0.status == "workout_done" }
+            .filter { $0.status == "workout_done" || $0.status == "workout_failed" }
             .sorted { $0.date > $1.date }
     }
 
     var body: some View {
         ZStack {
-            AnimatedBackground()
+            Color.clear
+                .glassEffect(.regular.tint(AppColors.primary.opacity(0.6)).interactive(), in: .rect)
                 .ignoresSafeArea()
 
             if store.isLoading && completedWorkouts.isEmpty {
@@ -88,6 +89,11 @@ private struct WorkoutHistoryCard: View {
     private var headerRow: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
+                if workout.status == "workout_failed" {
+                    Text("Отменена")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                }
                 Text(workout.title)
                     .font(.headline)
                     .foregroundStyle(.white)

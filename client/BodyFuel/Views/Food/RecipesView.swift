@@ -22,6 +22,7 @@ struct RecipesView: View {
                             ForEach(recipes) { recipe in
                                 RecipeCard(recipe: recipe) { recipe in
                                     onRecipeTap(recipe)
+                                    dismiss()
                                 }
                             }
                         }

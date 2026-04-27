@@ -5,6 +5,7 @@ struct Exercise: Identifiable, Codable {
     let name: String
     let type: ExerciseType
     var gifName: String? = nil
+    let description: String
     let duration: Int
     let repCount: Int?
     let setCount: Int

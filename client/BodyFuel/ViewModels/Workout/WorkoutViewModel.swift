@@ -172,6 +172,8 @@ final class WorkoutViewModel: ObservableObject {
 
             if let storedID = storedWorkoutID {
                 (workoutID, workout) = try await workoutService.fetchWorkout(id: storedID)
+            } else if let pending = try await fetchPendingWorkout() {
+                (workoutID, workout) = pending
             } else {
                 (workoutID, workout) = try await workoutService.generateWorkout()
             }
@@ -204,6 +206,14 @@ final class WorkoutViewModel: ObservableObject {
             let appError = ErrorMapper.map(error)
             screenState = .error(appError.errorDescription ?? "Попробуйте еще раз позже")
         }
+    }
+
+    private func fetchPendingWorkout() async throws -> (workoutID: String, workout: Workout)? {
+        let history = try await workoutService.fetchWorkoutHistory(limit: 100, offset: 0)
+        guard let pending = history.workouts.first(where: { $0.status == WorkoutStatus.created.rawValue }) else {
+            return nil
+        }
+        return try await workoutService.fetchWorkout(id: pending.id)
     }
     
     func startWorkout() {
@@ -575,8 +585,9 @@ final class WorkoutViewModel: ObservableObject {
         exerciseStats.map { stats in
             let sets = stats.repCount.count
             let repInts = stats.repCount.compactMap { Int($0) }
-            let avgReps: Int? = (stats.exercise.type != .cardio && !repInts.isEmpty)
-                ? repInts.reduce(0, +) / repInts.count
+            let repSum = repInts.reduce(0, +)
+            let avgReps: Int? = (stats.exercise.type != .cardio && !repInts.isEmpty && repSum > 0)
+                ? repSum / repInts.count
                 : nil
             let allSkipped = stats.repCount.allSatisfy { $0 == "0" }
             let exStatus = allSkipped ? "skipped" : (finalStatus == .completed ? "completed" : "in_progress")

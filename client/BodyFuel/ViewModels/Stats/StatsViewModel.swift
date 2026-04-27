@@ -41,6 +41,7 @@ final class StatsViewModel: ObservableObject {
     @Published var stepsAverage: Int = 0
     @Published var isLoadingChart = false
     @Published var showWeightInput = false
+    @Published var exportFileURL: URL? = nil
 
     private var reportEntries: [FoodEntryResponseBody] = []
 
@@ -114,6 +115,42 @@ final class StatsViewModel: ObservableObject {
     func addWeight(_ value: Double) async throws {
         try await store.addWeight(value)
         await reloadChart()
+    }
+
+    // MARK: Export
+
+    func exportCSV() {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        let header: String
+        switch selectedMetric {
+        case .weight:   header = "Дата,Вес (кг)"
+        case .calories: header = "Дата,Калории (ккал)"
+        case .steps:    header = "Дата,Шаги"
+        }
+
+        let rows = chartPoints.map { point in
+            let dateStr = dateFormatter.string(from: point.date)
+            let valueStr: String
+            switch selectedMetric {
+            case .weight:   valueStr = String(format: "%.1f", point.value)
+            case .calories: valueStr = "\(Int(point.value))"
+            case .steps:    valueStr = "\(Int(point.value))"
+            }
+            return "\(dateStr),\(valueStr)"
+        }
+
+        let csv = ([header] + rows).joined(separator: "\n")
+        let fileName = "stats_\(selectedMetric.rawValue.lowercased())_\(selectedPeriod.rawValue.lowercased()).csv"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+        do {
+            try csv.write(to: url, atomically: true, encoding: .utf8)
+            exportFileURL = url
+        } catch {
+            ToastService.shared.show("Не удалось создать файл экспорта")
+        }
     }
 
     // MARK: Recommendations

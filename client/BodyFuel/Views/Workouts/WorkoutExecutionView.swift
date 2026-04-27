@@ -44,7 +44,7 @@ struct WorkoutExecutionView: View {
                             .foregroundColor(.white)
                         
                         if let exercise = viewModel.currentExercise {
-                            VStack(spacing: 24) {
+                            VStack(alignment: .center, spacing: 24) {
                                 Text(exercise.name)
                                     .font(.title2)
                                     .foregroundColor(.white)
@@ -55,7 +55,8 @@ struct WorkoutExecutionView: View {
                                         .foregroundColor(.white)
                                 }
                                 
-                                ExerciseGifView(exercise: exercise)
+                                Text(exercise.description)
+                                    .foregroundColor(.white)
                             }
                             .cardStyle()
                             
@@ -127,8 +128,12 @@ struct WorkoutExecutionView: View {
                 SecondaryButton(title: "Пропустить упражнение") {
                     viewModel.skipExercise()
                 }
-            case .restBetweenSets, .restBetweenExercises:
+            case .restBetweenExercises:
                 PrimaryButton(title: viewModel.isLastSet ? "Завершить тренировку" : "Следующее упражнение") {
+                    viewModel.moveToNextPhase()
+                }
+            case .restBetweenSets:
+                PrimaryButton(title: "Следующий подход") {
                     viewModel.moveToNextPhase()
                 }
             case .finished:
@@ -144,21 +149,5 @@ struct WorkoutExecutionView: View {
         } else {
             return "\(value / 60) мин \(abs(value) % 60) сек"
         }
-    }
-}
-
-struct ExerciseGifView: View {
-    let exercise: Exercise
-
-    var body: some View {
-        // TODO: загрузка GIF с сервера
-        // если сервер вернет URL -> использовать SDWebImageSwiftUI
-
-        Rectangle()
-            .fill(Color.gray.opacity(0.2))
-            .frame(height: 220)
-            .overlay(
-                Text("GIF \(exercise.name)")
-            )
     }
 }
