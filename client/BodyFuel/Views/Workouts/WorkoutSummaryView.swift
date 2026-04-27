@@ -5,48 +5,51 @@ struct WorkoutSummaryView: View {
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
+        
         ZStack {
             AnimatedBackground()
                 .ignoresSafeArea()
             
-            VStack(spacing: 32) {
-                Text("Тренировка завершена")
-                    .font(.title.bold())
-                    .foregroundColor(.white)
-                
-                VStack(spacing: 16) {
-                    statRow(
-                        title: "Время тренировки",
-                        value: viewModel.totalWorkoutElapsedTime.formattedTime
-                    )
+            ScrollView {
+                VStack(spacing: 32) {
+                    Text("Тренировка завершена")
+                        .font(.title.bold())
+                        .foregroundColor(.white)
                     
-                    VStack(spacing: 12) {
-                        ForEach(viewModel.exerciseStats.indices, id: \.self) { index in
-                            exerciseStatsRow(for: viewModel.exerciseStats[index])
-                        }
-                    }
-                    .cardStyle()
-                    
-                    if let calories = viewModel.totalCaloriesBurned {
+                    VStack(spacing: 16) {
                         statRow(
-                            title: "Сожженные калории",
-                            value: String(format: "%.0f", calories)
+                            title: "Время тренировки",
+                            value: viewModel.totalWorkoutElapsedTime.formattedTime
+                        )
+                        
+                        VStack(spacing: 12) {
+                            ForEach(viewModel.exerciseStats.indices, id: \.self) { index in
+                                exerciseStatsRow(for: viewModel.exerciseStats[index])
+                            }
+                        }
+                        .cardStyle()
+                        
+                        if let calories = viewModel.totalCaloriesBurned {
+                            statRow(
+                                title: "Сожженные калории",
+                                value: String(format: "%.0f", calories)
+                            )
+                        }
+                        
+                        statRow(
+                            title: "Выполнено",
+                            value: "\(viewModel.workoutProgress * 100)%"
                         )
                     }
                     
-                    statRow(
-                        title: "Выполнено",
-                        value: "\(viewModel.workoutProgress * 100)%"
-                    )
+                    PrimaryButton(title: "На главный экран") {
+                        viewModel.moveToNextPhase()
+                    }
+                    
                 }
-                
-                PrimaryButton(title: "На главный экран") {
-                    viewModel.moveToNextPhase()
-                }
-                
+                .navigationBarBackButtonHidden()
+                .padding()
             }
-            .navigationBarBackButtonHidden()
-            .padding()
         }
     }
     

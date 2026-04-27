@@ -103,11 +103,11 @@ final class WorkoutHistoryStore: ObservableObject {
 
     private func mapToHistoryItem(_ body: WorkoutSummaryResponseBody) -> WorkoutHistoryItem {
         let date = iso.date(from: body.date) ?? Date()
-        let exercises = body.exercises.map { ex in
+        let exercises = (body.exercises ?? [WorkoutExerciseSummaryBody]()).map { ex in
             WorkoutHistoryExercise(
                 exerciseID: ex.exerciseID,
                 name: ex.name,
-                sets: ex.sets,
+                sets: ex.sets ?? 1,
                 reps: ex.reps,
                 calories: ex.calories,
                 status: ex.status

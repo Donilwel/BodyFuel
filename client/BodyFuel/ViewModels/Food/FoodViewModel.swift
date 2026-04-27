@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import UIKit
 
 @MainActor
 final class FoodViewModel: ObservableObject {
@@ -10,6 +11,7 @@ final class FoodViewModel: ObservableObject {
     @Published var showAddMeal = false
     @Published var showCamera = false
     @Published var showRecipes = false
+    @Published var galleryImage: UIImage? = nil
 
     @Published var recipes: [Recipe] = []
     @Published var isLoadingRecipes = false

@@ -91,7 +91,7 @@ struct ProfileView: View {
                 )
                 CustomPickerField(
                     title: "Спортивная подготовка",
-                    options: FitnessLevel.allCases,
+                    options: viewModel.fitnessLevel.changingOptions,
                     optionTitle: \.title,
                     selection: Binding(
                         get: { Optional(viewModel.fitnessLevel) },
@@ -224,10 +224,12 @@ private struct CaloriesRecalculationSheet: View {
 
     var body: some View {
         ZStack {
-            AnimatedBackground().ignoresSafeArea()
+            Color.clear
+                .glassEffect(.regular.tint(AppColors.primary.opacity(0.6)).interactive(), in: .rect)
+                .ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(alignment: .center, spacing: 24) {
                     Text("Норма калорий")
                         .font(.title2.bold())
                         .foregroundStyle(.white)

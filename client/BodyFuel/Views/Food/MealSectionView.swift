@@ -97,7 +97,7 @@ struct MealRowView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 12)
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            .contextMenu {
                 Button(role: .destructive, action: onDelete) {
                     Label("Удалить", systemImage: "trash")
                 }

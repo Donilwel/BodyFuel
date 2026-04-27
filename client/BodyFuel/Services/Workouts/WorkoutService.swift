@@ -171,6 +171,7 @@ private extension WorkoutService {
             name: body.name,
             type: mapExerciseType(body.typeExercise),
             gifName: body.linkGif.isEmpty ? nil : body.linkGif,
+            description: body.description,
             duration: isCardio ? body.modifyReps : 0,
             repCount: isCardio ? nil : body.modifyReps,
             setCount: max(body.steps, 1),

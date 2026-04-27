@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PasswordRecoveryView: View {
     @StateObject private var viewModel = PasswordRecoveryViewModel()
+    @Environment(\.dismiss) private var dismiss
 
     @FocusState private var emailFocused: EmailField?
     @FocusState private var recoveryFocused: RecoveryField?
@@ -21,9 +22,14 @@ struct PasswordRecoveryView: View {
 
             VStack(spacing: 20) {
                 if viewModel.step == .success {
-                    Text("Пароль успешно восстановлен")
-                        .font(.title2.bold())
-                        .foregroundColor(.white)
+                    VStack(spacing: 16) {
+                        Text("Пароль успешно изменён")
+                            .font(.title2.bold())
+                            .foregroundColor(.white)
+                        PrimaryButton(title: "Войти") {
+                            dismiss()
+                        }
+                    }
                 } else {
                     Text("Восстановление пароля")
                         .font(.title2.bold())

@@ -142,7 +142,7 @@ struct WorkoutSummaryResponseBody: Decodable {
     let date: String
     let exercisesCount: Int
     let completedCount: Int
-    let exercises: [WorkoutExerciseSummaryBody]
+    let exercises: [WorkoutExerciseSummaryBody]?
 
     private enum CodingKeys: String, CodingKey {
         case id, level, status, duration, exercises
@@ -156,7 +156,7 @@ struct WorkoutSummaryResponseBody: Decodable {
 struct WorkoutExerciseSummaryBody: Decodable {
     let exerciseID: String
     let name: String
-    let sets: Int
+    let sets: Int?
     let reps: Int
     let calories: Int
     let status: String

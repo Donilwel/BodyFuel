@@ -78,6 +78,15 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    var isRegisterFormComplete: Bool {
+        guard mode == .register else { return true }
+        return !login.isEmpty && !name.isEmpty && !surname.isEmpty &&
+               !email.isEmpty && emailError == nil &&
+               !phone.isEmpty && phoneError == nil &&
+               !password.isEmpty && passwordError == nil &&
+               !confirmPassword.isEmpty && confirmPasswordError == nil
+    }
+
     private func validate() throws {
         var hasErrors = false
         switch mode {

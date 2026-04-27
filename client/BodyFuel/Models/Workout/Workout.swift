@@ -13,7 +13,7 @@ struct Workout: Identifiable, Codable {
 enum WorkoutPlace: String, CaseIterable, Codable {
     case home = "Дом"
     case gym = "Спортзал"
-    case outdoor = "На улице"
+    case outdoor = "Улица"
 
     var apiValue: String {
         switch self {

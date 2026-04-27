@@ -126,6 +126,7 @@ struct AuthView: View {
             ) {
                 Task { await viewModel.submit() }
             }
+            .disabled(viewModel.mode == .register && !viewModel.isRegisterFormComplete)
             
             if viewModel.mode == .login {
                 NavigationLink("Забыли пароль?") {

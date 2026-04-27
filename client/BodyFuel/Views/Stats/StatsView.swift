@@ -8,6 +8,7 @@ struct StatsView: View {
     @State private var selectedPoint: ChartDataPoint? = nil
     @State private var isInitialLoad = true
     @State private var showHistory = false
+    @State private var showExport = false
 
     var body: some View {
         ZStack {
@@ -50,6 +51,12 @@ struct StatsView: View {
         .sheet(isPresented: $showHistory) {
             NavigationStack {
                 WorkoutHistoryView()
+            }
+        }
+        .sheet(isPresented: $showExport) {
+            if let url = viewModel.exportFileURL {
+                ShareSheet(items: [url])
+                    .ignoresSafeArea()
             }
         }
         .onChange(of: viewModel.selectedPeriod) { _ in
@@ -318,6 +325,26 @@ struct StatsView: View {
                         .foregroundStyle(.white.opacity(0.4))
                 }
             }
+
+            Divider().background(.white.opacity(0.15))
+
+            Button {
+                viewModel.exportCSV()
+                if viewModel.exportFileURL != nil {
+                    showExport = true
+                }
+            } label: {
+                HStack {
+                    Label("Экспорт данных", systemImage: "square.and.arrow.up")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Text(viewModel.selectedMetric.rawValue)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+            }
+            .disabled(viewModel.chartPoints.isEmpty)
         }
     }
 

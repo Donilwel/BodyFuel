@@ -1,10 +1,13 @@
 import SwiftUI
+import PhotosUI
 
 struct FoodView: View {
     @StateObject private var viewModel = FoodViewModel()
     @ObservedObject private var router = AppRouter.shared
     @State private var expandedSections: Set<MealType> = []
     @State private var showAddOptions = false
+    @State private var showPhotoPicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
 
     var body: some View {
         NavigationStack {
@@ -68,6 +71,18 @@ struct FoodView: View {
         .fullScreenCover(isPresented: $viewModel.showCamera) {
             CameraFoodView()
                 .environmentObject(viewModel)
+        }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images)
+        .onChange(of: selectedPhotoItem) { item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    viewModel.galleryImage = image
+                    viewModel.showCamera = true
+                }
+                selectedPhotoItem = nil
+            }
         }
         .sheet(isPresented: $viewModel.showRecipes) {
             RecipesView(recipes: viewModel.recipes, isLoading: viewModel.isLoadingRecipes) { recipe in
@@ -153,6 +168,20 @@ struct FoodView: View {
                         viewModel.showCamera = true
                     } label: {
                         Label("Сфотографировать", systemImage: "camera.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(12)
+                    }
+
+                    Button {
+                        showAddOptions = false
+                        viewModel.addMealType = currentMealType()
+                        showPhotoPicker = true
+                    } label: {
+                        Label("Выбрать из галереи", systemImage: "photo.on.rectangle")
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)

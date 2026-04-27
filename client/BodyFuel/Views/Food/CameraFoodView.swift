@@ -24,7 +24,13 @@ struct CameraFoodView: View {
         }
         .onAppear {
             selectedMealType = viewModel.addMealType
-            camera.checkPermissions()
+            if let image = viewModel.galleryImage {
+                isAnalyzing = true
+                capturedImage = image
+                viewModel.galleryImage = nil
+            } else {
+                camera.checkPermissions()
+            }
         }
         .onDisappear {
             camera.stop()
