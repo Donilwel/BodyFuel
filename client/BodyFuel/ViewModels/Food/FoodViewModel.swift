@@ -77,9 +77,11 @@ final class FoodViewModel: ObservableObject {
         defer { isAddingMeal = false }
         do {
             try await NutritionStore.shared.addMeal(meal)
+            HapticService.notification(.success)
             showAddMeal = false
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
+            HapticService.notification(.error)
             addMealError = "Не удалось сохранить блюдо"
         }
     }
@@ -90,8 +92,10 @@ final class FoodViewModel: ObservableObject {
         defer { isAddingMeal = false }
         do {
             try await NutritionStore.shared.addMeal(meal)
+            HapticService.notification(.success)
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
+            HapticService.notification(.error)
             addMealError = "Не удалось сохранить блюдо"
         }
         showCamera = false

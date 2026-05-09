@@ -81,7 +81,6 @@ final class WorkoutViewModel: ObservableObject {
                 Task {
                     self.recommendedWorkout = nil
                     self.storedWorkoutID = nil
-                    self.isWorkoutStale = false
                     await self.load()
                 }
             }
@@ -240,7 +239,8 @@ final class WorkoutViewModel: ObservableObject {
 
         phase = .waitingForStart
         isWorkoutActive = true
-        
+
+        HapticService.impact(.medium)
         startWorkoutTimer()
         
         var activityType: HKWorkoutActivityType = .traditionalStrengthTraining
@@ -341,6 +341,7 @@ final class WorkoutViewModel: ObservableObject {
             isWorkoutActive = false
             return
         }
+        HapticService.notification(.warning)
         stopExerciseTimer()
         stopWorkoutTimer()
 
@@ -452,6 +453,9 @@ final class WorkoutViewModel: ObservableObject {
     private func tick() {
         timeRemaining -= 1
         elapsedTime += 1
+        if timeRemaining == 0 && (phase == .restBetweenSets || phase == .restBetweenExercises) {
+            HapticService.impact(.heavy)
+        }
     }
     
     private func finishExercise() {
@@ -534,6 +538,10 @@ final class WorkoutViewModel: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.liveActivityService.end()
+        }
+
+        if finalStatus == .completed {
+            HapticService.notification(.success)
         }
 
         phase = .finished

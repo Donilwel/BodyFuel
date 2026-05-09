@@ -64,6 +64,7 @@ final class AuthViewModel: ObservableObject {
             }
         } catch {
             let appError = ErrorMapper.map(error)
+            HapticService.notification(.error)
             screenState = .error(appError.errorDescription ?? "Попробуйте еще раз позже")
         }
     }
