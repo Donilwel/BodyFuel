@@ -6,6 +6,7 @@ final class AppRouter: ObservableObject {
     static let shared = AppRouter()
 
     private var workoutViewModel: WorkoutViewModel?
+    private var pendingDeepLink: DeepLink?
 
     @Published var selectedTab: TabRoute = .home
     @Published var rootRoute: RootRoute = .auth
@@ -21,6 +22,10 @@ final class AppRouter: ObservableObject {
 
     func configure(workoutViewModel: WorkoutViewModel) {
         self.workoutViewModel = workoutViewModel
+        if let pending = pendingDeepLink {
+            pendingDeepLink = nil
+            process(deepLink: pending)
+        }
     }
 
     func logout() {
@@ -64,8 +69,18 @@ final class AppRouter: ObservableObject {
     }
     
     func handleDeepLink(_ url: URL) {
-        guard let deepLink = DeepLink(url: url),
-              let workoutViewModel else { return }
+        guard let deepLink = DeepLink(url: url) else { return }
+
+        guard workoutViewModel != nil else {
+            pendingDeepLink = deepLink
+            return
+        }
+
+        process(deepLink: deepLink)
+    }
+
+    private func process(deepLink: DeepLink) {
+        guard let workoutViewModel else { return }
 
         if sessionManager.currentUserId == nil {
             rootRoute = .auth
@@ -84,6 +99,12 @@ final class AppRouter: ObservableObject {
             selectedTab = .home
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak workoutViewModel] in
                 workoutViewModel?.shouldStartFromDeepLink = true
+            }
+
+        case .workoutsWithID(let id):
+            selectedTab = .home
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak workoutViewModel] in
+                workoutViewModel?.startWorkoutFromDeepLink(id: id)
             }
 
         case .food:

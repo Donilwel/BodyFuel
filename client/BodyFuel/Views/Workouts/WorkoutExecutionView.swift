@@ -15,7 +15,7 @@ struct WorkoutExecutionView: View {
                 AnimatedBackground()
                     .ignoresSafeArea()
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(alignment: .center, spacing: 24) {
                         ProgressView(value: viewModel.workoutProgress)
                             .progressViewStyle(LinearProgressViewStyle(tint: .white.opacity(0.7)))
                         
@@ -48,17 +48,23 @@ struct WorkoutExecutionView: View {
                                 Text(exercise.name)
                                     .font(.title2)
                                     .foregroundColor(.white)
-                                
+                                    .multilineTextAlignment(.center)
+
                                 if let repCount = exercise.repCount {
                                     Text("\(exercise.setCount) подхода по \(repCount) раз")
                                         .font(.title3)
                                         .foregroundColor(.white)
+                                        .multilineTextAlignment(.center)
                                 }
-                                
+
                                 Text(exercise.description)
                                     .foregroundColor(.white)
+                                    .multilineTextAlignment(.center)
                             }
-                            .cardStyle()
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(.ultraThinMaterial)
+                            .cornerRadius(24)
                             
                             if exercise.type == .cardio && viewModel.phase == .exercise || viewModel.phase == .restBetweenExercises || viewModel.phase == .restBetweenSets {
                                 ZStack {

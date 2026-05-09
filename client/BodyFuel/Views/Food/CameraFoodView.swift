@@ -86,6 +86,7 @@ struct CameraFoodView: View {
 
                 Button {
                     camera.capturePhoto { image in
+                        isAnalyzing = true
                         capturedImage = image
                     }
                 } label: {
@@ -184,11 +185,13 @@ struct CameraFoodView: View {
             .padding(.top)
         }
         .task {
+            isAnalyzing = true
+            analysisFailed = false
             guard let data = image.jpegData(compressionQuality: 0.8) else {
+                isAnalyzing = false
                 analysisFailed = true
                 return
             }
-            isAnalyzing = true
             analyzedMeal = await viewModel.analyzeMealFromPhoto(data, mealType: selectedMealType)
             isAnalyzing = false
             if analyzedMeal == nil { analysisFailed = true }

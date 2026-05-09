@@ -7,7 +7,6 @@ final class UserSessionManager {
     var hasCompletedOnboarding = false
     
     private let keychain = KeychainWrapper.standard
-    private let defaults = UserDefaults.standard
     
     private enum Keys {
         static let currentUserId = "currentUserId"
@@ -31,13 +30,28 @@ final class UserSessionManager {
     }
     
     var currentUserId: String? {
-        get { defaults.string(forKey: Keys.currentUserId) }
-        set { defaults.set(newValue, forKey: Keys.currentUserId) }
+        get { keychain.string(forKey: Keys.currentUserId) }
+        set {
+            if let value = newValue {
+                keychain.set(value, forKey: Keys.currentUserId)
+            } else {
+                keychain.removeObject(forKey: Keys.currentUserId)
+            }
+        }
     }
-    
+
     var allUsers: [String] {
-        get { defaults.array(forKey: Keys.usersList) as? [String] ?? [] }
-        set { defaults.set(newValue, forKey: Keys.usersList) }
+        get {
+            guard let json = keychain.string(forKey: Keys.usersList),
+                  let data = json.data(using: .utf8),
+                  let list = try? JSONDecoder().decode([String].self, from: data) else { return [] }
+            return list
+        }
+        set {
+            guard let data = try? JSONEncoder().encode(newValue),
+                  let json = String(data: data, encoding: .utf8) else { return }
+            keychain.set(json, forKey: Keys.usersList)
+        }
     }
     
     func hasCompletedParametersSetup(for userId: String) -> Bool {

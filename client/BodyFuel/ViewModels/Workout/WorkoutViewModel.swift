@@ -253,22 +253,39 @@ final class WorkoutViewModel: ObservableObject {
             break
         }
         
+        let workoutTitle = workout.title
+        let exerciseName = currentExercise?.name ?? ""
+        let exerciseType = currentExercise?.type ?? .fullBody
         Task {
             await healthKitService.startWorkout(activityType: activityType)
-        }
-        
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.liveActivityService.start(
-                workoutName: workout.title,
-                exerciseName: self.currentExercise?.name ?? "",
-                exerciseType: self.currentExercise?.type ?? .fullBody
+            liveActivityService.start(
+                workoutName: workoutTitle,
+                exerciseName: exerciseName,
+                exerciseType: exerciseType
             )
         }
     }
     
     func changeWorkout() {
         showWorkoutFilter = true
+    }
+
+    func startWorkoutFromDeepLink(id: String) {
+        Task {
+            screenState = .loading
+            do {
+                let (workoutID, workout) = try await workoutService.fetchWorkout(id: id)
+                currentWorkoutID = workoutID
+                storedWorkoutID = workoutID
+                recommendedWorkout = workout
+                isWorkoutStale = false
+                diskCache.save(workout, key: workoutCacheKey)
+                screenState = .loaded
+                startWorkout()
+            } catch {
+                screenState = .loaded
+            }
+        }
     }
 
     func generateWithFilters(place: WorkoutPlace?, type: ExerciseType?, level: WorkoutLevel?) async {

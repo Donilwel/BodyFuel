@@ -445,6 +445,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Приложение использует камеру для сканирования штрихкода продукта и добавления приема пищи по фото";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложение использует данные здоровья для персонализации плана";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложение записывает данные о тренировках";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Приложение использует фотогалерею для добавления приема пищи по фото и установки фото профиля";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -483,6 +484,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Приложение использует камеру для сканирования штрихкода продукта и добавления приема пищи по фото";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Приложение использует данные здоровья для персонализации плана";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Приложение записывает данные о тренировках";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Приложение использует фотогалерею для добавления приема пищи по фото и установки фото профиля";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

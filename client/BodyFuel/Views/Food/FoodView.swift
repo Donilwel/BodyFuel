@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import Photos
 
 struct FoodView: View {
     @StateObject private var viewModel = FoodViewModel()
@@ -8,6 +9,7 @@ struct FoodView: View {
     @State private var showAddOptions = false
     @State private var showPhotoPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var showPhotoPermissionAlert = false
 
     var body: some View {
         NavigationStack {
@@ -71,6 +73,16 @@ struct FoodView: View {
         .fullScreenCover(isPresented: $viewModel.showCamera) {
             CameraFoodView()
                 .environmentObject(viewModel)
+        }
+        .alert("Нет доступа к галерее", isPresented: $showPhotoPermissionAlert) {
+            Button("Отмена", role: .cancel) {}
+            Button("Открыть настройки") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text("Разрешите доступ к фотогалерее в Настройках, чтобы добавлять блюда из галереи.")
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotoItem, matching: .images)
         .onChange(of: selectedPhotoItem) { item in
@@ -177,9 +189,14 @@ struct FoodView: View {
                     }
 
                     Button {
-                        showAddOptions = false
-                        viewModel.addMealType = currentMealType()
-                        showPhotoPicker = true
+                        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                        if status == .denied || status == .restricted {
+                            showPhotoPermissionAlert = true
+                        } else {
+                            showAddOptions = false
+                            viewModel.addMealType = currentMealType()
+                            showPhotoPicker = true
+                        }
                     } label: {
                         Label("Выбрать из галереи", systemImage: "photo.on.rectangle")
                             .font(.subheadline.weight(.semibold))

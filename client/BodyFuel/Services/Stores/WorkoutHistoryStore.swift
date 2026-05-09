@@ -40,7 +40,11 @@ final class WorkoutHistoryStore: ObservableObject {
 
     private let diskCache = DiskCache.shared
     private let workoutService: WorkoutServiceProtocol = WorkoutService.shared
-    private let iso = ISO8601DateFormatter()
+    private let iso: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
 
     private var cacheKey: String {
         "workout_history_\(UserSessionManager.shared.currentUserId ?? "anon")"

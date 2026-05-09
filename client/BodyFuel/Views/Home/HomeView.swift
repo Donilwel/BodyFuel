@@ -27,6 +27,7 @@ struct HomeView: View {
 
                         Spacer()
                     }
+                    .padding()
                 }
             }
             .screenLoading(viewModel.state == .loading)

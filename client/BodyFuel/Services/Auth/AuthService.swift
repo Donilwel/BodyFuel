@@ -49,8 +49,8 @@ final class AuthService: AuthServiceProtocol {
 
     func register(user: RegisterPayload) async throws {
         do {
-            let urlComponents = URLComponents(string: API.baseURLString + API.Auth.register)!
-            guard let url = urlComponents.url else {
+            guard let urlComponents = URLComponents(string: API.baseURLString + API.Auth.register),
+                  let url = urlComponents.url else {
                 print("[ERROR] [AuthService/register] Invalid register URL")
                 throw NetworkError.invalidURL
             }
