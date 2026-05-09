@@ -163,11 +163,13 @@ struct CameraFoodView: View {
                 if !isAnalyzing && analyzedMeal == nil {
                     if analysisFailed {
                         VStack(spacing: 12) {
-                            Text("Не удалось распознать блюдо")
+                            Text(viewModel.analysisNetworkError ? "Нет подключения к интернету" : "Не удалось распознать блюдо")
                                 .font(.subheadline)
                                 .foregroundColor(.white.opacity(0.8))
                                 .multilineTextAlignment(.center)
-                            Text("Попробуйте сфотографировать ещё раз или введите данные вручную")
+                            Text(viewModel.analysisNetworkError
+                                 ? "Проверьте соединение и попробуйте снова"
+                                 : "Попробуйте сфотографировать ещё раз или введите данные вручную")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.55))
                                 .multilineTextAlignment(.center)

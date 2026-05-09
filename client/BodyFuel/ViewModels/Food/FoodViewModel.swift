@@ -19,6 +19,7 @@ final class FoodViewModel: ObservableObject {
     @Published var addMealType: MealType = .breakfast
     @Published var isAddingMeal = false
     @Published var addMealError: String = ""
+    @Published var analysisNetworkError = false
 
     var mealsByType: [(MealType, [Meal])] {
         MealType.allCases.compactMap { type in
@@ -60,15 +61,20 @@ final class FoodViewModel: ObservableObject {
     }
 
     func analyzeMealFromPhoto(_ imageData: Data, mealType: MealType) async -> Meal? {
+        analysisNetworkError = false
         do {
             let meal = try await nutritionService.analyzeMealFromPhoto(imageData, mealType: mealType)
             return meal
         } catch {
+            analysisNetworkError = isTransportError(error)
             return nil
         }
     }
 
     func saveMeal(_ meal: Meal) async {
+        guard !isAddingMeal else { return }
+        isAddingMeal = true
+        defer { isAddingMeal = false }
         do {
             try await NutritionStore.shared.addMeal(meal)
             showAddMeal = false
@@ -79,6 +85,9 @@ final class FoodViewModel: ObservableObject {
     }
 
     func confirmAndSaveAnalyzedMeal(_ meal: Meal) async {
+        guard !isAddingMeal else { return }
+        isAddingMeal = true
+        defer { isAddingMeal = false }
         do {
             try await NutritionStore.shared.addMeal(meal)
         } catch {
