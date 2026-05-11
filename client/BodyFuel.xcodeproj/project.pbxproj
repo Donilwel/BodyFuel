@@ -17,6 +17,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		1521384F2FB23EC2003EF3E7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 151AD4CC2F1E7C77002AB6B6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 151AD4D32F1E7C77002AB6B6;
+			remoteInfo = BodyFuel;
+		};
 		15A742542F608215003DC0B9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 151AD4CC2F1E7C77002AB6B6 /* Project object */;
@@ -44,6 +51,7 @@
 		1510CF032F5F104E004CAE54 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		1510CF052F5F104E004CAE54 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyFuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1521384B2FB23EC2003EF3E7 /* BodyFuelTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BodyFuelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		153D0B462F5F7E8400A1C7BF /* BodyFuelWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BodyFuelWidgetsExtension.entitlements; sourceTree = "<group>"; };
 		156DAEBF2F61BA7E0087C2D1 /* SharedWidgetStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedWidgetStorage.swift; sourceTree = "<group>"; };
 		15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BodyFuelWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,6 +82,11 @@
 				1500563E2F23E38100958BEB /* Exceptions for "BodyFuel" folder in "BodyFuel" target */,
 			);
 			path = BodyFuel;
+			sourceTree = "<group>";
+		};
+		1521384C2FB23EC2003EF3E7 /* BodyFuelTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BodyFuelTests;
 			sourceTree = "<group>";
 		};
 		156DAEC42F61D0520087C2D1 /* Styles */ = {
@@ -111,6 +124,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		152138482FB23EC2003EF3E7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		15A742402F608214003DC0B9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -140,6 +160,7 @@
 				153D0B462F5F7E8400A1C7BF /* BodyFuelWidgetsExtension.entitlements */,
 				151AD4D62F1E7C77002AB6B6 /* BodyFuel */,
 				15A742462F608214003DC0B9 /* BodyFuelWidgets */,
+				1521384C2FB23EC2003EF3E7 /* BodyFuelTests */,
 				1510CF022F5F104E004CAE54 /* Frameworks */,
 				151AD4D52F1E7C77002AB6B6 /* Products */,
 			);
@@ -150,6 +171,7 @@
 			children = (
 				151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */,
 				15A742432F608214003DC0B9 /* BodyFuelWidgetsExtension.appex */,
+				1521384B2FB23EC2003EF3E7 /* BodyFuelTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -197,6 +219,29 @@
 			productReference = 151AD4D42F1E7C77002AB6B6 /* BodyFuel.app */;
 			productType = "com.apple.product-type.application";
 		};
+		1521384A2FB23EC2003EF3E7 /* BodyFuelTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 152138512FB23EC2003EF3E7 /* Build configuration list for PBXNativeTarget "BodyFuelTests" */;
+			buildPhases = (
+				152138472FB23EC2003EF3E7 /* Sources */,
+				152138482FB23EC2003EF3E7 /* Frameworks */,
+				152138492FB23EC2003EF3E7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				152138502FB23EC2003EF3E7 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1521384C2FB23EC2003EF3E7 /* BodyFuelTests */,
+			);
+			name = BodyFuelTests;
+			packageProductDependencies = (
+			);
+			productName = BodyFuelTests;
+			productReference = 1521384B2FB23EC2003EF3E7 /* BodyFuelTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 15A742572F608215003DC0B9 /* Build configuration list for PBXNativeTarget "BodyFuelWidgetsExtension" */;
@@ -229,11 +274,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2630;
+				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					151AD4D32F1E7C77002AB6B6 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					1521384A2FB23EC2003EF3E7 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 151AD4D32F1E7C77002AB6B6;
 					};
 					15A742422F608214003DC0B9 = {
 						CreatedOnToolsVersion = 26.3;
@@ -260,12 +309,20 @@
 			targets = (
 				151AD4D32F1E7C77002AB6B6 /* BodyFuel */,
 				15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */,
+				1521384A2FB23EC2003EF3E7 /* BodyFuelTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		151AD4D22F1E7C77002AB6B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		152138492FB23EC2003EF3E7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -290,6 +347,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		152138472FB23EC2003EF3E7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		15A7423F2F608214003DC0B9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -301,6 +365,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		152138502FB23EC2003EF3E7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 151AD4D32F1E7C77002AB6B6 /* BodyFuel */;
+			targetProxy = 1521384F2FB23EC2003EF3E7 /* PBXContainerItemProxy */;
+		};
 		15A742552F608215003DC0B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 15A742422F608214003DC0B9 /* BodyFuelWidgetsExtension */;
@@ -508,6 +577,50 @@
 			};
 			name = Release;
 		};
+		152138522FB23EC2003EF3E7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GWV92276SN;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.lordofmops.BodyFuelTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BodyFuel.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BodyFuel";
+			};
+			name = Debug;
+		};
+		152138532FB23EC2003EF3E7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GWV92276SN;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ru.lordofmops.BodyFuelTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BodyFuel.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BodyFuel";
+			};
+			name = Release;
+		};
 		15A742582F608215003DC0B9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -589,6 +702,15 @@
 			buildConfigurations = (
 				151AD4E02F1E7C78002AB6B6 /* Debug */,
 				151AD4E12F1E7C78002AB6B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		152138512FB23EC2003EF3E7 /* Build configuration list for PBXNativeTarget "BodyFuelTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				152138522FB23EC2003EF3E7 /* Debug */,
+				152138532FB23EC2003EF3E7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

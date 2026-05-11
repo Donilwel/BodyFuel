@@ -99,7 +99,6 @@ struct FoodView: View {
         }
         .sheet(isPresented: $viewModel.showRecipes) {
             RecipesView(recipes: viewModel.recipes, isLoading: viewModel.isLoadingRecipes) { recipe in
-                // TODO: сделать промежуточный оверлей с описанием и ингредиентами
                 let meal = Meal(name: recipe.name, mealType: currentMealType(), macros: recipe.macros)
                 
                 Task { await viewModel.saveMeal(meal) }
