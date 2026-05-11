@@ -2,6 +2,7 @@ import Foundation
 import HealthKit
 import Combine
 import WidgetKit
+import UIKit
 
 @MainActor
 final class WorkoutViewModel: ObservableObject {
@@ -182,6 +183,8 @@ final class WorkoutViewModel: ObservableObject {
             recommendedWorkout = workout
             isWorkoutStale = false
             diskCache.save(workout, key: workoutCacheKey)
+            sharedWidgetStorage.saveWorkout(makeWidgetModel(from: workout))
+            WidgetCenter.shared.reloadAllTimelines()
             NetworkMonitor.shared.markServerReachable()
             screenState = .loaded
         } catch {
@@ -303,6 +306,7 @@ final class WorkoutViewModel: ObservableObject {
             recommendedWorkout = workout
             isWorkoutStale = false
             diskCache.save(workout, key: workoutCacheKey)
+            sharedWidgetStorage.saveWorkout(makeWidgetModel(from: workout))
             screenState = .loaded
             WidgetCenter.shared.reloadAllTimelines()
         } catch {
@@ -377,12 +381,13 @@ final class WorkoutViewModel: ObservableObject {
     
     func skipExercise() {
         stopExerciseTimer()
-        
+
         if let exercise = currentExercise {
-            let skippedReps = Array(repeating: "0", count: exercise.setCount)
+            let remaining = max(0, exercise.setCount - currentSetRepCount.count)
+            let reps = currentSetRepCount + Array(repeating: "0", count: remaining)
             exerciseStats.append(ExerciseStats(
                 exercise: exercise,
-                repCount: skippedReps
+                repCount: reps
             ))
         }
         
@@ -525,8 +530,6 @@ final class WorkoutViewModel: ObservableObject {
             return
         }
 
-        sharedWidgetStorage.saveWorkout(nil)
-        
         phase = .waitingForStart
         
         updateLiveActivity()
@@ -596,6 +599,8 @@ final class WorkoutViewModel: ObservableObject {
                 self.showWorkoutSummary = true
 
                 UserStore.shared.setCaloriesBurned(calories)
+                self.sharedWidgetStorage.saveWorkout(nil)
+                WidgetCenter.shared.reloadAllTimelines()
 
                 exerciseStats.forEach { stats in
                     print("\(stats.exercise.name): \(stats.repCount.joined(separator: ", ")), calories: \(String(describing: calories))")
@@ -604,6 +609,16 @@ final class WorkoutViewModel: ObservableObject {
 
             await HealthKitService.shared.refreshDailyActivity()
         }
+    }
+
+    private func makeWidgetModel(from workout: Workout) -> WorkoutModel {
+        WorkoutModel(
+            name: workout.title,
+            duration: workout.duration,
+            calories: workout.calories,
+            location: workout.place.rawValue,
+            type: workout.type.rawValue
+        )
     }
 
     private func makeExerciseUpdateItems(finalStatus: WorkoutStatus) -> [UpdateWorkoutExerciseItem] {
