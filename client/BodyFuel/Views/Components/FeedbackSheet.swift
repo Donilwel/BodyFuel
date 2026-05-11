@@ -13,7 +13,8 @@ struct FeedbackSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AnimatedBackground()
+                Color.clear
+                    .glassEffect(.regular.tint(AppColors.primary.opacity(0.6)).interactive(), in: .rect)
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -68,7 +69,7 @@ struct FeedbackSheet: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Закрыть") { dismiss() }
                         .foregroundStyle(.white)
                 }

@@ -5,6 +5,7 @@ struct RecipesView: View {
     let isLoading: Bool
     let onRecipeTap: (Recipe) -> ()
     @Environment(\.dismiss) private var dismiss
+    @State private var showFeedback = false
 
     var body: some View {
         NavigationStack {
@@ -37,8 +38,20 @@ struct RecipesView: View {
                     Button("Закрыть") { dismiss() }
                         .foregroundColor(.white)
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showFeedback = true
+                    } label: {
+                        Image(systemName: "bubble.and.pencil")
+                            .foregroundColor(.white)
+                    }
+                }
             }
             .toolbarBackground(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showFeedback) {
+                FeedbackSheet(title: "Отзыв о рецептах")
+                    .presentationDetents([.medium, .large])
+            }
         }
     }
 }

@@ -16,6 +16,8 @@ final class FoodViewModel: ObservableObject {
     @Published var recipes: [Recipe] = []
     @Published var isLoadingRecipes = false
 
+    private var recipesSessionLoaded = false
+
     @Published var addMealType: MealType = .breakfast
     @Published var isAddingMeal = false
     @Published var addMealError: String = ""
@@ -57,7 +59,21 @@ final class FoodViewModel: ObservableObject {
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
             screenState = .error("Не удалось загрузить данные питания")
+            return
         }
+        Task { await preloadRecipesIfNeeded() }
+    }
+
+    private func preloadRecipesIfNeeded() async {
+        guard !recipesSessionLoaded, !isLoadingRecipes, recipes.isEmpty else { return }
+        isLoadingRecipes = true
+        do {
+            recipes = try await nutritionService.generateRecipes()
+            recipesSessionLoaded = true
+        } catch {
+            print("[ERROR] [FoodViewModel/preloadRecipesIfNeeded]: Error preloading recipes: \(error)")
+        }
+        isLoadingRecipes = false
     }
 
     func analyzeMealFromPhoto(_ imageData: Data, mealType: MealType) async -> Meal? {
@@ -106,15 +122,20 @@ final class FoodViewModel: ObservableObject {
     }
 
     func loadRecipes() async {
+        if recipesSessionLoaded || isLoadingRecipes {
+            showRecipes = true
+            return
+        }
         isLoadingRecipes = true
+        showRecipes = true
         do {
             recipes = try await nutritionService.generateRecipes()
+            recipesSessionLoaded = true
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
             recipes = []
         }
         isLoadingRecipes = false
-        showRecipes = true
     }
 
     func searchProducts(_ query: String) async throws -> [FoodProduct] {
