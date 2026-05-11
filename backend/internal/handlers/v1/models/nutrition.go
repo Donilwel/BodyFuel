@@ -9,8 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// --- Requests ---
-
 type CreateFoodEntryRequest struct {
 	Description string    `json:"description" validate:"required,max=500"`
 	Calories    int       `json:"calories" validate:"required,min=0,max=10000"`
@@ -33,7 +31,6 @@ type UpdateFoodEntryRequest struct {
 	Date        *time.Time `json:"date"`
 }
 
-// --- Responses ---
 
 type NutritionAnalysisResponse struct {
 	Description string  `json:"description"`
@@ -41,15 +38,17 @@ type NutritionAnalysisResponse struct {
 	Protein     float64 `json:"protein"`
 	Carbs       float64 `json:"carbs"`
 	Fat         float64 `json:"fat"`
+	PhotoURL    string  `json:"photo_url"`
 }
 
-func NewNutritionAnalysisResponse(a *ai.NutritionAnalysis) NutritionAnalysisResponse {
+func NewNutritionAnalysisResponse(a *ai.NutritionAnalysis, photoURL string) NutritionAnalysisResponse {
 	return NutritionAnalysisResponse{
 		Description: a.Description,
 		Calories:    a.Calories,
 		Protein:     a.Protein,
 		Carbs:       a.Carbs,
 		Fat:         a.Fat,
+		PhotoURL:    photoURL,
 	}
 }
 
