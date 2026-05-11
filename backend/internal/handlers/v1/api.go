@@ -111,6 +111,10 @@ type (
 		Refresh(ctx context.Context, userID uuid.UUID) ([]*entities.UserRecommendation, error)
 		MarkRead(ctx context.Context, id, userID uuid.UUID) error
 	}
+
+	EmailService interface {
+		SendEmail(to, subject, body string) error
+	}
 )
 
 type Config struct {
@@ -121,6 +125,7 @@ type Config struct {
 	AvatarService         AvatarService
 	NutritionService      NutritionService
 	RecommendationService RecommendationService
+	EmailService          EmailService
 	Validator             validator.Validate
 	Log                   logging.Entry
 }
@@ -133,6 +138,7 @@ type API struct {
 	avatarService         AvatarService
 	nutritionService      NutritionService
 	recommendationService RecommendationService
+	emailService          EmailService
 	validator             validator.Validate
 	log                   logging.Entry
 }
@@ -146,6 +152,7 @@ func NewHandlers(c Config) *API {
 		avatarService:         c.AvatarService,
 		nutritionService:      c.NutritionService,
 		recommendationService: c.RecommendationService,
+		emailService:          c.EmailService,
 		validator:             c.Validator,
 		log:                   c.Log,
 	}
@@ -153,6 +160,7 @@ func NewHandlers(c Config) *API {
 
 func (a *API) RegisterHandlers(r *gin.RouterGroup) {
 	a.registerAuthHandlers(r)
+	a.registerFeedbackHandlers(r)
 
 	protected := r.Group("", JWT.JWTAuthMiddleware())
 	a.registerExerciseHandlers(protected)
