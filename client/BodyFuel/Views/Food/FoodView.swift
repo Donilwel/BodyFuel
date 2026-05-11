@@ -69,6 +69,7 @@ struct FoodView: View {
             AddMealView()
                 .environmentObject(viewModel)
                 .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
         .fullScreenCover(isPresented: $viewModel.showCamera) {
             CameraFoodView()

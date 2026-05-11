@@ -17,8 +17,7 @@ struct WeightInputSheet: View {
 
             VStack(spacing: 24) {
                 Text("Добавить вес")
-                    .font(.title2.bold())
-                    .foregroundStyle(.white)
+                    .sheetTitle()
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Текущий вес (кг)")

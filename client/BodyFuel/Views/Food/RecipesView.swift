@@ -49,6 +49,7 @@ struct RecipesView: View {
             .sheet(isPresented: $showFeedback) {
                 FeedbackSheet(title: "Отзыв о рецептах")
                     .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
             }
         }
     }

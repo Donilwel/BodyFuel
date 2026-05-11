@@ -63,6 +63,7 @@ struct StatsView: View {
         .sheet(isPresented: $showFeedback) {
             FeedbackSheet(title: "Отзыв о рекомендациях")
                 .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .onChange(of: viewModel.selectedPeriod) { _ in
             Task { await viewModel.reloadChart() }

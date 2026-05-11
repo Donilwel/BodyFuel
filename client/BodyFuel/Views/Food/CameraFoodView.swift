@@ -39,6 +39,7 @@ struct CameraFoodView: View {
         .sheet(isPresented: $showFeedback) {
             FeedbackSheet(title: "Отзыв об анализе блюда")
                 .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .onChange(of: camera.permissionDenied) { denied in
             if denied { showPermissionAlert = true }

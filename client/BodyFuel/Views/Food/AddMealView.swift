@@ -25,6 +25,9 @@ struct AddMealView: View {
             
             NavigationStack {
                 VStack(spacing: 0) {
+                    Text("Добавить продукт")
+                        .sheetTitle()
+                    
                     mealTypePicker
                     modePicker
                     
@@ -79,11 +82,6 @@ struct AddMealView: View {
                 }
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .title) {
-                        Text("Добавить продукт")
-                            .font(.title3.bold())
-                            .foregroundColor(.white)
-                    }
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Отмена", systemImage: "xmark") { dismiss() }
                             .foregroundColor(.white)

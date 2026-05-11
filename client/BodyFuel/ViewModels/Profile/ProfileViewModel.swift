@@ -126,15 +126,14 @@ final class ProfileViewModel: ObservableObject {
             try validate()
             screenState = .loading
 
+            var newAvatarUrl = avatarUrl
             if let data = avatarData {
-                avatarUrl = try await PhotoService.shared.uploadUserAvatar(data: data)
-                avatarData = nil
-                avatarItem = nil
+                newAvatarUrl = try await PhotoService.shared.uploadUserAvatar(data: data)
             }
 
             let profile = UserProfile(
                 height: height,
-                photo: avatarUrl,
+                photo: newAvatarUrl,
                 goal: goal,
                 lifestyle: lifestyle,
                 fitnessLevel: fitnessLevel,
@@ -143,14 +142,17 @@ final class ProfileViewModel: ObservableObject {
                 targetCaloriesDaily: targetCaloriesDaily,
                 targetWorkoutsWeekly: targetWorkoutsWeekly
             )
-            
+
             try await service.updateProfile(profile)
             let basalMetabolicRate = await calculateBasalMetabolicRate()
 
             UserStore.shared.setTargetCalories(targetCaloriesDaily)
             UserStore.shared.setBasalMetabolicRate(Int(basalMetabolicRate))
             UserStore.shared.setProfile(profile)
-            
+
+            avatarUrl = newAvatarUrl
+            avatarData = nil
+            avatarItem = nil
             isEditing = false
             screenState = .idle
         } catch {

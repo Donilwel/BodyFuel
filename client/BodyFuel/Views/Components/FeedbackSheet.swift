@@ -18,6 +18,9 @@ struct FeedbackSheet: View {
                     .ignoresSafeArea()
 
                 ScrollView {
+                    Text(title)
+                        .sheetTitle()
+                    
                     VStack(alignment: .leading, spacing: 20) {
                         Text("Ваш отзыв поможет нам улучшить работу ИИ")
                             .font(.subheadline)
@@ -64,14 +67,6 @@ struct FeedbackSheet: View {
                         .disabled(isSending)
                     }
                     .padding()
-                }
-            }
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Закрыть") { dismiss() }
-                        .foregroundStyle(.white)
                 }
             }
         }
