@@ -13,6 +13,7 @@ struct CameraFoodView: View {
     @State private var analysisFailed = false
     @State private var selectedMealType: MealType = .breakfast
     @State private var showPermissionAlert = false
+    @State private var showFeedback = false
 
     var body: some View {
         ZStack {
@@ -34,6 +35,10 @@ struct CameraFoodView: View {
         }
         .onDisappear {
             camera.stop()
+        }
+        .sheet(isPresented: $showFeedback) {
+            FeedbackSheet(title: "Отзыв об анализе блюда")
+                .presentationDetents([.medium, .large])
         }
         .onChange(of: camera.permissionDenied) { denied in
             if denied { showPermissionAlert = true }
@@ -156,6 +161,14 @@ struct CameraFoodView: View {
                         }
                     }
                     .padding(.horizontal)
+
+                    Button {
+                        showFeedback = true
+                    } label: {
+                        Label("Что-то не так?", systemImage: "bubble.and.pencil")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
                 }
 
                 Spacer()

@@ -89,6 +89,10 @@ final class OfflineSyncManager: ObservableObject {
                 totalCalories: p.totalCalories,
                 exercises: exercises
             )
+
+        case .sendFeedback:
+            let p = try decoder.decode(SendFeedbackPayload.self, from: mutation.payload)
+            try await FeedbackService.shared.sendFeedback(message: p.message, email: p.email)
         }
     }
 }

@@ -22,6 +22,7 @@ enum API {
         static func workout(id: String) -> String { "/workouts/\(id)" }
     }
 
+    static let feedback = "/feedback"
     static let weightHistory = "/user/weight/history"
     static let recommendations = "/recommendations"
     static let recommendationsRefresh = "/recommendations/refresh"
