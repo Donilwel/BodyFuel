@@ -392,12 +392,16 @@ final class WorkoutViewModel: ObservableObject {
                 }
             }
         } else {
+            let remaining = max(0, exercise.setCount - currentSetRepCount.count)
+            let reps = currentSetRepCount + Array(repeating: "0", count: remaining)
             exerciseStats.append(ExerciseStats(
                 exercise: exercise,
-                repCount: currentSetRepCount
+                repCount: reps
             ))
             currentExerciseRepCount = ""
-            finishWorkout(finalStatus: .failed)
+
+            let anyDone = exerciseStats.contains { $0.repCount.contains { $0 != "0" } }
+            finishWorkout(finalStatus: anyDone ? .completed : .failed)
         }
 
         phase = .finished
@@ -578,6 +582,12 @@ final class WorkoutViewModel: ObservableObject {
         isWorkoutActive = false
         showWorkoutSummary = true
 
+        sharedWidgetStorage.saveWorkout(nil)
+        if finalStatus == .completed {
+            sharedWidgetStorage.saveTodayWorkoutDone(true)
+        }
+        WidgetCenter.shared.reloadAllTimelines()
+
         Task {
             let (calories, _) = await healthKitService.endWorkout()
 
@@ -626,11 +636,6 @@ final class WorkoutViewModel: ObservableObject {
                 self.showWorkoutSummary = true
 
                 UserStore.shared.setCaloriesBurned(calories)
-                self.sharedWidgetStorage.saveWorkout(nil)
-                if finalStatus == .completed {
-                    self.sharedWidgetStorage.saveTodayWorkoutDone(true)
-                }
-                WidgetCenter.shared.reloadAllTimelines()
 
                 exerciseStats.forEach { stats in
                     print("\(stats.exercise.name): \(stats.repCount.joined(separator: ", ")), calories: \(String(describing: calories))")

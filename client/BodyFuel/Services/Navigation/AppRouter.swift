@@ -43,7 +43,7 @@ final class AppRouter: ObservableObject {
     }
 
     func handleIfUnauthorized(_ error: Error) -> Bool {
-        guard ErrorMapper.map(error) == .unauthorized else { return false }
+        guard ErrorMapper.map(error) == .unauthorized || isUserParamsNotFoundError(error) else { return false }
         logout()
         return true
     }
