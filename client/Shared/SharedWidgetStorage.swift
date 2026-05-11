@@ -69,6 +69,14 @@ final class SharedWidgetStorage {
         )
     }
 
+    func saveTodayWorkoutDone(_ done: Bool) {
+        defaults?.set(done, forKey: "todayWorkoutDone")
+    }
+
+    func isTodayWorkoutDone() -> Bool {
+        defaults?.bool(forKey: "todayWorkoutDone") ?? false
+    }
+
     func clearAll() {
         defaults?.removeObject(forKey: "todayBurnedCalories")
         defaults?.removeObject(forKey: "todayConsumedCalories")
@@ -76,5 +84,6 @@ final class SharedWidgetStorage {
         defaults?.removeObject(forKey: "basalMetabolicRate")
         defaults?.removeObject(forKey: "todaySteps")
         defaults?.removeObject(forKey: "todayWorkout")
+        defaults?.removeObject(forKey: "todayWorkoutDone")
     }
 }

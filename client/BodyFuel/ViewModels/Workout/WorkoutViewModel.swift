@@ -184,6 +184,7 @@ final class WorkoutViewModel: ObservableObject {
             isWorkoutStale = false
             diskCache.save(workout, key: workoutCacheKey)
             sharedWidgetStorage.saveWorkout(makeWidgetModel(from: workout))
+            sharedWidgetStorage.saveTodayWorkoutDone(false)
             WidgetCenter.shared.reloadAllTimelines()
             NetworkMonitor.shared.markServerReachable()
             screenState = .loaded
@@ -273,6 +274,31 @@ final class WorkoutViewModel: ObservableObject {
         showWorkoutFilter = true
     }
 
+    func generateNextWorkout() async {
+        screenState = .loading
+        recommendedWorkout = nil
+        do {
+            let (workoutID, workout) = try await workoutService.generateWorkout()
+            currentWorkoutID = workoutID
+            storedWorkoutID = workoutID
+            recommendedWorkout = workout
+            isWorkoutStale = false
+            diskCache.save(workout, key: workoutCacheKey)
+            sharedWidgetStorage.saveWorkout(makeWidgetModel(from: workout))
+            sharedWidgetStorage.saveTodayWorkoutDone(false)
+            WidgetCenter.shared.reloadAllTimelines()
+            screenState = .loaded
+        } catch {
+            if isTransportError(error) {
+                ToastService.shared.show("Нет соединения с сетью")
+                screenState = recommendedWorkout != nil ? .loaded : .error("Нет соединения с интернетом")
+                return
+            }
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
+            screenState = .error("Не удалось загрузить тренировку")
+        }
+    }
+
     func startWorkoutFromDeepLink(id: String) {
         Task {
             screenState = .loading
@@ -307,6 +333,7 @@ final class WorkoutViewModel: ObservableObject {
             isWorkoutStale = false
             diskCache.save(workout, key: workoutCacheKey)
             sharedWidgetStorage.saveWorkout(makeWidgetModel(from: workout))
+            sharedWidgetStorage.saveTodayWorkoutDone(false)
             screenState = .loaded
             WidgetCenter.shared.reloadAllTimelines()
         } catch {
@@ -600,6 +627,9 @@ final class WorkoutViewModel: ObservableObject {
 
                 UserStore.shared.setCaloriesBurned(calories)
                 self.sharedWidgetStorage.saveWorkout(nil)
+                if finalStatus == .completed {
+                    self.sharedWidgetStorage.saveTodayWorkoutDone(true)
+                }
                 WidgetCenter.shared.reloadAllTimelines()
 
                 exerciseStats.forEach { stats in

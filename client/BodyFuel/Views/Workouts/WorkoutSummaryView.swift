@@ -66,28 +66,31 @@ struct WorkoutSummaryView: View {
     }
     
     private func exerciseStatsRow(for stat: ExerciseStats) -> some View {
-        HStack(alignment: .top, spacing: 16) {
+        let isFullySkipped = stat.repCount.allSatisfy { $0 == "0" }
+
+        return HStack(alignment: .top, spacing: 16) {
             Text(stat.exercise.name)
                 .bold()
-                .foregroundColor(.white)
+                .foregroundColor(isFullySkipped ? .white.opacity(0.45) : .white)
                 .lineLimit(2)
-            
+
             Spacer()
 
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(0..<stat.repCount.count, id: \.self) { setIndex in
-                    HStack {
-                        Text("\(setIndex + 1) подход:")
-                            .foregroundColor(.white.opacity(0.7))
-                        if setIndex < stat.repCount.count {
+            if isFullySkipped {
+                Text("Пропущено")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.45))
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(0..<stat.repCount.count, id: \.self) { setIndex in
+                        HStack {
+                            Text("\(setIndex + 1) подход:")
+                                .foregroundColor(.white.opacity(0.7))
                             Text(repCountText(repCount: stat.repCount[setIndex], exercise: stat.exercise))
                                 .foregroundColor(.white)
-                        } else {
-                            Text("—")
-                                .foregroundColor(.white)
                         }
+                        .font(.subheadline)
                     }
-                    .font(.subheadline)
                 }
             }
         }

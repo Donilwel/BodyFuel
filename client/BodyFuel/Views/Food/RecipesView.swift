@@ -31,8 +31,6 @@ struct RecipesView: View {
                     }
                 }
             }
-            .navigationTitle("Рекомендуемые рецепты")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Закрыть") { dismiss() }
