@@ -22,17 +22,15 @@ func (a *API) registerNutritionHandlers(router *gin.RouterGroup) {
 	group.GET("/recipes", a.recommendRecipes)
 }
 
-// uploadAndAnalyzeNutritionPhoto загружает фото еды, анализирует через OpenAI Vision и сохраняет запись в дневнике
-// @Summary Загрузка фото еды с автоматическим добавлением в дневник
-// @Description Принимает файл (JPEG/PNG/WebP) + тип приёма пищи. Загружает в S3, определяет КБЖУ через OpenAI Vision и автоматически создаёт запись в дневнике питания. Форматы HEIC/HEIF не поддерживаются.
+// uploadAndAnalyzeNutritionPhoto загружает фото еды и анализирует через OpenAI Vision
+// @Summary Анализ фото еды
+// @Description Принимает файл (JPEG/PNG/WebP), загружает в S3 и определяет КБЖУ через OpenAI Vision. Форматы HEIC/HEIF не поддерживаются.
 // @Tags Nutrition
 // @Security BearerAuth
 // @Accept multipart/form-data
 // @Produce json
 // @Param photo formData file true "Файл изображения еды (JPEG, PNG, WebP)"
-// @Param meal_type formData string true "Тип приёма пищи" Enums(breakfast, lunch, dinner, snack)
-// @Param date formData string false "Дата приёма пищи (YYYY-MM-DD), по умолчанию сегодня"
-// @Success 201 {object} models.FoodEntryResponse "Созданная запись в дневнике"
+// @Success 200 {object} models.NutritionAnalysisResponse "Результат анализа"
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
@@ -49,27 +47,6 @@ func (a *API) uploadAndAnalyzeNutritionPhoto(ctx *gin.Context) {
 		return
 	}
 	defer file.Close()
-
-	mealType := ctx.PostForm("meal_type")
-	switch mealType {
-	case "breakfast", "lunch", "dinner", "snack":
-	case "":
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "meal_type is required (breakfast, lunch, dinner, snack)"})
-		return
-	default:
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "meal_type must be one of: breakfast, lunch, dinner, snack"})
-		return
-	}
-
-	date := time.Now()
-	if dateStr := ctx.PostForm("date"); dateStr != "" {
-		parsed, parseErr := time.Parse("2006-01-02", dateStr)
-		if parseErr != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid date format, use YYYY-MM-DD"})
-			return
-		}
-		date = parsed
-	}
 
 	contentType := header.Header.Get("Content-Type")
 	if contentType == "" {
@@ -89,39 +66,7 @@ func (a *API) uploadAndAnalyzeNutritionPhoto(ctx *gin.Context) {
 		return
 	}
 
-	entryID := uuid.New()
-	now := time.Now()
-	spec := entities.UserFoodInitSpec{
-		ID:          entryID,
-		UserID:      userID,
-		Description: uploadResult.Analysis.Description,
-		Calories:    uploadResult.Analysis.Calories,
-		Protein:     uploadResult.Analysis.Protein,
-		Carbs:       uploadResult.Analysis.Carbs,
-		Fat:         uploadResult.Analysis.Fat,
-		MealType:    entities.MealType(mealType),
-		PhotoURL:    uploadResult.PhotoURL,
-		Date:        date,
-	}
-
-	if err := a.nutritionService.CreateFoodEntry(ctx, spec); err != nil {
-		a.log.Errorf("nutrition: create entry from photo: %v", err)
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to save food entry"})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, models.FoodEntryResponse{
-		ID:          entryID,
-		Description: spec.Description,
-		Calories:    spec.Calories,
-		Protein:     spec.Protein,
-		Carbs:       spec.Carbs,
-		Fat:         spec.Fat,
-		MealType:    mealType,
-		PhotoURL:    spec.PhotoURL,
-		Date:        date,
-		CreatedAt:   now,
-	})
+	ctx.JSON(http.StatusOK, models.NewNutritionAnalysisResponse(uploadResult.Analysis, uploadResult.PhotoURL))
 }
 
 // createFoodEntry создаёт запись в дневнике питания
