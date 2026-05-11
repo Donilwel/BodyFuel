@@ -38,7 +38,7 @@ struct WorkoutSummaryView: View {
                         
                         statRow(
                             title: "Выполнено",
-                            value: "\(viewModel.workoutProgress * 100)%"
+                            value: String(format: "%.0f", viewModel.workoutProgress * 100).appending("%")
                         )
                     }
                     

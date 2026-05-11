@@ -55,7 +55,11 @@ final class AuthViewModel: ObservableObject {
                     name: name,
                     surname: surname,
                     email: email,
-                    phone: phone,
+                    phone: phone
+                        .replacingOccurrences(of: "(", with: "")
+                        .replacingOccurrences(of: ")", with: "")
+                        .replacingOccurrences(of: "-", with: "")
+                        .replacingOccurrences(of: " ", with: ""),
                     password: password
                 )
                 try await authService.register(user: registerPayload)
