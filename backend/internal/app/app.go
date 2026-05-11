@@ -71,7 +71,6 @@ func NewApp(configPaths ...string) *App {
 	workers := make([]BackgroundWorker, 0, 8)
 	closers := make([]io.Closer, 0, 8)
 
-	// Redis is optional — if addr is empty or unreachable we run without cache.
 	var redisClient *cache.Client
 	if cfg.Redis.Addr != "" {
 		rc, rerr := cache.NewClient(cfg.Redis)
@@ -216,6 +215,7 @@ func NewApp(configPaths ...string) *App {
 			AvatarService:         avatarService,
 			NutritionService:      nutritionService,
 			RecommendationService: recommendationService,
+			EmailService:          emailClient,
 			Validator:             *validator,
 			Log:                   logger,
 		}),
