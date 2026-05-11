@@ -405,7 +405,6 @@ extension HealthKitService: HKLiveWorkoutBuilderDelegate {
     }
     
     nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {
-        // TODO: возможно добавить паузу тренировки
     }
     
     private func updateMetrics(_ statistics: HKStatistics) {

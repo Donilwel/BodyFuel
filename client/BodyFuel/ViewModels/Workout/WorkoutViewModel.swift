@@ -15,6 +15,7 @@ final class WorkoutViewModel: ObservableObject {
     @Published var currentExerciseRepCountError: String = ""
     
     @Published var isWorkoutActive: Bool = false
+    @Published var isPaused: Bool = false
     @Published var showWorkoutSummary: Bool = false
     @Published var showHealthPermissionAlert: Bool = false
     
@@ -243,6 +244,7 @@ final class WorkoutViewModel: ObservableObject {
 
         phase = .waitingForStart
         isWorkoutActive = true
+        isPaused = false
 
         HapticService.impact(.medium)
         startWorkoutTimer()
@@ -453,6 +455,25 @@ final class WorkoutViewModel: ObservableObject {
     func setupHealthKit() async {
         await healthKitService.requestAuthorization()
     }
+
+    func togglePause() {
+        if isPaused {
+            isPaused = false
+            healthKitService.resumeWorkout()
+            startWorkoutTimer()
+            switch phase {
+            case .exercise, .restBetweenSets, .restBetweenExercises:
+                startExerciseTimer()
+            default:
+                break
+            }
+        } else {
+            isPaused = true
+            stopExerciseTimer()
+            stopWorkoutTimer()
+            healthKitService.pauseWorkout()
+        }
+    }
     
     private func startExerciseTimer() {
         exerciseTimerTask?.cancel()
@@ -580,6 +601,7 @@ final class WorkoutViewModel: ObservableObject {
 
         phase = .finished
         isWorkoutActive = false
+        isPaused = false
         showWorkoutSummary = true
 
         sharedWidgetStorage.saveWorkout(nil)
