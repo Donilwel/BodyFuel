@@ -69,7 +69,7 @@ final class ProfileViewModel: ObservableObject {
         }
     }
     @Published var targetWorkoutsError: String? = nil
-    
+
     @Published var profile: UserProfile? {
         didSet {
             guard let profile else { return }
@@ -87,13 +87,34 @@ final class ProfileViewModel: ObservableObject {
     @Published var screenState: ScreenState = .idle
     @Published var event: ProfileEvent = .idle
     @Published var isEditing = false
-    
+
     private var dateOfBirth: Date?
     private var gender: HKBiologicalSex?
 
-    private let healthService: HealthKitServiceProtocol = HealthKitService.shared
-    private let service: ProfileServiceProtocol = ProfileService.shared
+    private let healthService: HealthKitServiceProtocol
+    private let service: ProfileServiceProtocol
+    private let photoService: PhotoServiceProtocol
+    private let userStore: UserStoreProtocol
     private var storeObserver: AnyCancellable?
+
+    init() {
+        self.service = ProfileService.shared
+        self.healthService = HealthKitService.shared
+        self.photoService = PhotoService.shared
+        self.userStore = UserStore.shared
+    }
+
+    init(
+        service: ProfileServiceProtocol,
+        healthService: HealthKitServiceProtocol,
+        photoService: PhotoServiceProtocol,
+        userStore: UserStoreProtocol
+    ) {
+        self.service = service
+        self.healthService = healthService
+        self.photoService = photoService
+        self.userStore = userStore
+    }
 
     func loadAvatar() async {
         avatarData = try? await avatarItem?.loadTransferable(type: Data.self)
@@ -102,7 +123,7 @@ final class ProfileViewModel: ObservableObject {
     func load() async {
         screenState = .loading
 
-        storeObserver = UserStore.shared.$profile
+        storeObserver = userStore.profilePublisher
             .compactMap { $0 }
             .receive(on: RunLoop.main)
             .sink { [weak self] updated in
@@ -111,9 +132,9 @@ final class ProfileViewModel: ObservableObject {
                 if self.screenState == .loading { self.screenState = .idle }
             }
 
-        await UserStore.shared.load()
+        await userStore.load()
 
-        if let cached = UserStore.shared.profile {
+        if let cached = userStore.profile {
             profile = cached
             screenState = .idle
         } else if screenState == .loading {
@@ -128,7 +149,7 @@ final class ProfileViewModel: ObservableObject {
 
             var newAvatarUrl = avatarUrl
             if let data = avatarData {
-                newAvatarUrl = try await PhotoService.shared.uploadUserAvatar(data: data)
+                newAvatarUrl = try await photoService.uploadUserAvatar(data: data)
             }
 
             let profile = UserProfile(
@@ -146,9 +167,9 @@ final class ProfileViewModel: ObservableObject {
             try await service.updateProfile(profile)
             let basalMetabolicRate = await calculateBasalMetabolicRate()
 
-            UserStore.shared.setTargetCalories(targetCaloriesDaily)
-            UserStore.shared.setBasalMetabolicRate(Int(basalMetabolicRate))
-            UserStore.shared.setProfile(profile)
+            userStore.setTargetCalories(targetCaloriesDaily)
+            userStore.setBasalMetabolicRate(Int(basalMetabolicRate))
+            userStore.setProfile(profile)
 
             avatarUrl = newAvatarUrl
             avatarData = nil
@@ -211,9 +232,9 @@ final class ProfileViewModel: ObservableObject {
                 targetWorkoutsWeekly: targetWorkoutsWeekly
             )
             try await service.updateProfile(updatedProfile)
-            UserStore.shared.setTargetCalories(Int(sheetTargetCalories))
-            UserStore.shared.setBasalMetabolicRate(Int(sheetBasalMetabolicRate))
-            UserStore.shared.setProfile(updatedProfile)
+            userStore.setTargetCalories(Int(sheetTargetCalories))
+            userStore.setBasalMetabolicRate(Int(sheetBasalMetabolicRate))
+            userStore.setProfile(updatedProfile)
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
             screenState = .error("Ошибка сохранения")
@@ -232,7 +253,7 @@ final class ProfileViewModel: ObservableObject {
         AppRouter.shared.logout()
         event = .logoutSuccess
     }
-    
+
     func deleteProfile() async {
         do {
             try await service.deleteProfile()
@@ -241,16 +262,16 @@ final class ProfileViewModel: ObservableObject {
             screenState = .error("Не удалось удалить профиль, попробуйте позже")
         }
     }
-    
+
     private func validate() throws {
         let hasEmptyFields = height == 0 || weight == 0.0 || targetWeight == 0.0
-        
+
         let hasErrors = [heightError, weightError, targetCaloriesError, targetWorkoutsError].contains { $0 != nil }
-        
+
         guard targetWeightError == nil else {
             throw AuthError.invalidData("Введите корректное значение желаемого веса и/или цели")
         }
-        
+
         guard !hasEmptyFields, !hasErrors else {
             throw AuthError.invalidData("Заполните все поля")
         }
@@ -258,7 +279,7 @@ final class ProfileViewModel: ObservableObject {
 
     private func calculateBasalMetabolicRate() async -> Float {
         await fetchHealthInfo()
-        
+
         let age: Float
         if let dob = dateOfBirth, let years = Calendar.current.dateComponents([.year], from: dob, to: Date()).year {
             age = Float(years)
@@ -267,12 +288,12 @@ final class ProfileViewModel: ObservableObject {
         }
 
         var basalMetabolicRate = (10 * weight) + (6.25 * Float(height)) - (5 * age)
-        
+
         switch gender {
         case .female: basalMetabolicRate -= 161
         default: basalMetabolicRate += 5
         }
-        
+
         return basalMetabolicRate
     }
 
