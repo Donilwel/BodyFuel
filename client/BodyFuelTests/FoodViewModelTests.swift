@@ -40,6 +40,8 @@ final class FoodViewModelTests: XCTestCase {
         await Task.yield()
         await Task.yield()
     }
+    
+    // MARK: - load()
 
     func test_load_success_setsLoadedState() async throws {
         await sut.load()
@@ -81,6 +83,8 @@ final class FoodViewModelTests: XCTestCase {
             XCTFail("Auth errors should not set .error state")
         }
     }
+    
+    // MARK: - preloadRecipes()
 
     func test_preloadRecipes_onlyOncePerSession() async throws {
         mockNutritionService.generateRecipesResult = .success([.stub()])
@@ -106,6 +110,8 @@ final class FoodViewModelTests: XCTestCase {
         XCTAssertEqual(mockNutritionService.generateRecipesCallCount, 0)
         XCTAssertEqual(sut.recipes.count, 1)
     }
+    
+    // MARK: - loadRecipes()
 
     func test_loadRecipes_whenNotLoaded_fetchesAndShowsRecipes() async throws {
         let recipes = [Recipe.stub(), Recipe.stub(name: "Борщ")]
@@ -147,6 +153,8 @@ final class FoodViewModelTests: XCTestCase {
         XCTAssertEqual(sut.recipes, [])
         XCTAssertFalse(sut.isLoadingRecipes)
     }
+    
+    // MARK: - saveMeal()
 
     func test_saveMeal_success_dismissesAddMealSheet() async throws {
         sut.showAddMeal = true
@@ -183,6 +191,8 @@ final class FoodViewModelTests: XCTestCase {
 
         XCTAssertFalse(sut.isAddingMeal)
     }
+    
+    // MARK: - confirmAndSaveAnalyzedMeal()
 
     func test_confirmAndSaveAnalyzedMeal_success_dismissesCamera() async throws {
         sut.showCamera = true
@@ -216,6 +226,8 @@ final class FoodViewModelTests: XCTestCase {
 
         XCTAssertFalse(sut.isAddingMeal)
     }
+    
+    // MARK: - analyzeMealFromPhoto()
 
     func test_analyzeMealFromPhoto_success_returnsMeal() async throws {
         let expected = Meal.stub(name: "Овсяная каша")
@@ -257,6 +269,8 @@ final class FoodViewModelTests: XCTestCase {
         _ = await sut.analyzeMealFromPhoto(Data(), mealType: .lunch)
         XCTAssertFalse(sut.analysisNetworkError)
     }
+    
+    // MARK: - deleteMeal()
 
     func test_deleteMeal_callsStore() async throws {
         let meal = Meal.stub()
@@ -266,6 +280,8 @@ final class FoodViewModelTests: XCTestCase {
         XCTAssertEqual(mockStore.deleteMealCallCount, 1)
         XCTAssertEqual(mockStore.lastDeletedMeal?.id, meal.id)
     }
+    
+    // MARK: - mealsByType()
 
     func test_mealsByType_groupsMealsByType() async throws {
         let breakfast1 = Meal.stub(mealType: .breakfast)
@@ -298,6 +314,8 @@ final class FoodViewModelTests: XCTestCase {
 
         XCTAssertTrue(sut.mealsByType.isEmpty)
     }
+    
+    // MARK: - mealsSubscription()
 
     func test_mealsSubscription_updatesWhenStoreEmits() async throws {
         let meals = [Meal.stub(name: "Завтрак"), Meal.stub(name: "Обед")]
@@ -307,6 +325,8 @@ final class FoodViewModelTests: XCTestCase {
 
         XCTAssertEqual(sut.meals.count, 2)
     }
+    
+    // MARK: - summarySubscription()
 
     func test_summarySubscription_updatesWhenStoreEmits() async throws {
         let summary = NutritionDailySummary.stub(burned: 500)
@@ -327,6 +347,8 @@ final class FoodViewModelTests: XCTestCase {
 
         XCTAssertNil(sut.dailySummary)
     }
+    
+    // MARK: - searchProducts()
 
     func test_searchProducts_delegatesToOffService() async throws {
         let products = [FoodProduct.stub(name: "Молоко"), FoodProduct.stub(name: "Кефир")]
@@ -338,6 +360,8 @@ final class FoodViewModelTests: XCTestCase {
         XCTAssertEqual(mockOffService.lastSearchQuery, "молоко")
         XCTAssertEqual(mockOffService.searchCallCount, 1)
     }
+    
+    // MARK: - fetchProductByBarcode()
 
     func test_fetchProductByBarcode_delegatesToOffService() async throws {
         let product = FoodProduct.stub(code: "123456")

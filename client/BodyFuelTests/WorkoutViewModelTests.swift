@@ -50,6 +50,8 @@ final class WorkoutViewModelTests: XCTestCase {
         await Task.yield()
         await Task.yield()
     }
+    
+    // MARK: - load()
 
     func test_load_success_setsRecommendedWorkout() async {
         let workout = Workout.stub(title: "Test Workout")
@@ -155,6 +157,8 @@ final class WorkoutViewModelTests: XCTestCase {
         XCTAssertEqual(mockWorkoutService.generateWorkoutCallCount, 1)
         XCTAssertNotNil(sut.recommendedWorkout)
     }
+    
+    // MARK: - startWorkout()
 
     func test_startWorkout_setsIsWorkoutActiveTrue() {
         sut.recommendedWorkout = Workout.stub()
@@ -203,6 +207,8 @@ final class WorkoutViewModelTests: XCTestCase {
 
         XCTAssertEqual(mockHealthKitService.startWorkoutCallCount, 1)
     }
+    
+    // MARK: - finishWorkout()
 
     func test_finishWorkout_completed_setsShowWorkoutSummaryTrue() {
         setupWorkoutInProgress()
@@ -275,6 +281,8 @@ final class WorkoutViewModelTests: XCTestCase {
         XCTAssertEqual(mockWorkoutService.updateWorkoutCallCount, 1)
         XCTAssertEqual(mockWorkoutService.lastUpdateStatus, .failed)
     }
+    
+    // MARK: - togglePause()
 
     func test_togglePause_setsPausedTrue() {
         sut.isPaused = false
@@ -332,6 +340,8 @@ final class WorkoutViewModelTests: XCTestCase {
         XCTAssertFalse(sut.isPaused)
         XCTAssertEqual(sut.phase, .exercise)
     }
+    
+    // MARK: - startExercise()
 
     func test_startExercise_changesPhaseToExercise() {
         sut.exercises = [Exercise.stub(duration: 60)]
@@ -353,6 +363,8 @@ final class WorkoutViewModelTests: XCTestCase {
         XCTAssertEqual(sut.timeRemaining, 45)
         XCTAssertEqual(sut.elapsedTime, 0)
     }
+    
+    // MARK: - moveToNextPhase()
 
     func test_moveToNextPhase_fromRestBetweenSets_incrementsCurrentSet() {
         sut.exercises = [Exercise.stub(setCount: 3, rest: 60)]
@@ -428,6 +440,8 @@ final class WorkoutViewModelTests: XCTestCase {
         XCTAssertFalse(sut.currentExerciseRepCountError.isEmpty)
         XCTAssertEqual(sut.phase, .exercise)
     }
+    
+    // MARK: - skipExercise()
 
     func test_skipExercise_withTwoCompletedSets_keepsCompletedAndPadsZero() {
         let exercise = Exercise.stub(setCount: 3)
@@ -473,6 +487,8 @@ final class WorkoutViewModelTests: XCTestCase {
 
         XCTAssertEqual(sut.phase, .restBetweenExercises)
     }
+    
+    // MARK: - skipWorkout()
 
     func test_skipWorkout_atStart_deactivatesWorkoutWithoutSummary() {
         setupWorkoutInProgress()
@@ -527,6 +543,8 @@ final class WorkoutViewModelTests: XCTestCase {
         XCTAssertNil(mockWidgetStorage.lastSavedWorkoutDoneValue)
         XCTAssertTrue(mockWidgetStorage.savedWorkoutWasNil)
     }
+    
+    // MARK: - workoutProgress
 
     func test_workoutProgress_noCompletedSets_isZero() {
         sut.exercises = [Exercise.stub(setCount: 3)]
@@ -557,6 +575,8 @@ final class WorkoutViewModelTests: XCTestCase {
 
         XCTAssertEqual(sut.workoutProgress, 0.5, accuracy: 0.001)
     }
+    
+    // MARK: - isLastSet
 
     func test_isLastSet_trueOnLastSetOfLastExercise() {
         let exercise = Exercise.stub(setCount: 3)
@@ -583,6 +603,8 @@ final class WorkoutViewModelTests: XCTestCase {
 
         XCTAssertFalse(sut.isLastSet)
     }
+    
+    // MARK: - generateWithFilters()
 
     func test_generateWithFilters_savesWidgetModelAndResetsDone() async {
         mockWorkoutService.generateWorkoutResult = .success(("w2", .stub(title: "Filtered")))
@@ -603,6 +625,8 @@ final class WorkoutViewModelTests: XCTestCase {
         XCTAssertEqual(mockWorkoutService.lastUpdateWorkoutId, "old-id")
         XCTAssertEqual(mockWorkoutService.lastUpdateStatus, .failed)
     }
+    
+    // MARK: - startWorkoutFromDeepLink()
 
     func test_startWorkoutFromDeepLink_fetchesWorkoutById() async {
         mockWorkoutService.fetchWorkoutResult = .success(("dl-id", .stub()))

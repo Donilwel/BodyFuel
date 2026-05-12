@@ -41,6 +41,8 @@ final class HomeViewModelTests: XCTestCase {
         await Task.yield()
         await Task.yield()
     }
+    
+    // MARK: - load()
 
     func test_load_callsAllThreeStores() async throws {
         await sut.load()
@@ -144,6 +146,8 @@ final class HomeViewModelTests: XCTestCase {
             XCTFail("Auth errors must not set .error state")
         }
     }
+    
+    // MARK: - hasTodayWorkout
 
     func test_hasTodayWorkout_falseByDefault() {
         XCTAssertFalse(sut.hasTodayWorkout)
@@ -187,6 +191,8 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertFalse(sut.hasTodayWorkout)
     }
+    
+    // MARK: - hasWeeklyGoalMet
 
     func test_hasWeeklyGoalMet_falseByDefault() {
         XCTAssertFalse(sut.hasWeeklyGoalMet)
@@ -257,6 +263,8 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertTrue(sut.hasWeeklyGoalMet)
     }
+    
+    // MARK: - meals
 
     func test_meals_updatesWhenMealPreviewsPublisherEmits() async throws {
         let previews = [MealPreview(title: "Завтрак", calories: 450),
@@ -268,6 +276,8 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(sut.meals.count, 2)
         XCTAssertEqual(sut.meals.first?.title, "Завтрак")
     }
+    
+    // MARK: - goals
 
     func test_goals_updatesWhenTargetCaloriesPublisherEmits() async throws {
         mockUserStore.setTargetCaloriesValue(2200)
@@ -275,6 +285,8 @@ final class HomeViewModelTests: XCTestCase {
 
         XCTAssertEqual(sut.goals?.calories, 2200)
     }
+    
+    // MARK: - stats
 
     func test_stats_updatesCaloriesConsumed_whenDailySummaryChanges() async throws {
         await sut.load()

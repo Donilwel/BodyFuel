@@ -33,6 +33,8 @@ final class AuthViewModelTests: XCTestCase {
         sut.password = "password123"
         sut.confirmPassword = "password123"
     }
+    
+    // MARK: - initialState
 
     func test_initialState_modeIsLogin() {
         XCTAssertEqual(sut.mode, .login)
@@ -45,6 +47,8 @@ final class AuthViewModelTests: XCTestCase {
     func test_initialState_screenStateIsIdle() {
         XCTAssertEqual(sut.screenState, .idle)
     }
+    
+    // MARK: - submit()
 
     func test_submit_loginMode_callsAuthServiceLogin() async throws {
         setValidLoginFields()
@@ -240,6 +244,8 @@ final class AuthViewModelTests: XCTestCase {
         }
         XCTAssertEqual(mockAuthService.registerCallCount, 0)
     }
+    
+    // MARK: - validateLive()
 
     func test_validateLive_emptyPassword_setsPasswordError() {
         sut.password = ""
@@ -388,6 +394,8 @@ final class AuthViewModelTests: XCTestCase {
 
         XCTAssertNil(sut.phoneError)
     }
+    
+    // MARK: - isRegisterFormComplete
 
     func test_isRegisterFormComplete_trueInLoginMode_always() {
         sut.mode = .login
@@ -498,6 +506,8 @@ final class AuthViewModelTests: XCTestCase {
 
         XCTAssertFalse(sut.isRegisterFormComplete)
     }
+    
+    // MARK: - submit()
 
     func test_submit_setsPasswordError_forShortPassword() async throws {
         sut.mode = .login

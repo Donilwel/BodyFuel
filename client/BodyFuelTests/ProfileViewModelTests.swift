@@ -54,6 +54,8 @@ final class ProfileViewModelTests: XCTestCase {
         await Task.yield()
         await Task.yield()
     }
+    
+    // MARK: - load()
 
     func test_load_callsUserStoreLoad() async throws {
         await sut.load()
@@ -96,6 +98,8 @@ final class ProfileViewModelTests: XCTestCase {
         XCTAssertEqual(sut.height, 190)
         XCTAssertEqual(sut.weight, 90.0, accuracy: 0.001)
     }
+    
+    // MARK: - save()
 
     func test_save_success_setsIsEditingToFalse() async throws {
         sut.isEditing = true
@@ -260,6 +264,8 @@ final class ProfileViewModelTests: XCTestCase {
         XCTAssertNotNil(sut.targetWeightError)
         XCTAssertEqual(mockService.updateProfileCallCount, 0)
     }
+    
+    // MARK: - goal
 
     func test_goal_didSet_maintain_setsTargetWeightToCurrentWeight() async throws {
         sut.weight = 75.0
@@ -274,6 +280,8 @@ final class ProfileViewModelTests: XCTestCase {
         sut.goal = .maintain
         XCTAssertNil(sut.targetWeightError)
     }
+    
+    // MARK: - countSheetCalories()
 
     func test_countSheetCalories_setsFormStateToCounting() async throws {
         sut.weight = 65.0
@@ -393,6 +401,8 @@ final class ProfileViewModelTests: XCTestCase {
 
         XCTAssertNil(sut.sheetHealthIntegrationError)
     }
+    
+    // MARK: - applySheetCalories()
 
     func test_applySheetCalories_updatesTargetCaloriesDaily() async throws {
         sut.sheetTargetCalories = 2100
@@ -451,6 +461,8 @@ final class ProfileViewModelTests: XCTestCase {
         XCTAssertFalse(sut.showCaloriesSheet)
         if case .error = sut.screenState { } else { XCTFail("Expected .error state") }
     }
+    
+    // MARK: - deleteProfile()
 
     func test_deleteProfile_success_setsLogoutSuccessEvent() async throws {
         await sut.deleteProfile()
@@ -471,6 +483,8 @@ final class ProfileViewModelTests: XCTestCase {
         }
         XCTAssertNotEqual(sut.event, .logoutSuccess)
     }
+    
+    // MARK: - logout()
 
     func test_logout_setsLogoutSuccessEvent() async throws {
         sut.logout()
