@@ -10,7 +10,6 @@ final class MockSharedWidgetStorage: SharedWidgetStorageProtocol {
 
     // MARK: - Captured values
 
-    /// nil means saveWorkout was called with a nil argument
     var lastSavedWorkout: WorkoutModel?
     var savedWorkoutWasNil = false
     var lastSavedWorkoutName: String?

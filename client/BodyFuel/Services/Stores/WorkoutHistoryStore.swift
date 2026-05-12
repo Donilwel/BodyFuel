@@ -28,6 +28,16 @@ struct WorkoutHistoryExercise: Identifiable, Codable {
     var isCompleted: Bool { status == "completed" }
 }
 
+// MARK: - Protocol
+
+@MainActor
+protocol WorkoutHistoryStoreProtocol: AnyObject {
+    var workoutsPublisher: AnyPublisher<[WorkoutHistoryItem], Never> { get }
+    var todayCompletedCount: Int { get }
+    var thisWeekCompletedCount: Int { get }
+    func load() async
+}
+
 // MARK: - Store
 
 @MainActor
@@ -139,4 +149,10 @@ final class WorkoutHistoryStore: ObservableObject {
         default: return "Тренировка"
         }
     }
+}
+
+// MARK: - Protocol conformance
+
+extension WorkoutHistoryStore: WorkoutHistoryStoreProtocol {
+    var workoutsPublisher: AnyPublisher<[WorkoutHistoryItem], Never> { $workouts.eraseToAnyPublisher() }
 }

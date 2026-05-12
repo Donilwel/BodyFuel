@@ -11,7 +11,10 @@ final class HomeViewModel: ObservableObject {
     @Published var hasTodayWorkout: Bool = false
     @Published var hasWeeklyGoalMet: Bool = false
 
-    private let health: HealthKitServiceProtocol = HealthKitService.shared
+    private let nutritionStore: NutritionStoreProtocol
+    private let userStore: UserStoreProtocol
+    private let workoutHistoryStore: WorkoutHistoryStoreProtocol
+    private let health: HealthKitServiceProtocol
 
     private var nutritionCancellable: AnyCancellable?
     private var userCancellable: AnyCancellable?
@@ -21,19 +24,40 @@ final class HomeViewModel: ObservableObject {
     private var historyCancellable: AnyCancellable?
 
     init() {
-        nutritionCancellable = NutritionStore.shared.$mealPreviews
+        self.nutritionStore = NutritionStore.shared
+        self.userStore = UserStore.shared
+        self.workoutHistoryStore = WorkoutHistoryStore.shared
+        self.health = HealthKitService.shared
+        setupSubscriptions()
+    }
+
+    init(
+        nutritionStore: NutritionStoreProtocol,
+        userStore: UserStoreProtocol,
+        workoutHistoryStore: WorkoutHistoryStoreProtocol,
+        health: HealthKitServiceProtocol
+    ) {
+        self.nutritionStore = nutritionStore
+        self.userStore = userStore
+        self.workoutHistoryStore = workoutHistoryStore
+        self.health = health
+        setupSubscriptions()
+    }
+
+    private func setupSubscriptions() {
+        nutritionCancellable = nutritionStore.mealPreviewsPublisher
             .receive(on: RunLoop.main)
             .sink { [weak self] previews in
                 self?.meals = previews
             }
 
-        userCancellable = UserStore.shared.$targetCalories
+        userCancellable = userStore.targetCaloriesPublisher
             .receive(on: RunLoop.main)
             .sink { [weak self] calories in
                 self?.goals = GoalTargets(steps: 10000, calories: calories)
             }
 
-        summaryCancellable = NutritionStore.shared.$dailySummary
+        summaryCancellable = nutritionStore.dailySummaryPublisher
             .dropFirst()
             .receive(on: RunLoop.main)
             .sink { [weak self] summary in
@@ -41,11 +65,11 @@ final class HomeViewModel: ObservableObject {
                 self.stats = DayStats(
                     steps: existing.steps,
                     caloriesConsumed: summary.consumed.calories,
-                    caloriesBurned: UserStore.shared.caloriesBurned
+                    caloriesBurned: self.userStore.caloriesBurned
                 )
             }
 
-        burnedCancellable = UserStore.shared.$caloriesBurned
+        burnedCancellable = userStore.caloriesBurnedPublisher
             .dropFirst()
             .receive(on: RunLoop.main)
             .sink { [weak self] burned in
@@ -56,8 +80,8 @@ final class HomeViewModel: ObservableObject {
                     caloriesBurned: burned
                 )
             }
-        
-        stepsCancellable = UserStore.shared.$todaySteps
+
+        stepsCancellable = userStore.todayStepsPublisher
             .dropFirst()
             .receive(on: RunLoop.main)
             .sink { [weak self] steps in
@@ -69,7 +93,7 @@ final class HomeViewModel: ObservableObject {
                 )
             }
 
-        historyCancellable = WorkoutHistoryStore.shared.$workouts
+        historyCancellable = workoutHistoryStore.workoutsPublisher
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.updateWorkoutGoalStatus()
@@ -77,15 +101,15 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func updateWorkoutGoalStatus() {
-        hasTodayWorkout = WorkoutHistoryStore.shared.todayCompletedCount > 0
-        let target = UserStore.shared.profile?.targetWorkoutsWeekly ?? 0
-        hasWeeklyGoalMet = target > 0 && WorkoutHistoryStore.shared.thisWeekCompletedCount >= target
+        hasTodayWorkout = workoutHistoryStore.todayCompletedCount > 0
+        let target = userStore.profile?.targetWorkoutsWeekly ?? 0
+        hasWeeklyGoalMet = target > 0 && workoutHistoryStore.thisWeekCompletedCount >= target
     }
 
     func load() async {
         state = .loading
         do {
-            try await NutritionStore.shared.load()
+            try await nutritionStore.load()
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
             let appError = ErrorMapper.map(error)
@@ -93,26 +117,26 @@ final class HomeViewModel: ObservableObject {
             return
         }
 
-        await UserStore.shared.load()
-        await WorkoutHistoryStore.shared.load()
+        await userStore.load()
+        await workoutHistoryStore.load()
         updateWorkoutGoalStatus()
 
-        await HealthKitService.shared.refreshDailyActivity()
+        await health.refreshDailyActivity()
 
-        let steps = UserStore.shared.todaySteps
-        let burned = UserStore.shared.caloriesBurned
+        let steps = userStore.todaySteps
+        let burned = userStore.caloriesBurned
 
         self.stats = DayStats(
             steps: steps,
-            caloriesConsumed: NutritionStore.shared.dailySummary?.consumed.calories ?? 0,
+            caloriesConsumed: nutritionStore.dailySummary?.consumed.calories ?? 0,
             caloriesBurned: burned
         )
         self.goals = GoalTargets(
             steps: 10000,
-            calories: UserStore.shared.targetCalories
+            calories: userStore.targetCalories
         )
-        self.basalMetabolicRate = UserStore.shared.basalMetabolicRate > 0
-            ? UserStore.shared.basalMetabolicRate : nil
+        self.basalMetabolicRate = userStore.basalMetabolicRate > 0
+            ? userStore.basalMetabolicRate : nil
 
         state = .loaded
     }

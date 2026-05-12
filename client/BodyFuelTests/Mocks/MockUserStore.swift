@@ -5,12 +5,25 @@ import Combine
 @MainActor
 final class MockUserStore: UserStoreProtocol {
 
-    // MARK: - Publishers
+    // MARK: - Publishers (backing subjects)
 
     private let profileSubject = CurrentValueSubject<UserProfile?, Never>(nil)
+    private let targetCaloriesSubject = CurrentValueSubject<Int, Never>(0)
+    private let caloriesBurnedSubject = CurrentValueSubject<Int, Never>(0)
+    private let todayStepsSubject = CurrentValueSubject<Int, Never>(0)
+
+    // MARK: - Protocol properties
+
+    var profile: UserProfile? { profileSubject.value }
+    var targetCalories: Int { targetCaloriesSubject.value }
+    var caloriesBurned: Int { caloriesBurnedSubject.value }
+    var todaySteps: Int { todayStepsSubject.value }
+    var basalMetabolicRate: Int = 0
 
     var profilePublisher: AnyPublisher<UserProfile?, Never> { profileSubject.eraseToAnyPublisher() }
-    var profile: UserProfile? { profileSubject.value }
+    var targetCaloriesPublisher: AnyPublisher<Int, Never> { targetCaloriesSubject.eraseToAnyPublisher() }
+    var caloriesBurnedPublisher: AnyPublisher<Int, Never> { caloriesBurnedSubject.eraseToAnyPublisher() }
+    var todayStepsPublisher: AnyPublisher<Int, Never> { todayStepsSubject.eraseToAnyPublisher() }
 
     // MARK: - Call tracking
 
@@ -23,13 +36,25 @@ final class MockUserStore: UserStoreProtocol {
     var lastSetBasalMetabolicRate: Int?
     var lastSetProfile: UserProfile?
 
-    // MARK: - Helper to drive publisher
+    // MARK: - Helpers to drive publishers
 
     func setProfileValue(_ profile: UserProfile?) {
         profileSubject.send(profile)
     }
 
-    // MARK: - Protocol
+    func setTargetCaloriesValue(_ value: Int) {
+        targetCaloriesSubject.send(value)
+    }
+
+    func setCaloriesBurned(_ value: Int) {
+        caloriesBurnedSubject.send(value)
+    }
+
+    func setTodaySteps(_ value: Int) {
+        todayStepsSubject.send(value)
+    }
+
+    // MARK: - Protocol methods
 
     func load() async {
         loadCallCount += 1
@@ -38,11 +63,13 @@ final class MockUserStore: UserStoreProtocol {
     func setTargetCalories(_ calories: Int) {
         setTargetCaloriesCallCount += 1
         lastSetTargetCalories = calories
+        targetCaloriesSubject.send(calories)
     }
 
     func setBasalMetabolicRate(_ bmr: Int) {
         setBasalMetabolicRateCallCount += 1
         lastSetBasalMetabolicRate = bmr
+        basalMetabolicRate = bmr
     }
 
     func setProfile(_ updated: UserProfile) {

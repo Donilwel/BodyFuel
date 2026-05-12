@@ -9,9 +9,13 @@ final class MockNutritionStore: NutritionStoreProtocol {
 
     private let mealsSubject = CurrentValueSubject<[Meal], Never>([])
     private let summarySubject = CurrentValueSubject<NutritionDailySummary?, Never>(nil)
+    private let mealPreviewsSubject = CurrentValueSubject<[MealPreview], Never>([])
 
     var mealsPublisher: AnyPublisher<[Meal], Never> { mealsSubject.eraseToAnyPublisher() }
     var dailySummaryPublisher: AnyPublisher<NutritionDailySummary?, Never> { summarySubject.eraseToAnyPublisher() }
+    var mealPreviewsPublisher: AnyPublisher<[MealPreview], Never> { mealPreviewsSubject.eraseToAnyPublisher() }
+
+    var dailySummary: NutritionDailySummary? { summarySubject.value }
 
     // MARK: - Configurable state
 
@@ -27,7 +31,7 @@ final class MockNutritionStore: NutritionStoreProtocol {
     var lastAddedMeal: Meal?
     var lastDeletedMeal: Meal?
 
-    // MARK: - Helpers to drive publisher
+    // MARK: - Helpers to drive publishers
 
     func setMeals(_ meals: [Meal]) {
         mealsSubject.send(meals)
@@ -35,6 +39,10 @@ final class MockNutritionStore: NutritionStoreProtocol {
 
     func setSummary(_ summary: NutritionDailySummary?) {
         summarySubject.send(summary)
+    }
+
+    func setMealPreviews(_ previews: [MealPreview]) {
+        mealPreviewsSubject.send(previews)
     }
 
     // MARK: - Protocol
@@ -48,7 +56,6 @@ final class MockNutritionStore: NutritionStoreProtocol {
         addMealCallCount += 1
         lastAddedMeal = meal
         _ = try addMealResult.get()
-        // Emit updated meals list
         mealsSubject.send(mealsSubject.value + [meal])
     }
 

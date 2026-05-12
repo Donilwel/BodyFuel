@@ -7,7 +7,14 @@ import WidgetKit
 @MainActor
 protocol UserStoreProtocol: AnyObject {
     var profile: UserProfile? { get }
+    var targetCalories: Int { get }
+    var caloriesBurned: Int { get }
+    var todaySteps: Int { get }
+    var basalMetabolicRate: Int { get }
     var profilePublisher: AnyPublisher<UserProfile?, Never> { get }
+    var targetCaloriesPublisher: AnyPublisher<Int, Never> { get }
+    var caloriesBurnedPublisher: AnyPublisher<Int, Never> { get }
+    var todayStepsPublisher: AnyPublisher<Int, Never> { get }
     func load() async
     func setTargetCalories(_ calories: Int)
     func setBasalMetabolicRate(_ bmr: Int)
@@ -169,4 +176,7 @@ final class UserStore: ObservableObject {
 
 extension UserStore: UserStoreProtocol {
     var profilePublisher: AnyPublisher<UserProfile?, Never> { $profile.eraseToAnyPublisher() }
+    var targetCaloriesPublisher: AnyPublisher<Int, Never> { $targetCalories.eraseToAnyPublisher() }
+    var caloriesBurnedPublisher: AnyPublisher<Int, Never> { $caloriesBurned.eraseToAnyPublisher() }
+    var todayStepsPublisher: AnyPublisher<Int, Never> { $todaySteps.eraseToAnyPublisher() }
 }
