@@ -13,9 +13,15 @@ protocol SharedWidgetStorageProtocol {
 final class SharedWidgetStorage {
     static let shared = SharedWidgetStorage()
 
-    private let defaults = UserDefaults(
-        suiteName: "group.com.bodyfuel.shared"
-    )
+    private let defaults: UserDefaults?
+
+    private init() {
+        self.defaults = UserDefaults(suiteName: "group.com.bodyfuel.shared")
+    }
+
+    init(defaults: UserDefaults) {
+        self.defaults = defaults
+    }
 
     func saveTodayBurnedCalories(_ calories: Int) {
         defaults?.set(calories, forKey: "todayBurnedCalories")
