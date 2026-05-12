@@ -2,6 +2,7 @@ import HealthKit
 import Combine
 
 protocol HealthKitServiceProtocol {
+    var hasGrantedPermission: Bool { get }
     func requestAuthorization() async
     func fetchGender() throws -> HKBiologicalSex
     func fetchDateOfBirth() throws -> Date

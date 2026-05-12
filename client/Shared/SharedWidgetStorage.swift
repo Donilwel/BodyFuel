@@ -1,5 +1,15 @@
 import Foundation
 
+// MARK: - Protocol
+
+protocol SharedWidgetStorageProtocol {
+    func saveWorkout(_ workout: WorkoutModel?)
+    func saveTodayWorkoutDone(_ done: Bool)
+    func isTodayWorkoutDone() -> Bool
+}
+
+// MARK: - Implementation
+
 final class SharedWidgetStorage {
     static let shared = SharedWidgetStorage()
 
@@ -79,6 +89,7 @@ final class SharedWidgetStorage {
 
     func clearAll() {
         defaults?.removeObject(forKey: "todayBurnedCalories")
+
         defaults?.removeObject(forKey: "todayConsumedCalories")
         defaults?.removeObject(forKey: "targetCalories")
         defaults?.removeObject(forKey: "basalMetabolicRate")
@@ -87,3 +98,5 @@ final class SharedWidgetStorage {
         defaults?.removeObject(forKey: "todayWorkoutDone")
     }
 }
+
+extension SharedWidgetStorage: SharedWidgetStorageProtocol {}

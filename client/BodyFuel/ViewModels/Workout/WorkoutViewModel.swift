@@ -37,7 +37,7 @@ final class WorkoutViewModel: ObservableObject {
     
     @Published var totalCaloriesBurned: Double? = nil
 
-    private(set) var currentWorkoutID: String?
+    var currentWorkoutID: String?
 
     private var restTimeBetweenExercises = 90
 
@@ -68,12 +68,32 @@ final class WorkoutViewModel: ObservableObject {
         "workout_active_\(UserSessionManager.shared.currentUserId ?? "anon")"
     }
 
-    private let workoutService: WorkoutServiceProtocol = WorkoutService.shared
-    private let healthKitService: HealthKitServiceProtocol = HealthKitService.shared
-    private let sharedWidgetStorage = SharedWidgetStorage.shared
-    private lazy var liveActivityService: LiveActivityServiceProtocol = LiveActivityService.shared
+    private let workoutService: WorkoutServiceProtocol
+    private let healthKitService: HealthKitServiceProtocol
+    private let sharedWidgetStorage: SharedWidgetStorageProtocol
+    private let liveActivityService: LiveActivityServiceProtocol
     
     init() {
+        self.workoutService = WorkoutService.shared
+        self.healthKitService = HealthKitService.shared
+        self.sharedWidgetStorage = SharedWidgetStorage.shared
+        self.liveActivityService = LiveActivityService.shared
+        setupReconnectObserver()
+    }
+
+    init(
+        workoutService: WorkoutServiceProtocol,
+        healthKitService: HealthKitServiceProtocol,
+        sharedWidgetStorage: SharedWidgetStorageProtocol,
+        liveActivityService: LiveActivityServiceProtocol = LiveActivityService.shared
+    ) {
+        self.workoutService = workoutService
+        self.healthKitService = healthKitService
+        self.sharedWidgetStorage = sharedWidgetStorage
+        self.liveActivityService = liveActivityService
+    }
+
+    private func setupReconnectObserver() {
         reconnectCancellable = NetworkMonitor.shared.$isOnline
             .dropFirst()
             .filter { $0 }
@@ -223,10 +243,10 @@ final class WorkoutViewModel: ObservableObject {
     func startWorkout() {
         guard let workout = recommendedWorkout else { return }
 
-        guard HealthKitService.shared.hasGrantedPermission else {
+        guard healthKitService.hasGrantedPermission else {
             Task {
-                await HealthKitService.shared.requestAuthorization()
-                if HealthKitService.shared.hasGrantedPermission {
+                await healthKitService.requestAuthorization()
+                if healthKitService.hasGrantedPermission {
                     startWorkout()
                 } else {
                     showHealthPermissionAlert = true
@@ -664,7 +684,7 @@ final class WorkoutViewModel: ObservableObject {
                 }
             }
 
-            await HealthKitService.shared.refreshDailyActivity()
+            await healthKitService.refreshDailyActivity()
         }
     }
 
