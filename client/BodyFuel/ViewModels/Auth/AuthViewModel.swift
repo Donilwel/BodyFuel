@@ -31,7 +31,15 @@ final class AuthViewModel: ObservableObject {
     @Published var email = ""
     @Published var emailError: String? = nil
 
-    private let authService: AuthServiceProtocol = AuthService.shared
+    private let authService: AuthServiceProtocol
+
+    init() {
+        self.authService = AuthService.shared
+    }
+
+    init(authService: AuthServiceProtocol) {
+        self.authService = authService
+    }
 
     func submit() async {
         validateLive()
