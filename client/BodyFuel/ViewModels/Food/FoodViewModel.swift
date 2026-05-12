@@ -31,20 +31,39 @@ final class FoodViewModel: ObservableObject {
         }
     }
 
-    private let nutritionService: NutritionServiceProtocol = NutritionService.shared
-    private let offService: OpenFoodFactsServiceProtocol = OpenFoodFactsService.shared
+    private let nutritionService: NutritionServiceProtocol
+    private let offService: OpenFoodFactsServiceProtocol
+    private let nutritionStore: NutritionStoreProtocol
 
     private var mealsCancellable: AnyCancellable?
     private var summaryCancellable: AnyCancellable?
 
     init() {
-        mealsCancellable = NutritionStore.shared.$meals
+        self.nutritionService = NutritionService.shared
+        self.offService = OpenFoodFactsService.shared
+        self.nutritionStore = NutritionStore.shared
+        setupSubscriptions()
+    }
+
+    init(
+        nutritionService: NutritionServiceProtocol,
+        offService: OpenFoodFactsServiceProtocol,
+        nutritionStore: NutritionStoreProtocol
+    ) {
+        self.nutritionService = nutritionService
+        self.offService = offService
+        self.nutritionStore = nutritionStore
+        setupSubscriptions()
+    }
+
+    private func setupSubscriptions() {
+        mealsCancellable = nutritionStore.mealsPublisher
             .receive(on: RunLoop.main)
             .sink { [weak self] newMeals in
                 self?.meals = newMeals
             }
 
-        summaryCancellable = NutritionStore.shared.$dailySummary
+        summaryCancellable = nutritionStore.dailySummaryPublisher
             .receive(on: RunLoop.main)
             .sink { [weak self] summary in
                 self?.dailySummary = summary
@@ -54,7 +73,7 @@ final class FoodViewModel: ObservableObject {
     func load() async {
         screenState = .loading
         do {
-            try await NutritionStore.shared.load()
+            try await nutritionStore.load()
             screenState = .loaded
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
@@ -92,7 +111,7 @@ final class FoodViewModel: ObservableObject {
         isAddingMeal = true
         defer { isAddingMeal = false }
         do {
-            try await NutritionStore.shared.addMeal(meal)
+            try await nutritionStore.addMeal(meal)
             HapticService.notification(.success)
             showAddMeal = false
         } catch {
@@ -107,7 +126,7 @@ final class FoodViewModel: ObservableObject {
         isAddingMeal = true
         defer { isAddingMeal = false }
         do {
-            try await NutritionStore.shared.addMeal(meal)
+            try await nutritionStore.addMeal(meal)
             HapticService.notification(.success)
         } catch {
             if AppRouter.shared.handleIfUnauthorized(error) { return }
@@ -118,7 +137,7 @@ final class FoodViewModel: ObservableObject {
     }
 
     func deleteMeal(_ meal: Meal) async {
-        await NutritionStore.shared.deleteMeal(meal)
+        await nutritionStore.deleteMeal(meal)
     }
 
     func loadRecipes() async {

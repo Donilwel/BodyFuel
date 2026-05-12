@@ -54,6 +54,18 @@ extension Recipe {
     }
 }
 
+extension FoodProduct {
+    static func stub(
+        id: UUID = UUID(),
+        name: String = "Греческий йогурт",
+        brand: String? = "Danone",
+        per100g: MacroNutrients = .stub(protein: 10, fat: 3, carbs: 5),
+        code: String? = "1234567890"
+    ) -> FoodProduct {
+        FoodProduct(id: id, name: name, brand: brand, per100g: per100g, code: code)
+    }
+}
+
 extension NutritionDailySummary {
     static func stub(
         consumed: MacroNutrients = .stub(protein: 80, fat: 30, carbs: 150),
