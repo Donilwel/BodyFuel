@@ -1,6 +1,10 @@
 import Foundation
 
-final class FeedbackService {
+protocol FeedbackServiceProtocol {
+    func sendFeedback(message: String, email: String?) async throws
+}
+
+final class FeedbackService: FeedbackServiceProtocol {
     static let shared = FeedbackService()
 
     private let networkClient = NetworkClient.shared
