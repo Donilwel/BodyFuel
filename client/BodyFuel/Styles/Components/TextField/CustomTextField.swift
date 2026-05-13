@@ -24,6 +24,7 @@ struct CustomTextField<Field: Hashable>: View {
                 .glassEffect(in: .rect(cornerRadius: 12.0))
                 .frame(height: 50)
                 .focused(focusedField, equals: field)
+                .accessibilityIdentifier(title)
         }
         .padding(.vertical, 4)
     }

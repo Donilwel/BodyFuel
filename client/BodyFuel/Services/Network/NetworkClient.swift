@@ -68,6 +68,12 @@ final class NetworkClient {
         method: HTTPMethod,
         requestBody: U? = Optional<DefaultEncodable>.none
     ) async throws -> T {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UI_TESTING"] == "1" {
+            throw NetworkError.network(URLError(.notConnectedToInternet))
+        }
+        #endif
+
         var request = URLRequest(url: url)
 
         if requiresAuthorization {

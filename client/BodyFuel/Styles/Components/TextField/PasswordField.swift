@@ -17,6 +17,7 @@ struct PasswordField<Field: Hashable>: View {
                 .padding()
                 .glassEffect(in: .rect(cornerRadius: 12.0))
                 .focused(focusedField, equals: field)
+                .accessibilityIdentifier(title)
         }
     }
 }

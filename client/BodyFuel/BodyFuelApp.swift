@@ -6,6 +6,12 @@ struct BodyFuelApp: App {
     @StateObject var workoutViewModel = WorkoutViewModel()
     
     init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UI_TESTING"] == "1" {
+            UserSessionManager.shared.logout(userId: "uitest_user")
+            return
+        }
+        #endif
         Task {
             await HealthKitService.shared.requestAuthorization()
         }

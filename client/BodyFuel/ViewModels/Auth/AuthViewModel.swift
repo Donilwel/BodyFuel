@@ -34,7 +34,15 @@ final class AuthViewModel: ObservableObject {
     private let authService: AuthServiceProtocol
 
     init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UI_TESTING"] == "1" {
+            self.authService = UITestingAuthService()
+        } else {
+            self.authService = AuthService.shared
+        }
+        #else
         self.authService = AuthService.shared
+        #endif
     }
 
     init(authService: AuthServiceProtocol) {

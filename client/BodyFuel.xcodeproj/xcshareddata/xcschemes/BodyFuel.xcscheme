@@ -41,6 +41,17 @@
                ReferencedContainer = "container:BodyFuel.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "152138AA2FB4949B003EF3E7"
+               BuildableName = "BodyFuelUITests.xctest"
+               BlueprintName = "BodyFuelUITests"
+               ReferencedContainer = "container:BodyFuel.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
