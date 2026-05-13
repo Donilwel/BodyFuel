@@ -4,11 +4,7 @@ struct FeedbackSheet: View {
     let title: String
 
     @Environment(\.dismiss) private var dismiss
-
-    @State private var message = ""
-    @State private var email = ""
-    @State private var isSending = false
-    @State private var messageError: String? = nil
+    @StateObject private var viewModel = FeedbackSheetViewModel()
 
     var body: some View {
         NavigationStack {
@@ -20,7 +16,7 @@ struct FeedbackSheet: View {
                 ScrollView {
                     Text(title)
                         .sheetTitle()
-                    
+
                     VStack(alignment: .leading, spacing: 20) {
                         Text("Ваш отзыв поможет нам улучшить работу ИИ")
                             .font(.subheadline)
@@ -31,7 +27,7 @@ struct FeedbackSheet: View {
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.6))
 
-                            TextEditor(text: $message)
+                            TextEditor(text: $viewModel.message)
                                 .frame(minHeight: 120)
                                 .padding(12)
                                 .background(.ultraThinMaterial)
@@ -39,7 +35,7 @@ struct FeedbackSheet: View {
                                 .foregroundStyle(.white)
                                 .scrollContentBackground(.hidden)
 
-                            if let error = messageError {
+                            if let error = viewModel.messageError {
                                 Text(error)
                                     .font(.caption)
                                     .foregroundStyle(.red.opacity(0.9))
@@ -51,7 +47,7 @@ struct FeedbackSheet: View {
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.6))
 
-                            TextField("", text: $email)
+                            TextField("", text: $viewModel.email)
                                 .keyboardType(.emailAddress)
                                 .autocapitalization(.none)
                                 .textContentType(.emailAddress)
@@ -61,63 +57,17 @@ struct FeedbackSheet: View {
                                 .foregroundStyle(.white)
                         }
 
-                        PrimaryButton(title: "Отправить", isLoading: isSending) {
-                            submit()
+                        PrimaryButton(title: "Отправить", isLoading: viewModel.isSending) {
+                            Task { await viewModel.submit() }
                         }
-                        .disabled(isSending)
+                        .disabled(viewModel.isSending)
                     }
                     .padding()
                 }
             }
         }
-    }
-
-    private func submit() {
-        let trimmedMessage = message.trimmingCharacters(in: .whitespaces)
-        guard trimmedMessage.count >= 10 else {
-            messageError = "Сообщение должно быть не менее 10 символов"
-            HapticService.notification(.warning)
-            return
-        }
-        messageError = nil
-        isSending = true
-
-        let trimmedEmail = email.trimmingCharacters(in: .whitespaces)
-        let emailValue: String? = trimmedEmail.isEmpty ? nil : trimmedEmail
-
-        if !NetworkMonitor.shared.isOnline {
-            MutationQueue.shared.enqueue(
-                type: .sendFeedback,
-                payload: SendFeedbackPayload(message: trimmedMessage, email: emailValue)
-            )
-            isSending = false
-            dismiss()
-            ToastService.shared.show("Отзыв отправится при подключении к сети")
-            return
-        }
-
-        Task { @MainActor in
-            do {
-                try await FeedbackService.shared.sendFeedback(message: trimmedMessage, email: emailValue)
-                HapticService.notification(.success)
-                isSending = false
-                dismiss()
-                ToastService.shared.show("Спасибо! Ваш отзыв отправлен")
-            } catch {
-                if isTransportError(error) {
-                    MutationQueue.shared.enqueue(
-                        type: .sendFeedback,
-                        payload: SendFeedbackPayload(message: trimmedMessage, email: emailValue)
-                    )
-                    isSending = false
-                    dismiss()
-                    ToastService.shared.show("Отзыв отправится при подключении к сети")
-                } else {
-                    HapticService.notification(.error)
-                    isSending = false
-                    messageError = "Не удалось отправить отзыв, попробуйте позже"
-                }
-            }
+        .onChange(of: viewModel.isDismissed) { _, dismissed in
+            if dismissed { dismiss() }
         }
     }
 }
