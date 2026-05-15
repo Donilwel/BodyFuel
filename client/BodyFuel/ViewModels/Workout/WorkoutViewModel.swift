@@ -74,7 +74,15 @@ final class WorkoutViewModel: ObservableObject {
     private let liveActivityService: LiveActivityServiceProtocol
     
     init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UI_TESTING"] == "1" {
+            self.workoutService = UITestingWorkoutService()
+        } else {
+            self.workoutService = WorkoutService.shared
+        }
+        #else
         self.workoutService = WorkoutService.shared
+        #endif
         self.healthKitService = HealthKitService.shared
         self.sharedWidgetStorage = SharedWidgetStorage.shared
         self.liveActivityService = LiveActivityService.shared

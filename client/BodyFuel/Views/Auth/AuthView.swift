@@ -150,6 +150,9 @@ struct AuthView: View {
             ZStack(alignment: .center) {
                 AnimatedBackground()
                     .ignoresSafeArea()
+                    .onTapGesture {
+                        resetFocusStates()
+                    }
 
                 ScrollView {
                     formContent
@@ -175,9 +178,6 @@ struct AuthView: View {
                 viewModel.event = .idle
             }
             .onChange(of: viewModel.mode) {
-                resetFocusStates()
-            }
-            .onTapGesture {
                 resetFocusStates()
             }
         }

@@ -15,6 +15,24 @@ struct UITestingAuthService: AuthServiceProtocol {
             refreshToken: "test_refresh_token"
         )
         UserSessionManager.shared.setHasCompletedParametersSetup(true, for: "uitest_user")
+
+        DiskCache.shared.remove(key: "workout_history_uitest_user")
+
+        if env["UI_TESTING_HAS_TODAY_WORKOUT"] == "1" {
+            let item = WorkoutHistoryItem(
+                id: "uitest-history-id",
+                title: "Средняя тренировка",
+                level: "workout_middle",
+                status: "workout_done",
+                totalCalories: 300,
+                duration: 1800,
+                date: Date(),
+                exercisesCount: 5,
+                completedCount: 5,
+                exercises: []
+            )
+            DiskCache.shared.save([item], key: "workout_history_uitest_user")
+        }
     }
 
     func register(user: RegisterPayload) async throws {
