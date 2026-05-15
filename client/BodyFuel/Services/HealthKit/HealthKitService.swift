@@ -2,6 +2,7 @@ import HealthKit
 import Combine
 
 protocol HealthKitServiceProtocol {
+    var hasGrantedPermission: Bool { get }
     func requestAuthorization() async
     func fetchGender() throws -> HKBiologicalSex
     func fetchDateOfBirth() throws -> Date
@@ -49,21 +50,28 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
     private var workoutStartDate: Date?
     private var observersStarted = false
     
-    private let typesToRead: Set<HKObjectType> = [
-        HKQuantityType.quantityType(forIdentifier: .stepCount)!,
-        HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
-        HKObjectType.characteristicType(forIdentifier: .biologicalSex)!,
-        HKObjectType.characteristicType(forIdentifier: .dateOfBirth)!,
-        HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
-        HKObjectType.quantityType(forIdentifier: .heartRate)!,
-        HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning)!,
-        HKWorkoutType.workoutType()
-    ]
-    
-    private let typesToShare: Set<HKSampleType> = [
-        HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
-        HKWorkoutType.workoutType()
-    ]
+    private let typesToRead: Set<HKObjectType> = {
+        let quantityIDs: [HKQuantityTypeIdentifier] = [
+            .stepCount, .activeEnergyBurned, .heartRate, .distanceWalkingRunning
+        ]
+        let characteristicIDs: [HKCharacteristicTypeIdentifier] = [
+            .biologicalSex, .dateOfBirth
+        ]
+        var types = Set<HKObjectType>()
+        quantityIDs.compactMap { HKQuantityType.quantityType(forIdentifier: $0) }.forEach { types.insert($0) }
+        characteristicIDs.compactMap { HKObjectType.characteristicType(forIdentifier: $0) }.forEach { types.insert($0) }
+        types.insert(HKWorkoutType.workoutType())
+        return types
+    }()
+
+    private let typesToShare: Set<HKSampleType> = {
+        var types = Set<HKSampleType>()
+        if let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) {
+            types.insert(energyType)
+        }
+        types.insert(HKWorkoutType.workoutType())
+        return types
+    }()
 
     func requestAuthorization() async {
         guard HKHealthStore.isHealthDataAvailable() else { return }
@@ -112,7 +120,9 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
     }
     
     func fetchTodayActiveCalories() async throws -> Double {
-        let type = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
+        guard let type = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
+            throw HealthError.emptyValue(message: "HealthKit type unavailable")
+        }
 
         let startOfDay = Calendar.current.startOfDay(for: Date())
         let predicate = HKQuery.predicateForSamples(
@@ -141,8 +151,9 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
     }
 
     func fetchTodaySteps() async throws -> Int {
-//        6540
-        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            throw HealthError.emptyValue(message: "HealthKit type unavailable")
+        }
 
         let startOfDay = Calendar.current.startOfDay(for: Date())
         let predicate = HKQuery.predicateForSamples(
@@ -171,7 +182,9 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
     }
     
     func fetchDailySteps(from startDate: Date, to endDate: Date) async -> [DailySteps] {
-        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            return []
+        }
         let anchor = Calendar.current.startOfDay(for: startDate)
         let interval = DateComponents(day: 1)
 
@@ -268,11 +281,12 @@ final class HealthKitService: NSObject, ObservableObject, HealthKitServiceProtoc
             
             workoutSession?.delegate = self
             workoutBuilder?.delegate = self
-            
-            workoutStartDate = Date()
-            workoutSession?.startActivity(with: workoutStartDate!)
-            
-            try await workoutBuilder?.beginCollection(at: workoutStartDate!)
+
+            let startDate = Date()
+            workoutStartDate = startDate
+            workoutSession?.startActivity(with: startDate)
+
+            try await workoutBuilder?.beginCollection(at: startDate)
             
         } catch {
             print("[ERROR] [HealthKitService/startWorkout]: Failed to start workout: \(error)")
@@ -392,7 +406,6 @@ extension HealthKitService: HKLiveWorkoutBuilderDelegate {
     }
     
     nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {
-        // TODO: возможно добавить паузу тренировки
     }
     
     private func updateMetrics(_ statistics: HKStatistics) {

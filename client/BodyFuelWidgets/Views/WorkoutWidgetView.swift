@@ -34,6 +34,21 @@ struct WorkoutWidgetView: View {
                     durationAndCalories(duration: workout.duration, calories: workout.calories)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            } else if entry.isWorkoutDone {
+                VStack(alignment: .leading, spacing: 8) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .widgetAccentable()
+                    Text("Тренировка выполнена!")
+                        .font(.headline.bold())
+                        .foregroundColor(.white)
+                        .widgetAccentable()
+                    Text("Отдыхайте и восстанавливайтесь")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             } else {
                 HStack {
                     Image(systemName: "cloud.drizzle.fill")

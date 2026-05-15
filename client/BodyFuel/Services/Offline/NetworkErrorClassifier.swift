@@ -11,3 +11,9 @@ func isTransportError(_ error: Error) -> Bool {
     if case .network = e { return true }
     return false
 }
+
+func isUserParamsNotFoundError(_ error: Error) -> Bool {
+    guard let e = error as? NetworkError,
+          case .requestFailed(_, let message) = e else { return false }
+    return message.lowercased().contains("user params not found")
+}

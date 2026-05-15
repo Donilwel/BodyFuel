@@ -4,10 +4,10 @@ struct WorkoutProvider: TimelineProvider {
     private let sharedWidgetStorage = SharedWidgetStorage.shared
     
     func placeholder(in context: Context) -> WorkoutEntry {
-        let workoutModel = sharedWidgetStorage.getWorkout()
-        return WorkoutEntry(
+        WorkoutEntry(
             date: .now,
-            workout: workoutModel
+            workout: sharedWidgetStorage.getWorkout(),
+            isWorkoutDone: sharedWidgetStorage.isTodayWorkoutDone()
         )
     }
 

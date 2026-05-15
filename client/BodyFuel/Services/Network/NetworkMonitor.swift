@@ -1,5 +1,6 @@
 import Network
 import Combine
+import Foundation
 
 @MainActor
 final class NetworkMonitor: ObservableObject {
@@ -43,6 +44,9 @@ final class NetworkMonitor: ObservableObject {
     // MARK: - Server reachability
 
     func markServerUnreachable() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UI_TESTING"] == "1" { return }
+        #endif
         guard isServerReachable else { return }
         isServerReachable = false
         updateIsOnline()

@@ -66,7 +66,12 @@ final class UserParametersViewModel: ObservableObject {
             return
         }
         
-        let age = dateOfBirth != nil ? Float(Calendar.current.dateComponents([.year], from: dateOfBirth!, to: Date()).year!) : 30
+        let age: Float
+        if let dob = dateOfBirth, let years = Calendar.current.dateComponents([.year], from: dob, to: Date()).year {
+            age = Float(years)
+        } else {
+            age = 30
+        }
         
         basalMetabolicRate = (10 * weight) + (6.25 * Float(height)) - (5 * age)
         

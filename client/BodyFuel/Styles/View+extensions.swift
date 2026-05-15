@@ -48,4 +48,10 @@ extension View {
             }
         }
     }
+    
+    func sheetTitle() -> some View {
+        self
+            .font(.title2.bold())
+            .foregroundColor(.white)
+    }
 }

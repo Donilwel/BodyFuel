@@ -1,6 +1,24 @@
 import Foundation
 import Combine
 
+// MARK: - Protocol
+
+@MainActor
+protocol StatsStoreProtocol: AnyObject {
+    var weightHistory: [WeightEntryResponse] { get }
+    var recommendations: [RecommendationResponse] { get }
+    var isLoadingRecommendations: Bool { get }
+    func loadWeightHistory() async
+    func loadRecommendations() async
+    func markAllRead()
+    func fetchNutritionReport(from: Date, to: Date) async -> NutritionReportResponse?
+    func fetchDailySteps(from: Date, to: Date) async -> [DailySteps]
+    func addWeight(_ weight: Double) async throws
+    func refreshRecommendations() async
+}
+
+// MARK: - Implementation
+
 @MainActor
 final class StatsStore: ObservableObject {
     static let shared = StatsStore()
@@ -248,4 +266,11 @@ final class StatsStore: ObservableObject {
             priority: old.priority, isRead: isRead, generatedAt: old.generatedAt
         )
     }
+}
+
+// MARK: - StatsStoreProtocol Conformance
+
+extension StatsStore: StatsStoreProtocol {
+    func loadWeightHistory() async { await loadWeightHistory(force: false) }
+    func loadRecommendations() async { await loadRecommendations(force: false) }
 }

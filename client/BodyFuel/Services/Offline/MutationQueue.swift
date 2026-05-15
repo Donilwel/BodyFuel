@@ -9,6 +9,7 @@ enum MutationType: String, Codable {
     case addWeight
     case markRecommendationRead
     case updateWorkout
+    case sendFeedback
 }
 
 struct QueuedMutation: Codable, Identifiable {
@@ -53,6 +54,11 @@ struct UpdateWorkoutExerciseItemPayload: Codable {
     let reps: Int?
     let calories: Int?
     let status: String?
+}
+
+struct SendFeedbackPayload: Codable {
+    let message: String
+    let email: String?
 }
 
 // MARK: - Queue

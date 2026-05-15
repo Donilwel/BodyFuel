@@ -69,6 +69,11 @@ final class NutritionService: NutritionServiceProtocol {
             throw NetworkError.invalidURL
         }
 
+        let localComponents = Calendar.current.dateComponents([.year, .month, .day], from: meal.time)
+        var utcCalendar = Calendar(identifier: .gregorian)
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        let utcMidnight = utcCalendar.date(from: localComponents) ?? meal.time
+
         let body = CreateFoodEntryRequestBody(
             description: meal.name,
             calories: meal.macros.calories,
@@ -77,7 +82,7 @@ final class NutritionService: NutritionServiceProtocol {
             fat: meal.macros.fat,
             mealType: meal.mealType.rawValue,
             photoURL: meal.photoURL,
-            date: meal.time
+            date: utcMidnight
         )
 
         let _: DefaultDecodable = try await networkClient.request(

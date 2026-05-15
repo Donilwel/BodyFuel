@@ -39,6 +39,8 @@ struct CaloriesRingProgressView: View {
         .padding()
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("calories-ring")
     }
 
     private var mainContent: some View {

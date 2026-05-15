@@ -1,11 +1,27 @@
 import Foundation
 
+// MARK: - Protocol
+
+protocol SharedWidgetStorageProtocol {
+    func saveWorkout(_ workout: WorkoutModel?)
+    func saveTodayWorkoutDone(_ done: Bool)
+    func isTodayWorkoutDone() -> Bool
+}
+
+// MARK: - Implementation
+
 final class SharedWidgetStorage {
     static let shared = SharedWidgetStorage()
 
-    private let defaults = UserDefaults(
-        suiteName: "group.com.bodyfuel.shared"
-    )
+    private let defaults: UserDefaults?
+
+    private init() {
+        self.defaults = UserDefaults(suiteName: "group.com.bodyfuel.shared")
+    }
+
+    init(defaults: UserDefaults) {
+        self.defaults = defaults
+    }
 
     func saveTodayBurnedCalories(_ calories: Int) {
         defaults?.set(calories, forKey: "todayBurnedCalories")
@@ -69,12 +85,24 @@ final class SharedWidgetStorage {
         )
     }
 
+    func saveTodayWorkoutDone(_ done: Bool) {
+        defaults?.set(done, forKey: "todayWorkoutDone")
+    }
+
+    func isTodayWorkoutDone() -> Bool {
+        defaults?.bool(forKey: "todayWorkoutDone") ?? false
+    }
+
     func clearAll() {
         defaults?.removeObject(forKey: "todayBurnedCalories")
+
         defaults?.removeObject(forKey: "todayConsumedCalories")
         defaults?.removeObject(forKey: "targetCalories")
         defaults?.removeObject(forKey: "basalMetabolicRate")
         defaults?.removeObject(forKey: "todaySteps")
         defaults?.removeObject(forKey: "todayWorkout")
+        defaults?.removeObject(forKey: "todayWorkoutDone")
     }
 }
+
+extension SharedWidgetStorage: SharedWidgetStorageProtocol {}

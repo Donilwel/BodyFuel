@@ -2,6 +2,7 @@ import Foundation
 import HealthKit
 import Combine
 import WidgetKit
+import UIKit
 
 @MainActor
 final class WorkoutViewModel: ObservableObject {
@@ -14,6 +15,7 @@ final class WorkoutViewModel: ObservableObject {
     @Published var currentExerciseRepCountError: String = ""
     
     @Published var isWorkoutActive: Bool = false
+    @Published var isPaused: Bool = false
     @Published var showWorkoutSummary: Bool = false
     @Published var showHealthPermissionAlert: Bool = false
     
@@ -35,7 +37,7 @@ final class WorkoutViewModel: ObservableObject {
     
     @Published var totalCaloriesBurned: Double? = nil
 
-    private(set) var currentWorkoutID: String?
+    var currentWorkoutID: String?
 
     private var restTimeBetweenExercises = 90
 
@@ -66,12 +68,40 @@ final class WorkoutViewModel: ObservableObject {
         "workout_active_\(UserSessionManager.shared.currentUserId ?? "anon")"
     }
 
-    private let workoutService: WorkoutServiceProtocol = WorkoutService.shared
-    private let healthKitService: HealthKitServiceProtocol = HealthKitService.shared
-    private let sharedWidgetStorage = SharedWidgetStorage.shared
-    private lazy var liveActivityService: LiveActivityServiceProtocol = LiveActivityService.shared
+    private let workoutService: WorkoutServiceProtocol
+    private let healthKitService: HealthKitServiceProtocol
+    private let sharedWidgetStorage: SharedWidgetStorageProtocol
+    private let liveActivityService: LiveActivityServiceProtocol
     
     init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UI_TESTING"] == "1" {
+            self.workoutService = UITestingWorkoutService()
+        } else {
+            self.workoutService = WorkoutService.shared
+        }
+        #else
+        self.workoutService = WorkoutService.shared
+        #endif
+        self.healthKitService = HealthKitService.shared
+        self.sharedWidgetStorage = SharedWidgetStorage.shared
+        self.liveActivityService = LiveActivityService.shared
+        setupReconnectObserver()
+    }
+
+    init(
+        workoutService: WorkoutServiceProtocol,
+        healthKitService: HealthKitServiceProtocol,
+        sharedWidgetStorage: SharedWidgetStorageProtocol,
+        liveActivityService: LiveActivityServiceProtocol = LiveActivityService.shared
+    ) {
+        self.workoutService = workoutService
+        self.healthKitService = healthKitService
+        self.sharedWidgetStorage = sharedWidgetStorage
+        self.liveActivityService = liveActivityService
+    }
+
+    private func setupReconnectObserver() {
         reconnectCancellable = NetworkMonitor.shared.$isOnline
             .dropFirst()
             .filter { $0 }
@@ -81,7 +111,6 @@ final class WorkoutViewModel: ObservableObject {
                 Task {
                     self.recommendedWorkout = nil
                     self.storedWorkoutID = nil
-                    self.isWorkoutStale = false
                     await self.load()
                 }
             }
@@ -183,6 +212,9 @@ final class WorkoutViewModel: ObservableObject {
             recommendedWorkout = workout
             isWorkoutStale = false
             diskCache.save(workout, key: workoutCacheKey)
+            sharedWidgetStorage.saveWorkout(makeWidgetModel(from: workout))
+            sharedWidgetStorage.saveTodayWorkoutDone(false)
+            WidgetCenter.shared.reloadAllTimelines()
             NetworkMonitor.shared.markServerReachable()
             screenState = .loaded
         } catch {
@@ -219,10 +251,10 @@ final class WorkoutViewModel: ObservableObject {
     func startWorkout() {
         guard let workout = recommendedWorkout else { return }
 
-        guard HealthKitService.shared.hasGrantedPermission else {
+        guard healthKitService.hasGrantedPermission else {
             Task {
-                await HealthKitService.shared.requestAuthorization()
-                if HealthKitService.shared.hasGrantedPermission {
+                await healthKitService.requestAuthorization()
+                if healthKitService.hasGrantedPermission {
                     startWorkout()
                 } else {
                     showHealthPermissionAlert = true
@@ -240,7 +272,9 @@ final class WorkoutViewModel: ObservableObject {
 
         phase = .waitingForStart
         isWorkoutActive = true
-        
+        isPaused = false
+
+        HapticService.impact(.medium)
         startWorkoutTimer()
         
         var activityType: HKWorkoutActivityType = .traditionalStrengthTraining
@@ -253,22 +287,64 @@ final class WorkoutViewModel: ObservableObject {
             break
         }
         
+        let workoutTitle = workout.title
+        let exerciseName = currentExercise?.name ?? ""
+        let exerciseType = currentExercise?.type ?? .fullBody
         Task {
             await healthKitService.startWorkout(activityType: activityType)
-        }
-        
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            self.liveActivityService.start(
-                workoutName: workout.title,
-                exerciseName: self.currentExercise?.name ?? "",
-                exerciseType: self.currentExercise?.type ?? .fullBody
+            liveActivityService.start(
+                workoutName: workoutTitle,
+                exerciseName: exerciseName,
+                exerciseType: exerciseType
             )
         }
     }
     
     func changeWorkout() {
         showWorkoutFilter = true
+    }
+
+    func generateNextWorkout() async {
+        screenState = .loading
+        recommendedWorkout = nil
+        do {
+            let (workoutID, workout) = try await workoutService.generateWorkout()
+            currentWorkoutID = workoutID
+            storedWorkoutID = workoutID
+            recommendedWorkout = workout
+            isWorkoutStale = false
+            diskCache.save(workout, key: workoutCacheKey)
+            sharedWidgetStorage.saveWorkout(makeWidgetModel(from: workout))
+            sharedWidgetStorage.saveTodayWorkoutDone(false)
+            WidgetCenter.shared.reloadAllTimelines()
+            screenState = .loaded
+        } catch {
+            if isTransportError(error) {
+                ToastService.shared.show("Нет соединения с сетью")
+                screenState = recommendedWorkout != nil ? .loaded : .error("Нет соединения с интернетом")
+                return
+            }
+            if AppRouter.shared.handleIfUnauthorized(error) { return }
+            screenState = .error("Не удалось загрузить тренировку")
+        }
+    }
+
+    func startWorkoutFromDeepLink(id: String) {
+        Task {
+            screenState = .loading
+            do {
+                let (workoutID, workout) = try await workoutService.fetchWorkout(id: id)
+                currentWorkoutID = workoutID
+                storedWorkoutID = workoutID
+                recommendedWorkout = workout
+                isWorkoutStale = false
+                diskCache.save(workout, key: workoutCacheKey)
+                screenState = .loaded
+                startWorkout()
+            } catch {
+                screenState = .loaded
+            }
+        }
     }
 
     func generateWithFilters(place: WorkoutPlace?, type: ExerciseType?, level: WorkoutLevel?) async {
@@ -286,6 +362,8 @@ final class WorkoutViewModel: ObservableObject {
             recommendedWorkout = workout
             isWorkoutStale = false
             diskCache.save(workout, key: workoutCacheKey)
+            sharedWidgetStorage.saveWorkout(makeWidgetModel(from: workout))
+            sharedWidgetStorage.saveTodayWorkoutDone(false)
             screenState = .loaded
             WidgetCenter.shared.reloadAllTimelines()
         } catch {
@@ -324,6 +402,7 @@ final class WorkoutViewModel: ObservableObject {
             isWorkoutActive = false
             return
         }
+        HapticService.notification(.warning)
         stopExerciseTimer()
         stopWorkoutTimer()
 
@@ -343,12 +422,16 @@ final class WorkoutViewModel: ObservableObject {
                 }
             }
         } else {
+            let remaining = max(0, exercise.setCount - currentSetRepCount.count)
+            let reps = currentSetRepCount + Array(repeating: "0", count: remaining)
             exerciseStats.append(ExerciseStats(
                 exercise: exercise,
-                repCount: currentSetRepCount
+                repCount: reps
             ))
             currentExerciseRepCount = ""
-            finishWorkout(finalStatus: .failed)
+
+            let anyDone = exerciseStats.contains { $0.repCount.contains { $0 != "0" } }
+            finishWorkout(finalStatus: anyDone ? .completed : .failed)
         }
 
         phase = .finished
@@ -359,12 +442,13 @@ final class WorkoutViewModel: ObservableObject {
     
     func skipExercise() {
         stopExerciseTimer()
-        
+
         if let exercise = currentExercise {
-            let skippedReps = Array(repeating: "0", count: exercise.setCount)
+            let remaining = max(0, exercise.setCount - currentSetRepCount.count)
+            let reps = currentSetRepCount + Array(repeating: "0", count: remaining)
             exerciseStats.append(ExerciseStats(
                 exercise: exercise,
-                repCount: skippedReps
+                repCount: reps
             ))
         }
         
@@ -398,6 +482,25 @@ final class WorkoutViewModel: ObservableObject {
     
     func setupHealthKit() async {
         await healthKitService.requestAuthorization()
+    }
+
+    func togglePause() {
+        if isPaused {
+            isPaused = false
+            healthKitService.resumeWorkout()
+            startWorkoutTimer()
+            switch phase {
+            case .exercise, .restBetweenSets, .restBetweenExercises:
+                startExerciseTimer()
+            default:
+                break
+            }
+        } else {
+            isPaused = true
+            stopExerciseTimer()
+            stopWorkoutTimer()
+            healthKitService.pauseWorkout()
+        }
     }
     
     private func startExerciseTimer() {
@@ -435,6 +538,9 @@ final class WorkoutViewModel: ObservableObject {
     private func tick() {
         timeRemaining -= 1
         elapsedTime += 1
+        if timeRemaining == 0 && (phase == .restBetweenSets || phase == .restBetweenExercises) {
+            HapticService.impact(.heavy)
+        }
     }
     
     private func finishExercise() {
@@ -504,8 +610,6 @@ final class WorkoutViewModel: ObservableObject {
             return
         }
 
-        sharedWidgetStorage.saveWorkout(nil)
-        
         phase = .waitingForStart
         
         updateLiveActivity()
@@ -519,9 +623,20 @@ final class WorkoutViewModel: ObservableObject {
             self.liveActivityService.end()
         }
 
+        if finalStatus == .completed {
+            HapticService.notification(.success)
+        }
+
         phase = .finished
         isWorkoutActive = false
+        isPaused = false
         showWorkoutSummary = true
+
+        sharedWidgetStorage.saveWorkout(nil)
+        if finalStatus == .completed {
+            sharedWidgetStorage.saveTodayWorkoutDone(true)
+        }
+        WidgetCenter.shared.reloadAllTimelines()
 
         Task {
             let (calories, _) = await healthKitService.endWorkout()
@@ -577,8 +692,18 @@ final class WorkoutViewModel: ObservableObject {
                 }
             }
 
-            await HealthKitService.shared.refreshDailyActivity()
+            await healthKitService.refreshDailyActivity()
         }
+    }
+
+    private func makeWidgetModel(from workout: Workout) -> WorkoutModel {
+        WorkoutModel(
+            name: workout.title,
+            duration: workout.duration,
+            calories: workout.calories,
+            location: workout.place.rawValue,
+            type: workout.type.rawValue
+        )
     }
 
     private func makeExerciseUpdateItems(finalStatus: WorkoutStatus) -> [UpdateWorkoutExerciseItem] {

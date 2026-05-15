@@ -2,6 +2,21 @@ import Foundation
 import Combine
 import WidgetKit
 
+// MARK: - Protocol
+
+@MainActor
+protocol NutritionStoreProtocol: AnyObject {
+    var dailySummary: NutritionDailySummary? { get }
+    var mealsPublisher: AnyPublisher<[Meal], Never> { get }
+    var dailySummaryPublisher: AnyPublisher<NutritionDailySummary?, Never> { get }
+    var mealPreviewsPublisher: AnyPublisher<[MealPreview], Never> { get }
+    func load() async throws
+    func addMeal(_ meal: Meal) async throws
+    func deleteMeal(_ meal: Meal) async
+}
+
+// MARK: - Implementation
+
 @MainActor
 final class NutritionStore: ObservableObject {
     static let shared = NutritionStore()
@@ -246,4 +261,12 @@ final class NutritionStore: ObservableObject {
         var seen = Set<UUID>()
         return meals.filter { seen.insert($0.id).inserted }
     }
+}
+
+// MARK: - Protocol conformance
+
+extension NutritionStore: NutritionStoreProtocol {
+    var mealsPublisher: AnyPublisher<[Meal], Never> { $meals.eraseToAnyPublisher() }
+    var dailySummaryPublisher: AnyPublisher<NutritionDailySummary?, Never> { $dailySummary.eraseToAnyPublisher() }
+    var mealPreviewsPublisher: AnyPublisher<[MealPreview], Never> { $mealPreviews.eraseToAnyPublisher() }
 }

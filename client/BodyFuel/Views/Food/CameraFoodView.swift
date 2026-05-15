@@ -13,6 +13,7 @@ struct CameraFoodView: View {
     @State private var analysisFailed = false
     @State private var selectedMealType: MealType = .breakfast
     @State private var showPermissionAlert = false
+    @State private var showFeedback = false
 
     var body: some View {
         ZStack {
@@ -34,6 +35,11 @@ struct CameraFoodView: View {
         }
         .onDisappear {
             camera.stop()
+        }
+        .sheet(isPresented: $showFeedback) {
+            FeedbackSheet(title: "Отзыв об анализе блюда")
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .onChange(of: camera.permissionDenied) { denied in
             if denied { showPermissionAlert = true }
@@ -86,6 +92,7 @@ struct CameraFoodView: View {
 
                 Button {
                     camera.capturePhoto { image in
+                        isAnalyzing = true
                         capturedImage = image
                     }
                 } label: {
@@ -155,6 +162,14 @@ struct CameraFoodView: View {
                         }
                     }
                     .padding(.horizontal)
+
+                    Button {
+                        showFeedback = true
+                    } label: {
+                        Label("Что-то не так?", systemImage: "bubble.and.pencil")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
                 }
 
                 Spacer()
@@ -162,11 +177,13 @@ struct CameraFoodView: View {
                 if !isAnalyzing && analyzedMeal == nil {
                     if analysisFailed {
                         VStack(spacing: 12) {
-                            Text("Не удалось распознать блюдо")
+                            Text(viewModel.analysisNetworkError ? "Нет подключения к интернету" : "Не удалось распознать блюдо")
                                 .font(.subheadline)
                                 .foregroundColor(.white.opacity(0.8))
                                 .multilineTextAlignment(.center)
-                            Text("Попробуйте сфотографировать ещё раз или введите данные вручную")
+                            Text(viewModel.analysisNetworkError
+                                 ? "Проверьте соединение и попробуйте снова"
+                                 : "Попробуйте сфотографировать ещё раз или введите данные вручную")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.55))
                                 .multilineTextAlignment(.center)
@@ -184,11 +201,13 @@ struct CameraFoodView: View {
             .padding(.top)
         }
         .task {
+            isAnalyzing = true
+            analysisFailed = false
             guard let data = image.jpegData(compressionQuality: 0.8) else {
+                isAnalyzing = false
                 analysisFailed = true
                 return
             }
-            isAnalyzing = true
             analyzedMeal = await viewModel.analyzeMealFromPhoto(data, mealType: selectedMealType)
             isAnalyzing = false
             if analyzedMeal == nil { analysisFailed = true }

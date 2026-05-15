@@ -9,6 +9,7 @@ struct StatsView: View {
     @State private var isInitialLoad = true
     @State private var showHistory = false
     @State private var showExport = false
+    @State private var showFeedback = false
 
     var body: some View {
         ZStack {
@@ -58,6 +59,11 @@ struct StatsView: View {
                 ShareSheet(items: [url])
                     .ignoresSafeArea()
             }
+        }
+        .sheet(isPresented: $showFeedback) {
+            FeedbackSheet(title: "Отзыв о рекомендациях")
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
         .onChange(of: viewModel.selectedPeriod) { _ in
             Task { await viewModel.reloadChart() }
@@ -357,6 +363,12 @@ struct StatsView: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                 Spacer()
+                Button {
+                    showFeedback = true
+                } label: {
+                    Image(systemName: "bubble.and.pencil")
+                        .foregroundStyle(.white.opacity(0.8))
+                }
                 Button {
                     Task { await viewModel.refreshRecommendations() }
                 } label: {

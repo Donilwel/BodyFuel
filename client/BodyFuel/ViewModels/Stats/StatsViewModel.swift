@@ -45,14 +45,26 @@ final class StatsViewModel: ObservableObject {
 
     private var reportEntries: [FoodEntryResponseBody] = []
 
-    private let store = StatsStore.shared
+    private let store: StatsStoreProtocol
+    private let healthService: HealthKitServiceProtocol
+    private let userStore: UserStoreProtocol
+
+    init(
+        store: StatsStoreProtocol = StatsStore.shared,
+        healthService: HealthKitServiceProtocol = HealthKitService.shared,
+        userStore: UserStoreProtocol = UserStore.shared
+    ) {
+        self.store = store
+        self.healthService = healthService
+        self.userStore = userStore
+    }
 
     var weightHistory: [WeightEntryResponse] { store.weightHistory }
     var recommendations: [RecommendationResponse] { store.recommendations }
     var isLoadingRecommendations: Bool { store.isLoadingRecommendations }
 
     func load() async {
-        await HealthKitService.shared.refreshDailyActivity()
+        await healthService.refreshDailyActivity()
         await store.loadWeightHistory()
         await store.loadRecommendations()
         store.markAllRead()
@@ -114,6 +126,7 @@ final class StatsViewModel: ObservableObject {
 
     func addWeight(_ value: Double) async throws {
         try await store.addWeight(value)
+        showWeightInput = false
         await reloadChart()
     }
 
@@ -169,7 +182,7 @@ final class StatsViewModel: ObservableObject {
 
     var weightGoalAssessment: String? {
         guard let change = weightPeriodChange else { return nil }
-        switch UserStore.shared.profile?.goal ?? .maintain {
+        switch userStore.profile?.goal ?? .maintain {
         case .loseWeight:
             return change < -0.1
                 ? "Отличный прогресс — вы движетесь к цели!"
@@ -186,7 +199,7 @@ final class StatsViewModel: ObservableObject {
 
     var isWeightChangeGood: Bool {
         guard let change = weightPeriodChange else { return true }
-        switch UserStore.shared.profile?.goal ?? .maintain {
+        switch userStore.profile?.goal ?? .maintain {
         case .loseWeight: return change < 0
         case .gainMuscle: return change > 0
         case .maintain: return abs(change) <= 0.5

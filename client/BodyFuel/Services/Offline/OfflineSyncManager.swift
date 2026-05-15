@@ -7,17 +7,38 @@ final class OfflineSyncManager: ObservableObject {
 
     @Published private(set) var isSyncing = false
 
-    private let nutritionService: NutritionServiceProtocol = NutritionService.shared
-    private let statsService: StatsServiceProtocol = StatsService.shared
-    private let workoutService: WorkoutServiceProtocol = WorkoutService.shared
-    private let queue = MutationQueue.shared
+    private let nutritionService: NutritionServiceProtocol
+    private let statsService: StatsServiceProtocol
+    private let workoutService: WorkoutServiceProtocol
+    private let feedbackService: FeedbackServiceProtocol
+    private let queue: MutationQueue
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
         return d
     }()
 
-    private init() {}
+    private init() {
+        self.nutritionService = NutritionService.shared
+        self.statsService = StatsService.shared
+        self.workoutService = WorkoutService.shared
+        self.feedbackService = FeedbackService.shared
+        self.queue = MutationQueue.shared
+    }
+
+    init(
+        nutritionService: NutritionServiceProtocol,
+        statsService: StatsServiceProtocol,
+        workoutService: WorkoutServiceProtocol,
+        feedbackService: FeedbackServiceProtocol,
+        queue: MutationQueue = MutationQueue.shared
+    ) {
+        self.nutritionService = nutritionService
+        self.statsService = statsService
+        self.workoutService = workoutService
+        self.feedbackService = feedbackService
+        self.queue = queue
+    }
 
     // MARK: - Flush
 
@@ -89,6 +110,10 @@ final class OfflineSyncManager: ObservableObject {
                 totalCalories: p.totalCalories,
                 exercises: exercises
             )
+
+        case .sendFeedback:
+            let p = try decoder.decode(SendFeedbackPayload.self, from: mutation.payload)
+            try await feedbackService.sendFeedback(message: p.message, email: p.email)
         }
     }
 }

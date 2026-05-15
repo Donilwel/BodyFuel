@@ -25,12 +25,12 @@ struct Meal: Identifiable, Codable {
     }
 }
 
-struct RecipeIngredient {
+struct RecipeIngredient: Equatable {
     let name: String
     let grams: Double
 }
 
-struct Recipe: Identifiable {
+struct Recipe: Identifiable, Equatable {
     let id: UUID
     let name: String
     let description: String

@@ -2,6 +2,27 @@ import Foundation
 import Combine
 import WidgetKit
 
+// MARK: - Protocol
+
+@MainActor
+protocol UserStoreProtocol: AnyObject {
+    var profile: UserProfile? { get }
+    var targetCalories: Int { get }
+    var caloriesBurned: Int { get }
+    var todaySteps: Int { get }
+    var basalMetabolicRate: Int { get }
+    var profilePublisher: AnyPublisher<UserProfile?, Never> { get }
+    var targetCaloriesPublisher: AnyPublisher<Int, Never> { get }
+    var caloriesBurnedPublisher: AnyPublisher<Int, Never> { get }
+    var todayStepsPublisher: AnyPublisher<Int, Never> { get }
+    func load() async
+    func setTargetCalories(_ calories: Int)
+    func setBasalMetabolicRate(_ bmr: Int)
+    func setProfile(_ updated: UserProfile)
+}
+
+// MARK: - Implementation
+
 @MainActor
 final class UserStore: ObservableObject {
     static let shared = UserStore()
@@ -149,4 +170,13 @@ final class UserStore: ObservableObject {
         isDataStale = false
         diskCache.remove(key: profileKey)
     }
+}
+
+// MARK: - Protocol conformance
+
+extension UserStore: UserStoreProtocol {
+    var profilePublisher: AnyPublisher<UserProfile?, Never> { $profile.eraseToAnyPublisher() }
+    var targetCaloriesPublisher: AnyPublisher<Int, Never> { $targetCalories.eraseToAnyPublisher() }
+    var caloriesBurnedPublisher: AnyPublisher<Int, Never> { $caloriesBurned.eraseToAnyPublisher() }
+    var todayStepsPublisher: AnyPublisher<Int, Never> { $todaySteps.eraseToAnyPublisher() }
 }

@@ -17,7 +17,19 @@ final class PasswordRecoveryViewModel: ObservableObject {
     @Published var step: Step = .enterEmail
     @Published var screenState: ScreenState = .idle
 
-    private let authService: AuthServiceProtocol = AuthService.shared
+    private let authService: AuthServiceProtocol
+
+    init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UI_TESTING"] == "1" {
+            self.authService = UITestingAuthService()
+        } else {
+            self.authService = AuthService.shared
+        }
+        #else
+        self.authService = AuthService.shared
+        #endif
+    }
 
     func next() async {
         do {

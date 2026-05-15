@@ -6,7 +6,10 @@ struct SecondaryButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticService.impact(.light)
+            action()
+        }) {
             if isLoading {
                 ProgressView()
             } else {

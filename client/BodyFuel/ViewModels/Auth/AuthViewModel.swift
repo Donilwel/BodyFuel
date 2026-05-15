@@ -31,7 +31,23 @@ final class AuthViewModel: ObservableObject {
     @Published var email = ""
     @Published var emailError: String? = nil
 
-    private let authService: AuthServiceProtocol = AuthService.shared
+    private let authService: AuthServiceProtocol
+
+    init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["UI_TESTING"] == "1" {
+            self.authService = UITestingAuthService()
+        } else {
+            self.authService = AuthService.shared
+        }
+        #else
+        self.authService = AuthService.shared
+        #endif
+    }
+
+    init(authService: AuthServiceProtocol) {
+        self.authService = authService
+    }
 
     func submit() async {
         validateLive()
@@ -55,7 +71,11 @@ final class AuthViewModel: ObservableObject {
                     name: name,
                     surname: surname,
                     email: email,
-                    phone: phone,
+                    phone: phone
+                        .replacingOccurrences(of: "(", with: "")
+                        .replacingOccurrences(of: ")", with: "")
+                        .replacingOccurrences(of: "-", with: "")
+                        .replacingOccurrences(of: " ", with: ""),
                     password: password
                 )
                 try await authService.register(user: registerPayload)
@@ -64,6 +84,7 @@ final class AuthViewModel: ObservableObject {
             }
         } catch {
             let appError = ErrorMapper.map(error)
+            HapticService.notification(.error)
             screenState = .error(appError.errorDescription ?? "Попробуйте еще раз позже")
         }
     }

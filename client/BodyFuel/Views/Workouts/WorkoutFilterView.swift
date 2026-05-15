@@ -20,8 +20,7 @@ struct WorkoutFilterView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
                         Text("Параметры тренировки")
-                            .font(.title2.bold())
-                            .foregroundColor(.white)
+                            .sheetTitle()
                         
                         filterSection(title: "Место") {
                             chipsGrid(

@@ -28,6 +28,16 @@ struct WorkoutHistoryExercise: Identifiable, Codable {
     var isCompleted: Bool { status == "completed" }
 }
 
+// MARK: - Protocol
+
+@MainActor
+protocol WorkoutHistoryStoreProtocol: AnyObject {
+    var workoutsPublisher: AnyPublisher<[WorkoutHistoryItem], Never> { get }
+    var todayCompletedCount: Int { get }
+    var thisWeekCompletedCount: Int { get }
+    func load() async
+}
+
 // MARK: - Store
 
 @MainActor
@@ -40,7 +50,11 @@ final class WorkoutHistoryStore: ObservableObject {
 
     private let diskCache = DiskCache.shared
     private let workoutService: WorkoutServiceProtocol = WorkoutService.shared
-    private let iso = ISO8601DateFormatter()
+    private let iso: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
 
     private var cacheKey: String {
         "workout_history_\(UserSessionManager.shared.currentUserId ?? "anon")"
@@ -135,4 +149,10 @@ final class WorkoutHistoryStore: ObservableObject {
         default: return "Тренировка"
         }
     }
+}
+
+// MARK: - Protocol conformance
+
+extension WorkoutHistoryStore: WorkoutHistoryStoreProtocol {
+    var workoutsPublisher: AnyPublisher<[WorkoutHistoryItem], Never> { $workouts.eraseToAnyPublisher() }
 }

@@ -7,7 +7,8 @@ struct HomeView: View {
     @ObservedObject private var nutritionStore = NutritionStore.shared
     @StateObject private var viewModel = HomeViewModel()
     @State private var path = NavigationPath()
-    
+    @State private var wantsMoreWorkout = false
+
     private let sharedWidgetStorage = SharedWidgetStorage.shared
 
     var body: some View {
@@ -27,6 +28,7 @@ struct HomeView: View {
 
                         Spacer()
                     }
+                    .padding()
                 }
             }
             .screenLoading(viewModel.state == .loading)
@@ -51,6 +53,7 @@ struct HomeView: View {
                     .environmentObject(workoutViewModel)
             }
             .refreshable {
+                wantsMoreWorkout = false
                 Task {
                     NutritionStore.shared.invalidate()
                     UserStore.shared.invalidateProfile()
@@ -103,39 +106,59 @@ struct HomeView: View {
 
     private var workoutCard: some View {
         VStack(spacing: 6) {
-            if viewModel.hasTodayWorkout {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle.fill").font(.caption)
-                    Text("Тренировка на сегодня выполнена!")
-                        .font(.caption)
+            if viewModel.hasTodayWorkout && !wantsMoreWorkout {
+                workoutDoneCard
+            } else {
+                if viewModel.hasWeeklyGoalMet {
+                    HStack(spacing: 6) {
+                        Image(systemName: "trophy.fill").font(.caption)
+                        Text("Цель на неделю достигнута!")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.white.opacity(0.8))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .foregroundStyle(.white.opacity(0.8))
-                .frame(maxWidth: .infinity, alignment: .leading)
-            } else if viewModel.hasWeeklyGoalMet {
-                HStack(spacing: 6) {
-                    Image(systemName: "trophy.fill").font(.caption)
-                    Text("Цель на неделю достигнута!")
-                        .font(.caption)
+                if workoutViewModel.isWorkoutStale {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock.arrow.circlepath").font(.caption)
+                        Text("Сохраненная тренировка")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.white.opacity(0.65))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .foregroundStyle(.white.opacity(0.8))
-                .frame(maxWidth: .infinity, alignment: .leading)
+                WorkoutCardView(
+                    workout: workoutViewModel.recommendedWorkout,
+                    isChanging: workoutViewModel.screenState == .loading,
+                    startAction: workoutViewModel.startWorkout,
+                    changeAction: workoutViewModel.changeWorkout
+                )
             }
-            if workoutViewModel.isWorkoutStale {
-                HStack(spacing: 6) {
-                    Image(systemName: "clock.arrow.circlepath").font(.caption)
-                    Text("Сохраненная тренировка")
-                        .font(.caption)
-                }
-                .foregroundStyle(.white.opacity(0.65))
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            WorkoutCardView(
-                workout: workoutViewModel.recommendedWorkout,
-                isChanging: workoutViewModel.screenState == .loading,
-                startAction: workoutViewModel.startWorkout,
-                changeAction: workoutViewModel.changeWorkout
-            )
         }
+    }
+
+    private var workoutDoneCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Отличная работа!")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("Дай телу отдохнуть и набраться сил — ты заслужил это.")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            SecondaryButton(title: "Готов к новому рекорду") {
+                wantsMoreWorkout = true
+                Task { await workoutViewModel.generateNextWorkout() }
+            }
+        }
+        .cardStyle()
     }
 
     private var nutritionCard: some View {
